@@ -8,16 +8,18 @@ import Html.Events exposing (onInput)
 
 
 ---- MODEL ----
+-- pc stands for player character
 
 
 type alias Model =
-    { content : String
+    { pcOfferString : String
+    , pcOfferInt : Int
     }
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( { content = "" }, Cmd.none )
+    ( { pcOfferString = "0", pcOfferInt = 0 }, Cmd.none )
 
 
 
@@ -26,7 +28,7 @@ init =
 
 type Msg
     = NoOp
-    | Change String
+    | PcOffer String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -35,8 +37,8 @@ update msg model =
         NoOp ->
             ( model, Cmd.none )
 
-        Change newContent ->
-            ( { model | content = newContent }, Cmd.none )
+        PcOffer newOffer ->
+            ( { model | pcOfferString = newOffer, pcOfferInt = Maybe.withDefault model.pcOfferInt (String.toInt newOffer) }, Cmd.none )
 
 
 
@@ -48,7 +50,8 @@ view model =
     div []
         [ img [ src "/logo.svg" ] []
         , h1 [] [ text "Your Elm App still working!" ]
-        , input [ Attr.type_ "number", Attr.min "-50000", Attr.max "50000", placeholder "Value", value model.content, onInput Change ] []
+        , input [ Attr.type_ "number", Attr.min "-50000", Attr.max "50000", placeholder "Your Offer", value model.pcOfferString, onInput PcOffer ] []
+        , div [] [ text ("Your Offer: " ++ String.fromInt model.pcOfferInt) ]
         ]
 
 

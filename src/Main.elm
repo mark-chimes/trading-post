@@ -1,9 +1,10 @@
 module Main exposing (Model, Msg(..), init, main, update, view)
 
 import Browser
-import Html exposing (Html, button, div, h1, img, input, text)
+import Html exposing (Html, br, button, div, h1, img, input, li, text, ul)
 import Html.Attributes as Attr exposing (placeholder, src, value)
 import Html.Events exposing (onClick, onInput)
+import String
 
 
 
@@ -14,12 +15,13 @@ import Html.Events exposing (onClick, onInput)
 type alias Model =
     { pcOfferString : String
     , pcOfferInt : Int
+    , conversation : List String
     }
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( { pcOfferString = "0", pcOfferInt = 0 }, Cmd.none )
+    ( { pcOfferString = "0", pcOfferInt = 0, conversation = [] }, Cmd.none )
 
 
 
@@ -30,6 +32,7 @@ type Msg
     = NoOp
     | PcOffer String
     | ModifyPcOffer Int
+    | SubmitOffer
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -43,6 +46,9 @@ update msg model =
 
         ModifyPcOffer amount ->
             ( { model | pcOfferString = String.fromInt (model.pcOfferInt + amount), pcOfferInt = model.pcOfferInt + amount }, Cmd.none )
+
+        SubmitOffer ->
+            ( { model | conversation = model.conversation ++ [ "You offered: " ++ String.fromInt model.pcOfferInt ] }, Cmd.none )
 
 
 
@@ -62,6 +68,11 @@ view model =
             , button [ onClick (ModifyPcOffer 100) ] [ text "+100" ]
             ]
         , div [] [ text ("Your Offer: " ++ String.fromInt model.pcOfferInt) ]
+        , button [ onClick SubmitOffer ] [ text "Submit Offer" ]
+        , div [] []
+        , br [] []
+        , div [] [ text "The story thus far: " ]
+        , ul [] (List.map (\x -> li [] [ x ]) (List.map text model.conversation))
         ]
 
 

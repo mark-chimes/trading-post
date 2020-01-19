@@ -13,17 +13,17 @@ import String
 
 
 type alias Model =
-    { pcOfferString : String
-    , pcOfferInt : Int
+    { pcOfferInt : Int
     , pcGold : Int
     , itemWorth : Int
+    , customerMaxPrice : Int
     , conversation : List String
     }
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( { pcOfferString = "0", pcOfferInt = 0, pcGold = 0, itemWorth = 20, conversation = [] }, Cmd.none )
+    ( { pcOfferInt = 0, pcGold = 0, itemWorth = 20, customerMaxPrice = 50, conversation = [] }, Cmd.none )
 
 
 
@@ -44,18 +44,34 @@ update msg model =
             ( model, Cmd.none )
 
         PcOffer newOffer ->
-            ( { model | pcOfferString = newOffer, pcOfferInt = max 0 (Maybe.withDefault model.pcOfferInt (String.toInt newOffer)) }, Cmd.none )
+            ( makeOffer model newOffer, Cmd.none )
 
         ModifyPcOffer amount ->
-            ( { model | pcOfferString = String.fromInt (max 0 (model.pcOfferInt + amount)), pcOfferInt = max 0 (model.pcOfferInt + amount) }, Cmd.none )
+            ( modifyOffer model amount, Cmd.none )
 
         SubmitOffer ->
             ( sellItem <| updateConvoWithOffer <| model, Cmd.none )
 
 
+makeOffer : Model -> String -> Model
+makeOffer model newOffer =
+    { model | pcOfferInt = max 0 (Maybe.withDefault model.pcOfferInt (String.toInt newOffer)) }
+
+
+modifyOffer : Model -> Int -> Model
+modifyOffer model amount =
+    { model | pcOfferInt = max 0 (model.pcOfferInt + amount) }
+
+
 updateConvoWithOffer : Model -> Model
 updateConvoWithOffer model =
-    { model | conversation = model.conversation ++ [ "You offered: " ++ String.fromInt model.pcOfferInt ] }
+    { model
+        | conversation =
+            model.conversation
+                ++ [ "You offered the sword for: " ++ String.fromInt model.pcOfferInt ++ "gp."
+                   , "The customer bought 1 sword at " ++ String.fromInt model.pcOfferInt ++ "gp (cost price " ++ String.fromInt model.itemWorth ++ "gp)"
+                   ]
+    }
 
 
 sellItem : Model -> Model
@@ -70,14 +86,13 @@ sellItem model =
 view : Model -> Html Msg
 view model =
     div []
-        [ img [ src "/logo.svg" ] []
-        , h1 [] [ text "Your Elm App is still working!" ]
+        [ h1 [] [ text "Trading Post" ]
         , text ("Your gold: " ++ String.fromInt model.pcGold)
         , br [] []
         , div []
             [ button [ onClick (ModifyPcOffer -100) ] [ text "-100" ]
             , button [ onClick (ModifyPcOffer -10) ] [ text "-10" ]
-            , input [ Attr.type_ "number", Attr.min "0", Attr.max "50000", placeholder "Your Offer", value model.pcOfferString, onInput PcOffer ] []
+            , input [ Attr.type_ "number", Attr.min "0", Attr.max "50000", placeholder "Your Offer", value (String.fromInt model.pcOfferInt), onInput PcOffer ] []
             , button [ onClick (ModifyPcOffer 10) ] [ text "+10" ]
             , button [ onClick (ModifyPcOffer 100) ] [ text "+100" ]
             ]

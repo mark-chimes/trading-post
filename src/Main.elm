@@ -1,7 +1,7 @@
 module Main exposing (Model, Msg(..), init, main, update, view)
 
 import Browser
-import Html exposing (Html, br, button, div, h1, img, input, li, text, ul)
+import Html exposing (Html, br, button, div, h1, h2, h3, img, input, li, text, ul)
 import Html.Attributes as Attr exposing (placeholder, src, value)
 import Html.Events exposing (onClick, onInput)
 import String
@@ -13,17 +13,25 @@ import String
 
 
 type alias Model =
-    { pcOfferInt : Int
+    { time : Time
+    , pcOfferInt : Int
     , pcGold : Int
     , itemWorth : Int
     , customerMaxPrice : Int
+    , customerName : String
     , conversation : List String
+    }
+
+
+type alias Time =
+    { hour : Int
+    , minute : Int
     }
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( { pcOfferInt = 0, pcGold = 0, itemWorth = 20, customerMaxPrice = 50, conversation = [] }, Cmd.none )
+    ( { time = { hour = 8, minute = 0 }, pcOfferInt = 0, pcGold = 0, itemWorth = 20, customerMaxPrice = 50, customerName = "Susan", conversation = [] }, Cmd.none )
 
 
 
@@ -35,6 +43,7 @@ type Msg
     | PcOffer String
     | ModifyPcOffer Int
     | SubmitOffer
+    | ClearStory
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -50,7 +59,10 @@ update msg model =
             ( modifyOffer model amount, Cmd.none )
 
         SubmitOffer ->
-            ( sellItem <| updateConvoWithOffer <| model, Cmd.none )
+            ( submitOffer <| model, Cmd.none )
+
+        ClearStory ->
+            ( { model | conversation = [] }, Cmd.none )
 
 
 makeOffer : Model -> String -> Model
@@ -63,20 +75,61 @@ modifyOffer model amount =
     { model | pcOfferInt = max 0 (model.pcOfferInt + amount) }
 
 
-updateConvoWithOffer : Model -> Model
-updateConvoWithOffer model =
+submitOffer : Model -> Model
+submitOffer model =
+    if model.pcOfferInt < model.customerMaxPrice then
+        updateConvoWithOffer1 <| updateGold model
+
+    else
+        updateConvoWithOffer2 model
+
+
+updateConvoWithOffer1 : Model -> Model
+updateConvoWithOffer1 model =
     { model
         | conversation =
             model.conversation
-                ++ [ "You offered the sword for: " ++ String.fromInt model.pcOfferInt ++ "gp."
-                   , "The customer bought 1 sword at " ++ String.fromInt model.pcOfferInt ++ "gp (cost price " ++ String.fromInt model.itemWorth ++ "gp)"
+                ++ [ offerString model
+                   , purchaseString model
+                   , ""
                    ]
     }
 
 
-sellItem : Model -> Model
-sellItem model =
+updateConvoWithOffer2 : Model -> Model
+updateConvoWithOffer2 model =
+    { model
+        | conversation =
+            model.conversation
+                ++ [ offerString model
+                   , rejectString model
+                   , ""
+                   ]
+    }
+
+
+updateGold : Model -> Model
+updateGold model =
     { model | pcGold = model.pcGold + model.pcOfferInt }
+
+
+
+-- Strings --
+
+
+offerString : Model -> String
+offerString model =
+    "You offered the sword for: " ++ String.fromInt model.pcOfferInt ++ "gp."
+
+
+purchaseString : Model -> String
+purchaseString model =
+    "The customer, " ++ model.customerName ++ ", bought 1 sword at " ++ String.fromInt model.pcOfferInt ++ "gp (cost price " ++ String.fromInt model.itemWorth ++ "gp)"
+
+
+rejectString : Model -> String
+rejectString model =
+    "The customer, " ++ model.customerName ++ ", rejected the offer."
 
 
 
@@ -87,6 +140,11 @@ view : Model -> Html Msg
 view model =
     div []
         [ h1 [] [ text "Trading Post" ]
+        , h2 [] [ text "Debug" ]
+        , text
+            ("Customer Max Price: " ++ String.fromInt model.customerMaxPrice)
+        , h2 [] [ text "Game" ]
+        , div [] [ text ("Time: " ++ displayTime model.time) ]
         , text ("Your gold: " ++ String.fromInt model.pcGold)
         , br [] []
         , div []
@@ -100,9 +158,29 @@ view model =
         , button [ onClick SubmitOffer ] [ text "Submit Offer" ]
         , div [] []
         , br [] []
-        , div [] [ text "The story thus far: " ]
+        , h3 [] [ text "The story thus far: " ]
+        , button [ onClick ClearStory ] [ text "Clear Story" ]
         , ul [] (List.map (\x -> li [] [ x ]) (List.map text model.conversation))
         ]
+
+
+displayTime : Time -> String
+displayTime time =
+    (if time.hour < 10 then
+        "0"
+
+     else
+        ""
+    )
+        ++ String.fromInt time.hour
+        ++ ":"
+        ++ (if time.minute < 10 then
+                "0"
+
+            else
+                ""
+           )
+        ++ String.fromInt time.minute
 
 
 

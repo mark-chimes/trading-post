@@ -1,7 +1,7 @@
-module Main exposing (Model, Msg(..), init, main, update, view)
+module Main exposing (Model, Msg(..), hoursInDay, init, main, update, view)
 
 import Browser
-import Html exposing (Html, br, button, div, h1, h2, h3, img, input, li, text, ul)
+import Html exposing (Html, br, button, div, h1, h2, h3, img, input, li, text, textarea, ul)
 import Html.Attributes as Attr exposing (placeholder, src, value)
 import Html.Events exposing (onClick, onInput)
 import String
@@ -21,7 +21,8 @@ type alias Model =
     , customerIndex : Int
     , customer : Customer
     , itemWorth : Int
-    , conversation : List String
+    , isConvoReverse : Bool
+    , conversation : List (List String)
     }
 
 
@@ -50,6 +51,7 @@ init =
         , customerIndex = 0
         , customer = generateCustomer 0
         , itemWorth = 20
+        , isConvoReverse = False
         , conversation = []
         }
     , Cmd.none
@@ -121,6 +123,7 @@ type Msg
     | SubmitOffer
     | ClearStory
     | KickOutCustomer
+    | ReverseStory
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -143,6 +146,9 @@ update msg model =
 
         KickOutCustomer ->
             ( kickOutCustomer model, Cmd.none )
+
+        ReverseStory ->
+            ( { model | isConvoReverse = not model.isConvoReverse }, Cmd.none )
 
 
 makeOffer : Model -> String -> Model
@@ -213,13 +219,14 @@ updateConvoWithCustomerKickOut model =
     { model
         | conversation =
             model.conversation
-                ++ [ displayTime model.time
-                   , "You tell "
+                ++ [ [ displayTime model.time
+                     , "You tell "
                         ++ model.customer.name
                         ++ " to fuckk off. They leave in a huff taking "
                         ++ String.fromInt model.kickTime
                         ++ " minutes"
-                   , ""
+                     , ""
+                     ]
                    ]
     }
 
@@ -229,11 +236,12 @@ updateConvoWithCustomerEntry model =
     { model
         | conversation =
             model.conversation
-                ++ [ displayTime model.time
-                   , "A new customer called "
+                ++ [ [ displayTime model.time
+                     , "A new customer called "
                         ++ model.customer.name
                         ++ " enters the store."
-                   , ""
+                     , ""
+                     ]
                    ]
     }
 
@@ -243,10 +251,11 @@ updateConvoWithSuccessOffer model =
     { model
         | conversation =
             model.conversation
-                ++ [ displayTime model.time
-                   , offerString model
-                   , purchaseString model
-                   , ""
+                ++ [ [ displayTime model.time
+                     , offerString model
+                     , purchaseString model
+                     , ""
+                     ]
                    ]
     }
 
@@ -256,10 +265,11 @@ updateConvoWithFailureOffer model =
     { model
         | conversation =
             model.conversation
-                ++ [ displayTime model.time
-                   , offerString model
-                   , rejectString model
-                   , ""
+                ++ [ [ displayTime model.time
+                     , offerString model
+                     , rejectString model
+                     , ""
+                     ]
                    ]
     }
 
@@ -358,8 +368,27 @@ view model =
         , br [] []
         , h3 [] [ text "The story thus far: " ]
         , button [ onClick ClearStory ] [ text "Clear Story" ]
-        , ul [] (List.map (\x -> li [] [ x ]) (List.map text model.conversation))
+        , button [ onClick ReverseStory ] [ text "Reverse Story" ]
+        , div []
+            []
+
+        --        , textarea [ Attr.id "convoText", Attr.cols 80, Attr.rows 20 ] (List.map (\s -> text (s ++ "\n")) model.conversation)
+        -- , textarea [ Attr.id "convoText", Attr.cols 80, Attr.rows 20 ] (List.map (\s -> text (s ++ "\n")) (List.map (\s -> s ++ "\n") model.conversation))
+        , textarea [ Attr.id "convoText", Attr.cols 80, Attr.rows 20 ]
+            ((if model.isConvoReverse then
+                List.reverse
+
+              else
+                \l -> l
+             )
+                (List.map (\s -> text <| s ++ "\n") <| foo model.conversation)
+            )
         ]
+
+
+foo : List (List String) -> List String
+foo sll =
+    List.map (\sl -> String.join "\n" sl) sll
 
 
 displayTime : Time -> String

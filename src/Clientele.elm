@@ -16,6 +16,9 @@ type alias Customer =
     , maxPrice : Int
     , minTakenOnSuccess : Int
     , minTakenOnFail : Int
+    , minTakenOnSchmooze : Int
+    , schmoozeCount : Int
+    , maxSchmoozes : Int
     }
 
 
@@ -30,6 +33,39 @@ initCustomers =
 
 
 ---- UPDATE ----
+
+
+schmoozeCustomerMessage : Customer -> String
+schmoozeCustomerMessage customer =
+    if customer.schmoozeCount < customer.maxSchmoozes then
+        "You tell "
+            ++ customer.name
+            ++ " that they have lovely hair. They are impressed and are willing to pay 10% more for the item. This takes "
+            ++ String.fromInt customer.minTakenOnSchmooze
+            ++ " minutes"
+
+    else
+        "You tell "
+            ++ customer.name
+            ++ " that they have lovely hair. They snap at you that you've said that "
+            ++ String.fromInt customer.maxSchmoozes
+            ++ " times already. They seem annoyed. This takes "
+            ++ String.fromInt customer.minTakenOnSchmooze
+            ++ " minutes"
+
+
+schmoozeCurrentCustomer : Customers -> Customers
+schmoozeCurrentCustomer customers =
+    { customers | customer = schmoozeCustomer customers.customer }
+
+
+schmoozeCustomer : Customer -> Customer
+schmoozeCustomer customer =
+    if customer.schmoozeCount < customer.maxSchmoozes then
+        { customer | maxPrice = customer.maxPrice + (customer.maxPrice // 10), schmoozeCount = customer.schmoozeCount + 1 }
+
+    else
+        { customer | schmoozeCount = customer.schmoozeCount + 1 }
 
 
 updateCustomers : Customers -> Customers
@@ -55,6 +91,9 @@ generateCustomer index =
             , maxPrice = 50
             , minTakenOnSuccess = 5
             , minTakenOnFail = 10
+            , minTakenOnSchmooze = 20
+            , schmoozeCount = 0
+            , maxSchmoozes = 3
             }
 
         1 ->
@@ -62,6 +101,9 @@ generateCustomer index =
             , maxPrice = 60
             , minTakenOnSuccess = 5
             , minTakenOnFail = 15
+            , minTakenOnSchmooze = 30
+            , schmoozeCount = 0
+            , maxSchmoozes = 3
             }
 
         2 ->
@@ -69,6 +111,9 @@ generateCustomer index =
             , maxPrice = 30
             , minTakenOnSuccess = 5
             , minTakenOnFail = 5
+            , minTakenOnSchmooze = 10
+            , schmoozeCount = 0
+            , maxSchmoozes = 3
             }
 
         3 ->
@@ -76,6 +121,9 @@ generateCustomer index =
             , maxPrice = 80
             , minTakenOnSuccess = 5
             , minTakenOnFail = 20
+            , minTakenOnSchmooze = 40
+            , schmoozeCount = 0
+            , maxSchmoozes = 3
             }
 
         4 ->
@@ -83,6 +131,9 @@ generateCustomer index =
             , maxPrice = 25
             , minTakenOnSuccess = 5
             , minTakenOnFail = 5
+            , minTakenOnSchmooze = 10
+            , schmoozeCount = 0
+            , maxSchmoozes = 3
             }
 
         _ ->
@@ -90,6 +141,9 @@ generateCustomer index =
             , maxPrice = 1200
             , minTakenOnSuccess = 5
             , minTakenOnFail = 60
+            , minTakenOnSchmooze = 120
+            , schmoozeCount = 0
+            , maxSchmoozes = 3
             }
 
 

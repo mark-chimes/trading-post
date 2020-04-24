@@ -65,6 +65,7 @@ type Msg
     | ClearStory
     | KickOutCustomer
     | ReverseStory
+    | SchmoozeCustomer
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -90,6 +91,9 @@ update msg model =
 
         ReverseStory ->
             ( { model | isConvoReverse = not model.isConvoReverse }, Cmd.none )
+
+        SchmoozeCustomer ->
+            ( schmoozeCustomer model, Cmd.none )
 
 
 makeOffer : Model -> String -> Model
@@ -133,6 +137,11 @@ kickOutCustomer model =
     callNextCustomer <| updateTimeKickout <| updateConvoWithCustomerKickOut <| model
 
 
+schmoozeCustomer : Model -> Model
+schmoozeCustomer model =
+    (\mdl -> { mdl | customers = Clientele.schmoozeCurrentCustomer mdl.customers }) <| updateTimeSchmooze <| updateConvoWithCustomerSchmooze model
+
+
 callNextCustomer : Model -> Model
 callNextCustomer model =
     updateConvoWithCustomerEntry <|
@@ -142,6 +151,19 @@ callNextCustomer model =
 updateTimeKickout : Model -> Model
 updateTimeKickout model =
     { model | time = incrementTimeWithMin model.time model.customers.kickTime }
+
+
+updateConvoWithCustomerSchmooze : Model -> Model
+updateConvoWithCustomerSchmooze model =
+    { model
+        | conversation =
+            model.conversation
+                ++ [ [ displayTime model.time
+                     , Clientele.schmoozeCustomerMessage model.customers.customer
+                     , ""
+                     ]
+                   ]
+    }
 
 
 updateConvoWithCustomerKickOut : Model -> Model
@@ -196,6 +218,11 @@ updateConvoWithFailureOffer model =
                      ]
                    ]
     }
+
+
+updateTimeSchmooze : Model -> Model
+updateTimeSchmooze model =
+    { model | time = incrementTimeWithMin model.time model.customers.customer.minTakenOnSchmooze }
 
 
 updateTimeSuccess : Model -> Model
@@ -271,9 +298,9 @@ view model =
     div []
         [ h1 [] [ text "Trading Post" ]
 
-        --        , h2 [] [ text "Debug" ]
-        --        , text
-        --            ("Customer Max Price: " ++ String.fromInt model.customer.maxPrice)
+        --       , h2 [] [ text "Debug" ]
+        --      , text
+        --         ("Customer Max Price: " ++ String.fromInt model.customers.customer.maxPrice)
         , h2 [] [ text "Game" ]
         , div [] [ text ("Time: " ++ displayTime model.time) ]
         , text ("Your gold: " ++ String.fromInt model.pcGold)
@@ -287,6 +314,7 @@ view model =
             ]
         , div [] [ text ("Your Offer: " ++ String.fromInt model.pcOfferInt) ]
         , button [ onClick SubmitOffer ] [ text "Submit Offer" ]
+        , button [ onClick SchmoozeCustomer ] [ text "Schmooze Customer" ]
         , button [ onClick KickOutCustomer ] [ text "Fuckk Off" ]
         , div [] []
         , br [] []

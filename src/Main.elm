@@ -1,6 +1,7 @@
 module Main exposing (Model, Msg(..), hoursInDay, init, main, update, view)
 
 import Browser
+import Clientele
 import Html exposing (Html, br, button, div, h1, h2, h3, img, input, li, text, textarea, ul)
 import Html.Attributes as Attr exposing (placeholder, src, value)
 import Html.Events exposing (onClick, onInput)
@@ -16,21 +17,11 @@ type alias Model =
     { time : Time
     , pcOfferInt : Int
     , pcGold : Int
+    , customers : Clientele.Customers
     , kickTime : Int
-    , maxCustomers : Int
-    , customerIndex : Int
-    , customer : Customer
     , itemWorth : Int
     , isConvoReverse : Bool
     , conversation : List (List String)
-    }
-
-
-type alias Customer =
-    { name : String
-    , maxPrice : Int
-    , minTakenOnSuccess : Int
-    , minTakenOnFail : Int
     }
 
 
@@ -47,61 +38,13 @@ init =
         , pcOfferInt = 0
         , pcGold = 0
         , kickTime = 2
-        , maxCustomers = 6
-        , customerIndex = 0
-        , customer = generateCustomer 0
+        , customers = Clientele.initCustomers
         , itemWorth = 20
         , isConvoReverse = False
         , conversation = []
         }
     , Cmd.none
     )
-
-
-generateCustomer : Int -> Customer
-generateCustomer index =
-    case index of
-        0 ->
-            { name = "Susan"
-            , maxPrice = 50
-            , minTakenOnSuccess = 5
-            , minTakenOnFail = 10
-            }
-
-        1 ->
-            { name = "Jeremy"
-            , maxPrice = 60
-            , minTakenOnSuccess = 5
-            , minTakenOnFail = 15
-            }
-
-        2 ->
-            { name = "Samantha"
-            , maxPrice = 30
-            , minTakenOnSuccess = 5
-            , minTakenOnFail = 5
-            }
-
-        3 ->
-            { name = "Gertrude"
-            , maxPrice = 80
-            , minTakenOnSuccess = 5
-            , minTakenOnFail = 20
-            }
-
-        4 ->
-            { name = "Samson"
-            , maxPrice = 25
-            , minTakenOnSuccess = 5
-            , minTakenOnFail = 5
-            }
-
-        _ ->
-            { name = "Pink"
-            , maxPrice = 1200
-            , minTakenOnSuccess = 5
-            , minTakenOnFail = 60
-            }
 
 
 
@@ -167,7 +110,7 @@ modifyOffer model amount =
 
 submitOffer : Model -> Model
 submitOffer model =
-    if model.pcOfferInt <= model.customer.maxPrice then
+    if model.pcOfferInt <= model.customers.customer.maxPrice then
         succeedOnSale model
 
     else
@@ -195,18 +138,7 @@ kickOutCustomer model =
 callNextCustomer : Model -> Model
 callNextCustomer model =
     updateConvoWithCustomerEntry <|
-        incrementCustomer <|
-            model
-
-
-incrementCustomer : Model -> Model
-incrementCustomer model =
-    { model | customer = generateCustomer <| getNewCustomerIndex model, customerIndex = getNewCustomerIndex model }
-
-
-getNewCustomerIndex : Model -> Int
-getNewCustomerIndex model =
-    remainderBy model.maxCustomers (model.customerIndex + 1)
+        { model | customers = Clientele.incrementCustomer model.customers }
 
 
 updateTimeKickout : Model -> Model
@@ -221,7 +153,7 @@ updateConvoWithCustomerKickOut model =
             model.conversation
                 ++ [ [ displayTime model.time
                      , "You tell "
-                        ++ model.customer.name
+                        ++ model.customers.customer.name
                         ++ " to fuckk off. They leave in a huff taking "
                         ++ String.fromInt model.kickTime
                         ++ " minutes"
@@ -238,7 +170,7 @@ updateConvoWithCustomerEntry model =
             model.conversation
                 ++ [ [ displayTime model.time
                      , "A new customer called "
-                        ++ model.customer.name
+                        ++ model.customers.customer.name
                         ++ " enters the store."
                      , ""
                      ]
@@ -276,12 +208,12 @@ updateConvoWithFailureOffer model =
 
 updateTimeSuccess : Model -> Model
 updateTimeSuccess model =
-    { model | time = incrementTimeWithMin model.time model.customer.minTakenOnSuccess }
+    { model | time = incrementTimeWithMin model.time model.customers.customer.minTakenOnSuccess }
 
 
 updateTimeFailure : Model -> Model
 updateTimeFailure model =
-    { model | time = incrementTimeWithMin model.time model.customer.minTakenOnFail }
+    { model | time = incrementTimeWithMin model.time model.customers.customer.minTakenOnFail }
 
 
 updateGold : Model -> Model
@@ -318,23 +250,23 @@ offerString model =
 purchaseString : Model -> String
 purchaseString model =
     "The customer, "
-        ++ model.customer.name
+        ++ model.customers.customer.name
         ++ ", bought 1 sword at "
         ++ String.fromInt model.pcOfferInt
         ++ "gp (cost price "
         ++ String.fromInt model.itemWorth
         ++ "gp)"
         ++ ", taking "
-        ++ String.fromInt model.customer.minTakenOnSuccess
+        ++ String.fromInt model.customers.customer.minTakenOnSuccess
         ++ " minutes."
 
 
 rejectString : Model -> String
 rejectString model =
     "The customer, "
-        ++ model.customer.name
+        ++ model.customers.customer.name
         ++ ", rejected the offer, taking "
-        ++ String.fromInt model.customer.minTakenOnFail
+        ++ String.fromInt model.customers.customer.minTakenOnFail
         ++ " minutes."
 
 

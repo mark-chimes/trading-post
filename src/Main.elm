@@ -18,7 +18,6 @@ type alias Model =
     , pcOfferInt : Int
     , pcGold : Int
     , customers : Clientele.Customers
-    , kickTime : Int
     , itemWorth : Int
     , isConvoReverse : Bool
     , conversation : List (List String)
@@ -37,7 +36,6 @@ init =
         { time = { hour = 8, minute = 0 }
         , pcOfferInt = 0
         , pcGold = 0
-        , kickTime = 2
         , customers = Clientele.initCustomers
         , itemWorth = 20
         , isConvoReverse = False
@@ -143,7 +141,7 @@ callNextCustomer model =
 
 updateTimeKickout : Model -> Model
 updateTimeKickout model =
-    { model | time = incrementTimeWithMin model.time model.kickTime }
+    { model | time = incrementTimeWithMin model.time model.customers.kickTime }
 
 
 updateConvoWithCustomerKickOut : Model -> Model
@@ -152,11 +150,7 @@ updateConvoWithCustomerKickOut model =
         | conversation =
             model.conversation
                 ++ [ [ displayTime model.time
-                     , "You tell "
-                        ++ model.customers.customer.name
-                        ++ " to fuckk off. They leave in a huff taking "
-                        ++ String.fromInt model.kickTime
-                        ++ " minutes"
+                     , Clientele.customerKickOutMessage model.customers
                      , ""
                      ]
                    ]
@@ -169,9 +163,7 @@ updateConvoWithCustomerEntry model =
         | conversation =
             model.conversation
                 ++ [ [ displayTime model.time
-                     , "A new customer called "
-                        ++ model.customers.customer.name
-                        ++ " enters the store."
+                     , Clientele.customerEntryMessage model.customers
                      , ""
                      ]
                    ]
@@ -303,9 +295,6 @@ view model =
         , button [ onClick ReverseStory ] [ text "Reverse Story" ]
         , div []
             []
-
-        --        , textarea [ Attr.id "convoText", Attr.cols 80, Attr.rows 20 ] (List.map (\s -> text (s ++ "\n")) model.conversation)
-        -- , textarea [ Attr.id "convoText", Attr.cols 80, Attr.rows 20 ] (List.map (\s -> text (s ++ "\n")) (List.map (\s -> s ++ "\n") model.conversation))
         , textarea [ Attr.id "convoText", Attr.cols 80, Attr.rows 20 ]
             ((if model.isConvoReverse then
                 List.reverse
@@ -313,13 +302,13 @@ view model =
               else
                 \l -> l
              )
-                (List.map (\s -> text <| s ++ "\n") <| foo model.conversation)
+                (List.map (\s -> text <| s ++ "\n") <| flattenStringListList model.conversation)
             )
         ]
 
 
-foo : List (List String) -> List String
-foo sll =
+flattenStringListList : List (List String) -> List String
+flattenStringListList sll =
     List.map (\sl -> String.join "\n" sl) sll
 
 

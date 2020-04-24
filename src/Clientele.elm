@@ -1,4 +1,4 @@
-module Clientele exposing (Customer, Customers, generateCustomer, incrementCustomer, initCustomers, updateCustomers)
+module Clientele exposing (..)
 
 ---- MODEL ----
 
@@ -7,6 +7,7 @@ type alias Customers =
     { maxCustomers : Int
     , customerIndex : Int
     , customer : Customer
+    , kickTime : Int
     }
 
 
@@ -23,7 +24,12 @@ initCustomers =
     { maxCustomers = 6
     , customerIndex = 0
     , customer = generateCustomer 0
+    , kickTime = 2
     }
+
+
+
+---- UPDATE ----
 
 
 updateCustomers : Customers -> Customers
@@ -85,3 +91,19 @@ generateCustomer index =
             , minTakenOnSuccess = 5
             , minTakenOnFail = 60
             }
+
+
+customerKickOutMessage : Customers -> String
+customerKickOutMessage customers =
+    "You tell "
+        ++ customers.customer.name
+        ++ " to fuckk off. They leave in a huff taking "
+        ++ String.fromInt customers.kickTime
+        ++ " minutes"
+
+
+customerEntryMessage : Customers -> String
+customerEntryMessage customers =
+    "A new customer called "
+        ++ customers.customer.name
+        ++ " enters the store."

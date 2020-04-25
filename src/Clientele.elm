@@ -149,13 +149,13 @@ generateCustomer index =
             }
 
 
-customerKickOutMessage : Customers -> String
-customerKickOutMessage customers =
+customerFuckOffMessage : Customers -> String
+customerFuckOffMessage customers =
     "You tell "
         ++ customers.currentCustomer.name
-        ++ " to fuckk off. They leave in a huff taking "
+        ++ " to fuckk off. They get angry, taking "
         ++ String.fromInt customers.kickTime
-        ++ " minutes"
+        ++ " minutes. But otherwise having no effect."
 
 
 customerEntryMessage : Customers -> String

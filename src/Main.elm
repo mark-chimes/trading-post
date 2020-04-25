@@ -88,7 +88,7 @@ update msg model =
             ( { model | conversation = [] }, Cmd.none )
 
         KickOutCustomer ->
-            ( kickOutCustomer model, Cmd.none )
+            ( fuckOffCustomer model, Cmd.none )
 
         ReverseStory ->
             ( { model | isConvoReverse = not model.isConvoReverse }, Cmd.none )
@@ -135,9 +135,9 @@ failOnSale model =
     updateConvoWithFailureOffer <| updateTimeFailure model
 
 
-kickOutCustomer : Model -> Model
-kickOutCustomer model =
-    updateTimeKickout <| updateConvoWithCustomerKickOut <| model
+fuckOffCustomer : Model -> Model
+fuckOffCustomer model =
+    updateTimeFuckOff <| updateConvoWithCustomerFuckOff <| model
 
 
 schmoozeCustomer : Model -> Model
@@ -151,8 +151,8 @@ callNextCustomer model customer =
         { model | customers = Clientele.callCustomer model.customers customer }
 
 
-updateTimeKickout : Model -> Model
-updateTimeKickout model =
+updateTimeFuckOff : Model -> Model
+updateTimeFuckOff model =
     { model | time = incrementTimeWithMin model.time model.customers.kickTime }
 
 
@@ -174,9 +174,9 @@ updateConvoWithCustomerSchmooze model =
     updateConvoWithAction model (Clientele.schmoozeCustomerMessage model.customers.currentCustomer)
 
 
-updateConvoWithCustomerKickOut : Model -> Model
-updateConvoWithCustomerKickOut model =
-    updateConvoWithAction model (Clientele.customerKickOutMessage model.customers)
+updateConvoWithCustomerFuckOff : Model -> Model
+updateConvoWithCustomerFuckOff model =
+    updateConvoWithAction model (Clientele.customerFuckOffMessage model.customers)
 
 
 updateConvoWithCustomerEntry : Model -> Model

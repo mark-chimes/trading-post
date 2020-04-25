@@ -1,6 +1,6 @@
 module Clientele exposing (..)
 
-import Html exposing (Html, button, text)
+import Html exposing (Attribute, Html, button, text)
 import Html.Attributes
 
 
@@ -28,11 +28,16 @@ type alias Customer =
     }
 
 
+numWaitingCustomers : Int
+numWaitingCustomers =
+    2
+
+
 initCustomers : Customers
 initCustomers =
     { maxCustomers = 6
-    , customerIndex = 0
-    , waitingCustomers = [ generateCustomer 1 ]
+    , customerIndex = numWaitingCustomers
+    , waitingCustomers = List.map (\n -> generateCustomer n) <| List.range 1 numWaitingCustomers
     , currentCustomer = generateCustomer 0
     , kickTime = 2
     }
@@ -75,19 +80,9 @@ schmoozeCustomer customer =
         { customer | schmoozeCount = customer.schmoozeCount + 1 }
 
 
-updateCustomers : Customers -> Customers
-updateCustomers customers =
-    { customers | currentCustomer = generateCustomer <| getNewCustomerIndex customers, customerIndex = getNewCustomerIndex customers }
-
-
 getNewCustomerIndex : Customers -> Int
 getNewCustomerIndex customers =
     remainderBy customers.maxCustomers (customers.customerIndex + 1)
-
-
-incrementCustomer : Customers -> Customers
-incrementCustomer customers =
-    { customers | currentCustomer = generateCustomer <| getNewCustomerIndex customers, customerIndex = getNewCustomerIndex customers }
 
 
 generateCustomer : Int -> Customer
@@ -170,10 +165,30 @@ customerEntryMessage customers =
         ++ " enters the store."
 
 
+callCustomer : Customers -> Customer -> Customers
+callCustomer customers customer =
+    { customers | currentCustomer = customer, waitingCustomers = updateCustomerList customers customer, customerIndex = getNewCustomerIndex customers }
+
+
+updateCustomerList : Customers -> Customer -> List Customer
+updateCustomerList customers customer =
+    List.filter (\x -> x /= customer) customers.waitingCustomers ++ [ generateCustomer <| getNewCustomerIndex customers ]
+
+
 
 ---- VIEW ----
 
 
-customerEntryButtons : Customers -> List (Html msg)
-customerEntryButtons customers =
-    List.map (\c -> button [] [ text c.name ]) customers.waitingCustomers
+customerEntryButtons :
+    (Customer -> Attribute msg)
+    -> Customers
+    -> List (Html msg)
+customerEntryButtons command customers =
+    List.map
+        (\c ->
+            button
+                [ command c
+                ]
+                [ text c.name ]
+        )
+        customers.waitingCustomers

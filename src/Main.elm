@@ -2,7 +2,7 @@ module Main exposing (Model, Msg(..), hoursInDay, init, main, update, view)
 
 import Browser
 import Clientele
-import Html exposing (Html, br, button, div, h1, h2, h3, img, input, li, text, textarea, ul)
+import Html exposing (Html, br, button, div, h1, h2, h3, h4, img, input, li, text, textarea, ul)
 import Html.Attributes as Attr exposing (placeholder, src, value)
 import Html.Events exposing (onClick, onInput)
 import String
@@ -66,6 +66,7 @@ type Msg
     | KickOutCustomer
     | ReverseStory
     | SchmoozeCustomer
+    | CustomerEntry Clientele.Customer
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -95,6 +96,9 @@ update msg model =
         SchmoozeCustomer ->
             ( schmoozeCustomer model, Cmd.none )
 
+        CustomerEntry customer ->
+            ( callNextCustomer model customer, Cmd.none )
+
 
 makeOffer : Model -> String -> Model
 makeOffer model newOffer =
@@ -121,10 +125,9 @@ submitOffer model =
 
 succeedOnSale : Model -> Model
 succeedOnSale model =
-    callNextCustomer <|
-        updateConvoWithSuccessOffer <|
-            updateGold <|
-                updateTimeSuccess model
+    updateConvoWithSuccessOffer <|
+        updateGold <|
+            updateTimeSuccess model
 
 
 failOnSale : Model -> Model
@@ -134,7 +137,7 @@ failOnSale model =
 
 kickOutCustomer : Model -> Model
 kickOutCustomer model =
-    callNextCustomer <| updateTimeKickout <| updateConvoWithCustomerKickOut <| model
+    updateTimeKickout <| updateConvoWithCustomerKickOut <| model
 
 
 schmoozeCustomer : Model -> Model
@@ -142,10 +145,10 @@ schmoozeCustomer model =
     (\mdl -> { mdl | customers = Clientele.schmoozeCurrentCustomer mdl.customers }) <| updateTimeSchmooze <| updateConvoWithCustomerSchmooze model
 
 
-callNextCustomer : Model -> Model
-callNextCustomer model =
+callNextCustomer : Model -> Clientele.Customer -> Model
+callNextCustomer model customer =
     updateConvoWithCustomerEntry <|
-        { model | customers = Clientele.incrementCustomer model.customers }
+        { model | customers = Clientele.callCustomer model.customers customer }
 
 
 updateTimeKickout : Model -> Model
@@ -281,9 +284,15 @@ view model =
         , h3 [] [ text "Customers" ]
         , div []
             (Clientele.customerEntryButtons
+                (\c -> onClick (CustomerEntry c))
                 model.customers
             )
-        , h3 [] [ text "Offer" ]
+        , h3 [] [ text "Actions" ]
+        , div []
+            [ button [ onClick SchmoozeCustomer ] [ text "Schmooze Customer" ]
+            , button [ onClick KickOutCustomer ] [ text "Fuckk Off" ]
+            ]
+        , h4 [] [ text "Offer" ]
         , text ("Your gold: " ++ String.fromInt model.pcGold)
         , br [] []
         , div []
@@ -295,8 +304,6 @@ view model =
             ]
         , div [] [ text ("Your Offer: " ++ String.fromInt model.pcOfferInt) ]
         , button [ onClick SubmitOffer ] [ text "Submit Offer" ]
-        , button [ onClick SchmoozeCustomer ] [ text "Schmooze Customer" ]
-        , button [ onClick KickOutCustomer ] [ text "Fuckk Off" ]
         , div [] []
         , br [] []
         , h3 [] [ text "The story thus far: " ]

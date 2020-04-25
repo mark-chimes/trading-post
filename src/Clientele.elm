@@ -1,12 +1,18 @@
 module Clientele exposing (..)
 
+import Html exposing (Html, button, text)
+import Html.Attributes
+
+
+
 ---- MODEL ----
 
 
 type alias Customers =
     { maxCustomers : Int
     , customerIndex : Int
-    , customer : Customer
+    , waitingCustomers : List Customer
+    , currentCustomer : Customer
     , kickTime : Int
     }
 
@@ -26,7 +32,8 @@ initCustomers : Customers
 initCustomers =
     { maxCustomers = 6
     , customerIndex = 0
-    , customer = generateCustomer 0
+    , waitingCustomers = [ generateCustomer 1 ]
+    , currentCustomer = generateCustomer 0
     , kickTime = 2
     }
 
@@ -56,7 +63,7 @@ schmoozeCustomerMessage customer =
 
 schmoozeCurrentCustomer : Customers -> Customers
 schmoozeCurrentCustomer customers =
-    { customers | customer = schmoozeCustomer customers.customer }
+    { customers | currentCustomer = schmoozeCustomer customers.currentCustomer }
 
 
 schmoozeCustomer : Customer -> Customer
@@ -70,7 +77,7 @@ schmoozeCustomer customer =
 
 updateCustomers : Customers -> Customers
 updateCustomers customers =
-    { customers | customer = generateCustomer <| getNewCustomerIndex customers, customerIndex = getNewCustomerIndex customers }
+    { customers | currentCustomer = generateCustomer <| getNewCustomerIndex customers, customerIndex = getNewCustomerIndex customers }
 
 
 getNewCustomerIndex : Customers -> Int
@@ -80,7 +87,7 @@ getNewCustomerIndex customers =
 
 incrementCustomer : Customers -> Customers
 incrementCustomer customers =
-    { customers | customer = generateCustomer <| getNewCustomerIndex customers, customerIndex = getNewCustomerIndex customers }
+    { customers | currentCustomer = generateCustomer <| getNewCustomerIndex customers, customerIndex = getNewCustomerIndex customers }
 
 
 generateCustomer : Int -> Customer
@@ -150,7 +157,7 @@ generateCustomer index =
 customerKickOutMessage : Customers -> String
 customerKickOutMessage customers =
     "You tell "
-        ++ customers.customer.name
+        ++ customers.currentCustomer.name
         ++ " to fuckk off. They leave in a huff taking "
         ++ String.fromInt customers.kickTime
         ++ " minutes"
@@ -159,5 +166,14 @@ customerKickOutMessage customers =
 customerEntryMessage : Customers -> String
 customerEntryMessage customers =
     "A new customer called "
-        ++ customers.customer.name
+        ++ customers.currentCustomer.name
         ++ " enters the store."
+
+
+
+---- VIEW ----
+
+
+customerEntryButtons : Customers -> List (Html msg)
+customerEntryButtons customers =
+    List.map (\c -> button [] [ text c.name ]) customers.waitingCustomers

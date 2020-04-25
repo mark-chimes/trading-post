@@ -112,7 +112,7 @@ modifyOffer model amount =
 
 submitOffer : Model -> Model
 submitOffer model =
-    if model.pcOfferInt <= model.customers.customer.maxPrice then
+    if model.pcOfferInt <= model.customers.currentCustomer.maxPrice then
         succeedOnSale model
 
     else
@@ -153,86 +153,61 @@ updateTimeKickout model =
     { model | time = incrementTimeWithMin model.time model.customers.kickTime }
 
 
-updateConvoWithCustomerSchmooze : Model -> Model
-updateConvoWithCustomerSchmooze model =
+updateConvoWithAction : Model -> String -> Model
+updateConvoWithAction model message =
     { model
         | conversation =
             model.conversation
                 ++ [ [ displayTime model.time
-                     , Clientele.schmoozeCustomerMessage model.customers.customer
+                     , message
                      , ""
                      ]
                    ]
     }
+
+
+updateConvoWithCustomerSchmooze : Model -> Model
+updateConvoWithCustomerSchmooze model =
+    updateConvoWithAction model (Clientele.schmoozeCustomerMessage model.customers.currentCustomer)
 
 
 updateConvoWithCustomerKickOut : Model -> Model
 updateConvoWithCustomerKickOut model =
-    { model
-        | conversation =
-            model.conversation
-                ++ [ [ displayTime model.time
-                     , Clientele.customerKickOutMessage model.customers
-                     , ""
-                     ]
-                   ]
-    }
+    updateConvoWithAction model (Clientele.customerKickOutMessage model.customers)
 
 
 updateConvoWithCustomerEntry : Model -> Model
 updateConvoWithCustomerEntry model =
-    { model
-        | conversation =
-            model.conversation
-                ++ [ [ displayTime model.time
-                     , Clientele.customerEntryMessage model.customers
-                     , ""
-                     ]
-                   ]
-    }
+    updateConvoWithAction model (Clientele.customerEntryMessage model.customers)
 
 
 updateConvoWithSuccessOffer : Model -> Model
 updateConvoWithSuccessOffer model =
-    { model
-        | conversation =
-            model.conversation
-                ++ [ [ displayTime model.time
-                     , offerString model
-                     , purchaseString model
-                     , ""
-                     ]
-                   ]
-    }
+    updateConvoWithAction model (offerString model ++ "\n" ++ purchaseString model)
 
 
 updateConvoWithFailureOffer : Model -> Model
 updateConvoWithFailureOffer model =
-    { model
-        | conversation =
-            model.conversation
-                ++ [ [ displayTime model.time
-                     , offerString model
-                     , rejectString model
-                     , ""
-                     ]
-                   ]
-    }
+    updateConvoWithAction model
+        (offerString model
+            ++ "\n"
+            ++ rejectString model
+        )
 
 
 updateTimeSchmooze : Model -> Model
 updateTimeSchmooze model =
-    { model | time = incrementTimeWithMin model.time model.customers.customer.minTakenOnSchmooze }
+    { model | time = incrementTimeWithMin model.time model.customers.currentCustomer.minTakenOnSchmooze }
 
 
 updateTimeSuccess : Model -> Model
 updateTimeSuccess model =
-    { model | time = incrementTimeWithMin model.time model.customers.customer.minTakenOnSuccess }
+    { model | time = incrementTimeWithMin model.time model.customers.currentCustomer.minTakenOnSuccess }
 
 
 updateTimeFailure : Model -> Model
 updateTimeFailure model =
-    { model | time = incrementTimeWithMin model.time model.customers.customer.minTakenOnFail }
+    { model | time = incrementTimeWithMin model.time model.customers.currentCustomer.minTakenOnFail }
 
 
 updateGold : Model -> Model
@@ -269,23 +244,23 @@ offerString model =
 purchaseString : Model -> String
 purchaseString model =
     "The customer, "
-        ++ model.customers.customer.name
+        ++ model.customers.currentCustomer.name
         ++ ", bought 1 sword at "
         ++ String.fromInt model.pcOfferInt
         ++ "gp (cost price "
         ++ String.fromInt model.itemWorth
         ++ "gp)"
         ++ ", taking "
-        ++ String.fromInt model.customers.customer.minTakenOnSuccess
+        ++ String.fromInt model.customers.currentCustomer.minTakenOnSuccess
         ++ " minutes."
 
 
 rejectString : Model -> String
 rejectString model =
     "The customer, "
-        ++ model.customers.customer.name
+        ++ model.customers.currentCustomer.name
         ++ ", rejected the offer, taking "
-        ++ String.fromInt model.customers.customer.minTakenOnFail
+        ++ String.fromInt model.customers.currentCustomer.minTakenOnFail
         ++ " minutes."
 
 
@@ -302,7 +277,13 @@ view model =
         --      , text
         --         ("Customer Max Price: " ++ String.fromInt model.customers.customer.maxPrice)
         , h2 [] [ text "Game" ]
-        , div [] [ text ("Time: " ++ displayTime model.time) ]
+        , h3 [] [ text ("Time: " ++ displayTime model.time) ]
+        , h3 [] [ text "Customers" ]
+        , div []
+            (Clientele.customerEntryButtons
+                model.customers
+            )
+        , h3 [] [ text "Offer" ]
         , text ("Your gold: " ++ String.fromInt model.pcGold)
         , br [] []
         , div []

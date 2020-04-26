@@ -1,4 +1,4 @@
-module Main exposing (Model, Msg(..), hoursInDay, init, main, update, view)
+module Main exposing (Model, Msg(..), hoursInDay, init, main, purchaseString, update, view)
 
 import Browser
 import Clientele
@@ -17,6 +17,7 @@ type alias Model =
     { time : Time
     , pcOfferInt : Int
     , pcGold : Int
+    , cleanTime : Int
     , customers : Clientele.Customers
     , itemWorth : Int
     , isConvoReverse : Bool
@@ -36,6 +37,7 @@ init =
         { time = { hour = 8, minute = 0 }
         , pcOfferInt = 0
         , pcGold = 0
+        , cleanTime = 10
         , customers = Clientele.initCustomers
         , itemWorth = 20
         , isConvoReverse = False
@@ -64,6 +66,7 @@ type Msg
     | SubmitOffer
     | ClearStory
     | KickOutCustomer
+    | CleanStore
     | ReverseStory
     | SchmoozeCustomer
     | CustomerEntry Clientele.Customer
@@ -90,6 +93,9 @@ update msg model =
         KickOutCustomer ->
             ( fuckOffCustomer model, Cmd.none )
 
+        CleanStore ->
+            ( cleanStore model, Cmd.none )
+
         ReverseStory ->
             ( { model | isConvoReverse = not model.isConvoReverse }, Cmd.none )
 
@@ -97,7 +103,7 @@ update msg model =
             ( schmoozeCustomer model, Cmd.none )
 
         CustomerEntry customer ->
-            ( callNextCustomer model customer, Cmd.none )
+            ( callNextCustomer customer model, Cmd.none )
 
 
 makeOffer : Model -> String -> Model
@@ -116,23 +122,28 @@ modifyOffer model amount =
 
 submitOffer : Model -> Model
 submitOffer model =
-    if model.pcOfferInt <= model.customers.currentCustomer.maxPrice then
-        succeedOnSale model
+    case model.customers.currentCustomer of
+        Just customer ->
+            if model.pcOfferInt <= customer.maxPrice then
+                succeedOnSale customer model
 
-    else
-        failOnSale model
+            else
+                failOnSale customer model
+
+        Nothing ->
+            model
 
 
-succeedOnSale : Model -> Model
-succeedOnSale model =
-    updateConvoWithSuccessOffer <|
+succeedOnSale : Clientele.Customer -> Model -> Model
+succeedOnSale customer model =
+    updateConvoWithSuccessOffer customer <|
         updateGold <|
-            updateTimeSuccess model
+            updateTimeSuccess customer model
 
 
-failOnSale : Model -> Model
-failOnSale model =
-    updateConvoWithFailureOffer <| updateTimeFailure model
+failOnSale : Clientele.Customer -> Model -> Model
+failOnSale customer model =
+    updateConvoWithFailureOffer customer <| updateTimeFailure customer <| model
 
 
 fuckOffCustomer : Model -> Model
@@ -140,13 +151,27 @@ fuckOffCustomer model =
     updateTimeFuckOff <| updateConvoWithCustomerFuckOff <| model
 
 
+cleanStore : Model -> Model
+cleanStore model =
+    updateTimeCleanStore <| updateConvoWithCleanStore <| model
+
+
 schmoozeCustomer : Model -> Model
 schmoozeCustomer model =
-    (\mdl -> { mdl | customers = Clientele.schmoozeCurrentCustomer mdl.customers }) <| updateTimeSchmooze <| updateConvoWithCustomerSchmooze model
+    case model.customers.currentCustomer of
+        Just customer ->
+            (\mdl -> { mdl | customers = Clientele.schmoozeCurrentCustomer mdl.customers }) <| updateTimeSchmooze customer <| updateConvoWithCustomerSchmooze customer <| model
+
+        Nothing ->
+            model
 
 
-callNextCustomer : Model -> Clientele.Customer -> Model
-callNextCustomer model customer =
+
+-- TODO
+
+
+callNextCustomer : Clientele.Customer -> Model -> Model
+callNextCustomer customer model =
     updateConvoWithCustomerEntry <|
         { model | customers = Clientele.callCustomer model.customers customer }
 
@@ -154,6 +179,11 @@ callNextCustomer model customer =
 updateTimeFuckOff : Model -> Model
 updateTimeFuckOff model =
     { model | time = incrementTimeWithMin model.time model.customers.kickTime }
+
+
+updateTimeCleanStore : Model -> Model
+updateTimeCleanStore model =
+    { model | time = incrementTimeWithMin model.time model.cleanTime }
 
 
 updateConvoWithAction : Model -> String -> Model
@@ -169,9 +199,9 @@ updateConvoWithAction model message =
     }
 
 
-updateConvoWithCustomerSchmooze : Model -> Model
-updateConvoWithCustomerSchmooze model =
-    updateConvoWithAction model (Clientele.schmoozeCustomerMessage model.customers.currentCustomer)
+updateConvoWithCustomerSchmooze : Clientele.Customer -> Model -> Model
+updateConvoWithCustomerSchmooze customer model =
+    updateConvoWithAction model (Clientele.schmoozeCustomerMessage customer)
 
 
 updateConvoWithCustomerFuckOff : Model -> Model
@@ -179,38 +209,43 @@ updateConvoWithCustomerFuckOff model =
     updateConvoWithAction model (Clientele.customerFuckOffMessage model.customers)
 
 
+updateConvoWithCleanStore : Model -> Model
+updateConvoWithCleanStore model =
+    updateConvoWithAction model (cleanStoreMessage model)
+
+
 updateConvoWithCustomerEntry : Model -> Model
 updateConvoWithCustomerEntry model =
     updateConvoWithAction model (Clientele.customerEntryMessage model.customers)
 
 
-updateConvoWithSuccessOffer : Model -> Model
-updateConvoWithSuccessOffer model =
-    updateConvoWithAction model (offerString model ++ "\n" ++ purchaseString model)
+updateConvoWithSuccessOffer : Clientele.Customer -> Model -> Model
+updateConvoWithSuccessOffer customer model =
+    updateConvoWithAction model (offerString model ++ "\n" ++ purchaseString model customer)
 
 
-updateConvoWithFailureOffer : Model -> Model
-updateConvoWithFailureOffer model =
+updateConvoWithFailureOffer : Clientele.Customer -> Model -> Model
+updateConvoWithFailureOffer customer model =
     updateConvoWithAction model
         (offerString model
             ++ "\n"
-            ++ rejectString model
+            ++ rejectString customer
         )
 
 
-updateTimeSchmooze : Model -> Model
-updateTimeSchmooze model =
-    { model | time = incrementTimeWithMin model.time model.customers.currentCustomer.minTakenOnSchmooze }
+updateTimeSchmooze : Clientele.Customer -> Model -> Model
+updateTimeSchmooze customer model =
+    { model | time = incrementTimeWithMin model.time customer.minTakenOnSchmooze }
 
 
-updateTimeSuccess : Model -> Model
-updateTimeSuccess model =
-    { model | time = incrementTimeWithMin model.time model.customers.currentCustomer.minTakenOnSuccess }
+updateTimeSuccess : Clientele.Customer -> Model -> Model
+updateTimeSuccess customer model =
+    { model | time = incrementTimeWithMin model.time customer.minTakenOnSuccess }
 
 
-updateTimeFailure : Model -> Model
-updateTimeFailure model =
-    { model | time = incrementTimeWithMin model.time model.customers.currentCustomer.minTakenOnFail }
+updateTimeFailure : Clientele.Customer -> Model -> Model
+updateTimeFailure customer model =
+    { model | time = incrementTimeWithMin model.time customer.minTakenOnFail }
 
 
 updateGold : Model -> Model
@@ -237,6 +272,11 @@ incrementTimeWithMin time mins =
 -- Strings --
 
 
+cleanStoreMessage : Model -> String
+cleanStoreMessage model =
+    "You clean the store for " ++ String.fromInt model.cleanTime ++ " minutes."
+
+
 offerString : Model -> String
 offerString model =
     "You offered the sword for: "
@@ -244,26 +284,26 @@ offerString model =
         ++ "gp."
 
 
-purchaseString : Model -> String
-purchaseString model =
+purchaseString : Model -> Clientele.Customer -> String
+purchaseString model customer =
     "The customer, "
-        ++ model.customers.currentCustomer.name
+        ++ customer.name
         ++ ", bought 1 sword at "
         ++ String.fromInt model.pcOfferInt
         ++ "gp (cost price "
         ++ String.fromInt model.itemWorth
         ++ "gp)"
         ++ ", taking "
-        ++ String.fromInt model.customers.currentCustomer.minTakenOnSuccess
+        ++ String.fromInt customer.minTakenOnSuccess
         ++ " minutes."
 
 
-rejectString : Model -> String
-rejectString model =
+rejectString : Clientele.Customer -> String
+rejectString customer =
     "The customer, "
-        ++ model.customers.currentCustomer.name
+        ++ customer.name
         ++ ", rejected the offer, taking "
-        ++ String.fromInt model.customers.currentCustomer.minTakenOnFail
+        ++ String.fromInt customer.minTakenOnFail
         ++ " minutes."
 
 
@@ -291,6 +331,7 @@ view model =
         , div []
             [ button [ onClick SchmoozeCustomer ] [ text "Schmooze Customer" ]
             , button [ onClick KickOutCustomer ] [ text "Fuckk Off" ]
+            , button [ onClick CleanStore ] [ text "Clean Store" ]
             ]
         , h4 [] [ text "Offer" ]
         , text ("Your gold: " ++ String.fromInt model.pcGold)

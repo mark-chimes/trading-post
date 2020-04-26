@@ -12,7 +12,7 @@ type alias Customers =
     { maxCustomers : Int
     , customerIndex : Int
     , waitingCustomers : List Customer
-    , currentCustomer : Customer
+    , currentCustomer : Maybe Customer
     , kickTime : Int
     }
 
@@ -38,7 +38,7 @@ initCustomers =
     { maxCustomers = 6
     , customerIndex = numWaitingCustomers
     , waitingCustomers = List.map (\n -> generateCustomer n) <| List.range 1 numWaitingCustomers
-    , currentCustomer = generateCustomer 0
+    , currentCustomer = Just (generateCustomer 0)
     , kickTime = 2
     }
 
@@ -68,7 +68,7 @@ schmoozeCustomerMessage customer =
 
 schmoozeCurrentCustomer : Customers -> Customers
 schmoozeCurrentCustomer customers =
-    { customers | currentCustomer = schmoozeCustomer customers.currentCustomer }
+    { customers | currentCustomer = Maybe.map schmoozeCustomer customers.currentCustomer }
 
 
 schmoozeCustomer : Customer -> Customer
@@ -151,23 +151,33 @@ generateCustomer index =
 
 customerFuckOffMessage : Customers -> String
 customerFuckOffMessage customers =
-    "You tell "
-        ++ customers.currentCustomer.name
-        ++ " to fuckk off. They get angry, taking "
-        ++ String.fromInt customers.kickTime
-        ++ " minutes. But otherwise having no effect."
+    case customers.currentCustomer of
+        Nothing ->
+            "There is no customer to tell to fuckk off."
+
+        Just customer ->
+            "You tell "
+                ++ customer.name
+                ++ " to fuckk off. They get angry, taking "
+                ++ String.fromInt customers.kickTime
+                ++ " minutes. But otherwise having no effect."
 
 
 customerEntryMessage : Customers -> String
 customerEntryMessage customers =
-    "A new customer called "
-        ++ customers.currentCustomer.name
-        ++ " enters the store."
+    case customers.currentCustomer of
+        Nothing ->
+            "There is no customer who can enter."
+
+        Just customer ->
+            "A new customer called "
+                ++ customer.name
+                ++ " enters the store."
 
 
 callCustomer : Customers -> Customer -> Customers
 callCustomer customers customer =
-    { customers | currentCustomer = customer, waitingCustomers = updateCustomerList customers customer, customerIndex = getNewCustomerIndex customers }
+    { customers | currentCustomer = Just customer, waitingCustomers = updateCustomerList customers customer, customerIndex = getNewCustomerIndex customers }
 
 
 updateCustomerList : Customers -> Customer -> List Customer

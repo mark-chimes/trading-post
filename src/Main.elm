@@ -337,6 +337,19 @@ view model =
                 (\c -> onClick (CustomerEntry c))
                 model.customers
             )
+        , div []
+            [ text
+                ("You are speaking to: "
+                    ++ (case model.customers.currentCustomer of
+                            Just customer ->
+                                customer.name
+
+                            Nothing ->
+                                "No-one"
+                       )
+                    ++ "."
+                )
+            ]
         , h3 [] [ text "Actions" ]
         , div []
             [ button [ onClick SchmoozeCustomer ] [ text "Schmooze Customer" ]

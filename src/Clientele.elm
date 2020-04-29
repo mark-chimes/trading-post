@@ -73,7 +73,7 @@ schmoozeCurrentCustomer clientele =
 
 kickOutCurrentCustomer : ClienteleDetails -> ClienteleDetails
 kickOutCurrentCustomer clientele =
-    { clientele | currentCustomer = Nothing }
+    { clientele | currentCustomer = Nothing, customerIndex = getNewCustomerIndex clientele }
 
 
 schmoozeCustomer : Customer -> Customer
@@ -179,8 +179,7 @@ callCustomer : ClienteleDetails -> Customer -> ClienteleDetails
 callCustomer clientele customer =
     { clientele
         | currentCustomer = Just customer
-        , waitingCustomers = calculateWaitingCustomers clientele.waitingCustomers clientele.currentCustomer customer (getNewCustomerIndex clientele)
-        , customerIndex = getNewCustomerIndex clientele
+        , waitingCustomers = calculateWaitingCustomers clientele.waitingCustomers clientele.currentCustomer customer clientele.customerIndex
     }
 
 

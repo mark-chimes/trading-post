@@ -34,6 +34,9 @@ type alias Time =
 init : ( Model, Cmd Msg )
 init =
     ( updateConvoWithCustomerEntry
+        (Clientele.generateCustomer
+            0
+        )
         { time = { hour = 8, minute = 0 }
         , pcOfferInt = 0
         , pcGold = 0
@@ -149,19 +152,19 @@ failOnSale customer model =
 
 fuckOffCustomer : Model -> Model
 fuckOffCustomer model =
-    updateTimeFuckOff <| kickOutCurrentCustomer <| updateConvoWithCustomerFuckOff <| model
+    kickOutCurrentCustomer <| updateConvoWithCustomerFuckOff <| updateTimeFuckOff <| model
 
 
 cleanStore : Model -> Model
 cleanStore model =
-    updateTimeCleanStore <| updateConvoWithCleanStore <| model
+    updateConvoWithCleanStore <| updateTimeCleanStore <| model
 
 
 schmoozeCustomer : Model -> Model
 schmoozeCustomer model =
     case model.customers.currentCustomer of
         Just customer ->
-            (\mdl -> { mdl | customers = Clientele.schmoozeCurrentCustomer mdl.customers }) <| updateTimeSchmooze customer <| updateConvoWithCustomerSchmooze customer <| model
+            (\mdl -> { mdl | customers = Clientele.schmoozeCurrentCustomer mdl.customers }) <| updateConvoWithCustomerSchmooze customer <| updateTimeSchmooze customer <| model
 
         Nothing ->
             updateConvoWithAction model "There is no customer in store to schmooze."
@@ -169,13 +172,18 @@ schmoozeCustomer model =
 
 callNextCustomer : Clientele.Customer -> Model -> Model
 callNextCustomer customer model =
-    updateConvoWithCustomerEntry <|
+    updateConvoWithCustomerEntry customer <|
         { model | customers = Clientele.callCustomer model.customers customer }
 
 
 updateTimeFuckOff : Model -> Model
 updateTimeFuckOff model =
-    { model | time = incrementTimeWithMin model.time model.customers.kickTime }
+    case model.customers.currentCustomer of
+        Just _ ->
+            { model | time = incrementTimeWithMin model.time model.customers.kickTime }
+
+        Nothing ->
+            model
 
 
 updateTimeCleanStore : Model -> Model
@@ -211,9 +219,9 @@ updateConvoWithCleanStore model =
     updateConvoWithAction model (cleanStoreMessage model)
 
 
-updateConvoWithCustomerEntry : Model -> Model
-updateConvoWithCustomerEntry model =
-    updateConvoWithAction model (Clientele.customerEntryMessage model.customers)
+updateConvoWithCustomerEntry : Clientele.Customer -> Model -> Model
+updateConvoWithCustomerEntry customer model =
+    updateConvoWithAction model (Clientele.customerEntryMessage customer)
 
 
 updateConvoWithSuccessOffer : Clientele.Customer -> Model -> Model

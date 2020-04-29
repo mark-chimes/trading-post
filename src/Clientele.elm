@@ -168,16 +168,11 @@ customerFuckOffMessage clientele =
                 ++ " minutes."
 
 
-customerEntryMessage : ClienteleDetails -> String
-customerEntryMessage clientele =
-    case clientele.currentCustomer of
-        Nothing ->
-            "There is no customer who can enter."
-
-        Just customer ->
-            "A new customer called "
-                ++ customer.name
-                ++ " enters the store."
+customerEntryMessage : Customer -> String
+customerEntryMessage customer =
+    "A new customer called "
+        ++ customer.name
+        ++ " enters the store."
 
 
 callCustomer : ClienteleDetails -> Customer -> ClienteleDetails

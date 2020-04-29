@@ -94,7 +94,7 @@ generateCustomer : Int -> Customer
 generateCustomer index =
     case index of
         0 ->
-            { name = "Susan"
+            { name = "Abby"
             , maxPrice = 50
             , minTakenOnSuccess = 5
             , minTakenOnFail = 10
@@ -104,7 +104,7 @@ generateCustomer index =
             }
 
         1 ->
-            { name = "Jeremy"
+            { name = "Bob"
             , maxPrice = 60
             , minTakenOnSuccess = 5
             , minTakenOnFail = 15
@@ -114,7 +114,7 @@ generateCustomer index =
             }
 
         2 ->
-            { name = "Samantha"
+            { name = "Carol"
             , maxPrice = 30
             , minTakenOnSuccess = 5
             , minTakenOnFail = 5
@@ -124,7 +124,7 @@ generateCustomer index =
             }
 
         3 ->
-            { name = "Gertrude"
+            { name = "Dennis"
             , maxPrice = 80
             , minTakenOnSuccess = 5
             , minTakenOnFail = 20
@@ -134,7 +134,7 @@ generateCustomer index =
             }
 
         4 ->
-            { name = "Samson"
+            { name = "Erica"
             , maxPrice = 25
             , minTakenOnSuccess = 5
             , minTakenOnFail = 5
@@ -144,7 +144,7 @@ generateCustomer index =
             }
 
         _ ->
-            { name = "Pink"
+            { name = "Frank"
             , maxPrice = 1200
             , minTakenOnSuccess = 5
             , minTakenOnFail = 60
@@ -158,7 +158,7 @@ customerFuckOffMessage : ClienteleDetails -> String
 customerFuckOffMessage clientele =
     case clientele.currentCustomer of
         Nothing ->
-            "There is no customer to tell to fuckk off."
+            "Who are you telling to fuckk off?"
 
         Just customer ->
             "You tell "
@@ -168,11 +168,11 @@ customerFuckOffMessage clientele =
                 ++ " minutes."
 
 
-customerEntryMessage : Customer -> String
-customerEntryMessage customer =
-    "A new customer called "
+customerCallMessage : Customer -> String
+customerCallMessage customer =
+    "You begin speaking to a customer named "
         ++ customer.name
-        ++ " enters the store."
+        ++ "."
 
 
 callCustomer : ClienteleDetails -> Customer -> ClienteleDetails
@@ -192,9 +192,8 @@ calculateWaitingCustomers waitingCustomers maybeCurrentCustomer calledCustomer n
                     [ currentCustomer ]
 
                 Nothing ->
-                    []
+                    [ generateCustomer newCustomerIndex ]
            )
-        ++ [ generateCustomer newCustomerIndex ]
 
 
 

@@ -167,7 +167,7 @@ schmoozeCustomer model =
             (\mdl -> { mdl | customers = Clientele.schmoozeCurrentCustomer mdl.customers }) <| updateConvoWithCustomerSchmooze customer <| updateTimeSchmooze customer <| model
 
         Nothing ->
-            updateConvoWithAction model "There is no customer in store to schmooze."
+            updateConvoWithAction model "Who are you trying to schmooze?"
 
 
 callNextCustomer : Clientele.Customer -> Model -> Model
@@ -221,7 +221,7 @@ updateConvoWithCleanStore model =
 
 updateConvoWithCustomerEntry : Clientele.Customer -> Model -> Model
 updateConvoWithCustomerEntry customer model =
-    updateConvoWithAction model (Clientele.customerEntryMessage customer)
+    updateConvoWithAction model (Clientele.customerCallMessage customer)
 
 
 updateConvoWithSuccessOffer : Clientele.Customer -> Model -> Model

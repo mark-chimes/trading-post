@@ -71,6 +71,11 @@ schmoozeCurrentCustomer customers =
     { customers | currentCustomer = Maybe.map schmoozeCustomer customers.currentCustomer }
 
 
+kickOutCurrentCustomer : Customers -> Customers
+kickOutCurrentCustomer customers =
+    { customers | currentCustomer = Nothing }
+
+
 schmoozeCustomer : Customer -> Customer
 schmoozeCustomer customer =
     if customer.schmoozeCount < customer.maxSchmoozes then
@@ -158,9 +163,9 @@ customerFuckOffMessage customers =
         Just customer ->
             "You tell "
                 ++ customer.name
-                ++ " to fuckk off. They get angry, taking "
+                ++ " to fuckk off. They get angry, and leave the store, taking "
                 ++ String.fromInt customers.kickTime
-                ++ " minutes. But otherwise having no effect."
+                ++ " minutes."
 
 
 customerEntryMessage : Customers -> String

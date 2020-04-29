@@ -131,7 +131,7 @@ submitOffer model =
                 failOnSale customer model
 
         Nothing ->
-            model
+            updateConvoWithAction model "There is no customer in store to whom to submit that offer."
 
 
 succeedOnSale : Clientele.Customer -> Model -> Model
@@ -148,7 +148,7 @@ failOnSale customer model =
 
 fuckOffCustomer : Model -> Model
 fuckOffCustomer model =
-    updateTimeFuckOff <| updateConvoWithCustomerFuckOff <| model
+    updateTimeFuckOff <| kickOutCurrentCustomer <| updateConvoWithCustomerFuckOff <| model
 
 
 cleanStore : Model -> Model
@@ -163,11 +163,7 @@ schmoozeCustomer model =
             (\mdl -> { mdl | customers = Clientele.schmoozeCurrentCustomer mdl.customers }) <| updateTimeSchmooze customer <| updateConvoWithCustomerSchmooze customer <| model
 
         Nothing ->
-            model
-
-
-
--- TODO
+            updateConvoWithAction model "There is no customer in store to schmooze."
 
 
 callNextCustomer : Clientele.Customer -> Model -> Model
@@ -231,6 +227,11 @@ updateConvoWithFailureOffer customer model =
             ++ "\n"
             ++ rejectString customer
         )
+
+
+kickOutCurrentCustomer : Model -> Model
+kickOutCurrentCustomer model =
+    { model | customers = Clientele.kickOutCurrentCustomer model.customers }
 
 
 updateTimeSchmooze : Clientele.Customer -> Model -> Model

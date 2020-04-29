@@ -8,7 +8,7 @@ import Html.Attributes
 ---- MODEL ----
 
 
-type alias Customers =
+type alias ClienteleDetails =
     { maxCustomers : Int
     , customerIndex : Int
     , waitingCustomers : List Customer
@@ -33,7 +33,7 @@ numWaitingCustomers =
     2
 
 
-initCustomers : Customers
+initCustomers : ClienteleDetails
 initCustomers =
     { maxCustomers = 6
     , customerIndex = numWaitingCustomers
@@ -66,14 +66,14 @@ schmoozeCustomerMessage customer =
             ++ " minutes"
 
 
-schmoozeCurrentCustomer : Customers -> Customers
-schmoozeCurrentCustomer customers =
-    { customers | currentCustomer = Maybe.map schmoozeCustomer customers.currentCustomer }
+schmoozeCurrentCustomer : ClienteleDetails -> ClienteleDetails
+schmoozeCurrentCustomer clientele =
+    { clientele | currentCustomer = Maybe.map schmoozeCustomer clientele.currentCustomer }
 
 
-kickOutCurrentCustomer : Customers -> Customers
-kickOutCurrentCustomer customers =
-    { customers | currentCustomer = Nothing }
+kickOutCurrentCustomer : ClienteleDetails -> ClienteleDetails
+kickOutCurrentCustomer clientele =
+    { clientele | currentCustomer = Nothing }
 
 
 schmoozeCustomer : Customer -> Customer
@@ -85,9 +85,9 @@ schmoozeCustomer customer =
         { customer | schmoozeCount = customer.schmoozeCount + 1 }
 
 
-getNewCustomerIndex : Customers -> Int
-getNewCustomerIndex customers =
-    remainderBy customers.maxCustomers (customers.customerIndex + 1)
+getNewCustomerIndex : ClienteleDetails -> Int
+getNewCustomerIndex clientele =
+    remainderBy clientele.maxCustomers (clientele.customerIndex + 1)
 
 
 generateCustomer : Int -> Customer
@@ -154,9 +154,9 @@ generateCustomer index =
             }
 
 
-customerFuckOffMessage : Customers -> String
-customerFuckOffMessage customers =
-    case customers.currentCustomer of
+customerFuckOffMessage : ClienteleDetails -> String
+customerFuckOffMessage clientele =
+    case clientele.currentCustomer of
         Nothing ->
             "There is no customer to tell to fuckk off."
 
@@ -164,13 +164,13 @@ customerFuckOffMessage customers =
             "You tell "
                 ++ customer.name
                 ++ " to fuckk off. They get angry, and leave the store, taking "
-                ++ String.fromInt customers.kickTime
+                ++ String.fromInt clientele.kickTime
                 ++ " minutes."
 
 
-customerEntryMessage : Customers -> String
-customerEntryMessage customers =
-    case customers.currentCustomer of
+customerEntryMessage : ClienteleDetails -> String
+customerEntryMessage clientele =
+    case clientele.currentCustomer of
         Nothing ->
             "There is no customer who can enter."
 
@@ -180,14 +180,26 @@ customerEntryMessage customers =
                 ++ " enters the store."
 
 
-callCustomer : Customers -> Customer -> Customers
-callCustomer customers customer =
-    { customers | currentCustomer = Just customer, waitingCustomers = updateCustomerList customers customer, customerIndex = getNewCustomerIndex customers }
+callCustomer : ClienteleDetails -> Customer -> ClienteleDetails
+callCustomer clientele customer =
+    { clientele
+        | currentCustomer = Just customer
+        , waitingCustomers = calculateWaitingCustomers clientele.waitingCustomers clientele.currentCustomer customer (getNewCustomerIndex clientele)
+        , customerIndex = getNewCustomerIndex clientele
+    }
 
 
-updateCustomerList : Customers -> Customer -> List Customer
-updateCustomerList customers customer =
-    List.filter (\x -> x /= customer) customers.waitingCustomers ++ [ generateCustomer <| getNewCustomerIndex customers ]
+calculateWaitingCustomers : List Customer -> Maybe Customer -> Customer -> Int -> List Customer
+calculateWaitingCustomers waitingCustomers maybeCurrentCustomer calledCustomer newCustomerIndex =
+    List.filter (\x -> x /= calledCustomer) waitingCustomers
+        ++ (case maybeCurrentCustomer of
+                Just currentCustomer ->
+                    [ currentCustomer ]
+
+                Nothing ->
+                    []
+           )
+        ++ [ generateCustomer newCustomerIndex ]
 
 
 
@@ -196,7 +208,7 @@ updateCustomerList customers customer =
 
 customerEntryButtons :
     (Customer -> Attribute msg)
-    -> Customers
+    -> ClienteleDetails
     -> List (Html msg)
 customerEntryButtons command customers =
     List.map

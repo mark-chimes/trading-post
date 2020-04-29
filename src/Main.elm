@@ -18,7 +18,7 @@ type alias Model =
     , pcOfferInt : Int
     , pcGold : Int
     , cleanTime : Int
-    , customers : Clientele.Customers
+    , customers : Clientele.ClienteleDetails
     , itemWorth : Int
     , isConvoReverse : Bool
     , conversation : List (List String)
@@ -136,9 +136,10 @@ submitOffer model =
 
 succeedOnSale : Clientele.Customer -> Model -> Model
 succeedOnSale customer model =
-    updateConvoWithSuccessOffer customer <|
-        updateGold <|
-            updateTimeSuccess customer model
+    kickOutCurrentCustomer <|
+        updateConvoWithSuccessOffer customer <|
+            updateGold <|
+                updateTimeSuccess customer model
 
 
 failOnSale : Clientele.Customer -> Model -> Model
@@ -294,7 +295,7 @@ purchaseString model customer =
         ++ "gp (cost price "
         ++ String.fromInt model.itemWorth
         ++ "gp)"
-        ++ ", taking "
+        ++ ", and leaves happy, taking "
         ++ String.fromInt customer.minTakenOnSuccess
         ++ " minutes."
 

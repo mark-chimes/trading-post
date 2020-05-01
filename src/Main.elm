@@ -15,13 +15,18 @@ import String
 
 type alias Model =
     { time : Time
-    , pcOfferInt : Int
+    , offerInfo : OfferInfo
     , pcGold : Int
     , cleanTime : Int
     , customers : Clientele.ClienteleDetails
-    , itemWorth : Int
     , isConvoReverse : Bool
     , conversation : List (List String)
+    }
+
+
+type alias OfferInfo =
+    { pcOfferInt : Int
+    , itemWorth : Int
     }
 
 
@@ -40,11 +45,10 @@ init =
             )
         )
         { time = { hour = 8, minute = 0 }
-        , pcOfferInt = 0
+        , offerInfo = { pcOfferInt = 0, itemWorth = 20 }
         , pcGold = 0
         , cleanTime = 10
         , customers = Clientele.initCustomers
-        , itemWorth = 20
         , isConvoReverse = False
         , conversation = []
         }
@@ -76,7 +80,7 @@ update msg model =
             ( model, Cmd.none )
 
         PcOffer newOffer ->
-            ( makeOffer model newOffer, Cmd.none )
+            ( updateOffer newOffer model, Cmd.none )
 
         ModifyPcOffer amount ->
             ( modifyOffer model amount, Cmd.none )
@@ -103,14 +107,24 @@ update msg model =
             ( callNextCustomer customer model, Cmd.none )
 
 
-makeOffer : Model -> String -> Model
-makeOffer model newOffer =
-    { model | pcOfferInt = max 0 (Maybe.withDefault model.pcOfferInt (String.toInt newOffer)) }
+updateOffer : String -> Model -> Model
+updateOffer newOfferString model =
+    { model | offerInfo = calculateUpdatedOffer newOfferString model.offerInfo }
+
+
+calculateUpdatedOffer : String -> OfferInfo -> OfferInfo
+calculateUpdatedOffer newOfferString info =
+    { info | pcOfferInt = max 0 (Maybe.withDefault info.pcOfferInt (String.toInt newOfferString)) }
 
 
 modifyOffer : Model -> Int -> Model
-modifyOffer model amount =
-    { model | pcOfferInt = max 0 (model.pcOfferInt + amount) }
+modifyOffer model increaseAmount =
+    { model | offerInfo = calculateModifiedOffer increaseAmount model.offerInfo }
+
+
+calculateModifiedOffer : Int -> OfferInfo -> OfferInfo
+calculateModifiedOffer increaseAmount offerInfo =
+    { offerInfo | pcOfferInt = max 0 (offerInfo.pcOfferInt + increaseAmount) }
 
 
 
@@ -121,7 +135,7 @@ submitOffer : Model -> Model
 submitOffer model =
     case model.customers.currentCustomer of
         Just customer ->
-            if model.pcOfferInt <= customer.maxPrice then
+            if model.offerInfo.pcOfferInt <= customer.maxPrice then
                 succeedOnSale customer model
 
             else
@@ -139,7 +153,7 @@ updateConversationWithActionMessage message model =
 succeedOnSale : Clientele.Customer -> Model -> Model
 succeedOnSale customer model =
     kickOutCurrentCustomer <|
-        updateConversationWithActionMessage (bar model.pcOfferInt model.itemWorth customer) <|
+        updateConversationWithActionMessage (bar model.offerInfo.pcOfferInt model.offerInfo.itemWorth customer) <|
             updateGold <|
                 updateTimeSuccess customer model
 
@@ -217,7 +231,7 @@ updateTimeFailure customer model =
 
 updateGold : Model -> Model
 updateGold model =
-    { model | pcGold = model.pcGold + model.pcOfferInt }
+    { model | pcGold = model.pcGold + model.offerInfo.pcOfferInt }
 
 
 minutesInHour : Int
@@ -329,11 +343,11 @@ view model =
         , div []
             [ button [ onClick (ModifyPcOffer -100) ] [ text "-100" ]
             , button [ onClick (ModifyPcOffer -10) ] [ text "-10" ]
-            , input [ Attr.type_ "number", Attr.min "0", Attr.max "50000", placeholder "Your Offer", value (String.fromInt model.pcOfferInt), onInput PcOffer ] []
+            , input [ Attr.type_ "number", Attr.min "0", Attr.max "50000", placeholder "Your Offer", value (String.fromInt model.offerInfo.pcOfferInt), onInput PcOffer ] []
             , button [ onClick (ModifyPcOffer 10) ] [ text "+10" ]
             , button [ onClick (ModifyPcOffer 100) ] [ text "+100" ]
             ]
-        , div [] [ text ("Your Offer: " ++ String.fromInt model.pcOfferInt) ]
+        , div [] [ text ("Your Offer: " ++ String.fromInt model.offerInfo.pcOfferInt) ]
         , button [ onClick SubmitOffer ] [ text "Submit Offer" ]
         , div [] []
         , br [] []

@@ -33,9 +33,11 @@ type alias Time =
 
 init : ( Model, Cmd Msg )
 init =
-    ( updateConvoWithCustomerEntry
-        (Clientele.generateCustomer
-            0
+    ( updateConversationWithActionMessage
+        (Clientele.customerCallMessage
+            (Clientele.generateCustomer
+                0
+            )
         )
         { time = { hour = 8, minute = 0 }
         , pcOfferInt = 0
@@ -126,45 +128,55 @@ submitOffer model =
                 failOnSale customer model
 
         Nothing ->
-            updateConvoWithAction model "There is no customer in store to whom to submit that offer."
+            updateConversationWithActionMessage "There is no customer in store to whom to submit that offer." model
+
+
+updateConversationWithActionMessage : String -> Model -> Model
+updateConversationWithActionMessage message model =
+    { model | conversation = model.conversation ++ [ [ displayTime model.time, message, "" ] ] }
 
 
 succeedOnSale : Clientele.Customer -> Model -> Model
 succeedOnSale customer model =
     kickOutCurrentCustomer <|
-        updateConvoWithSuccessOffer customer <|
+        updateConversationWithActionMessage (bar model.pcOfferInt model.itemWorth customer) <|
             updateGold <|
                 updateTimeSuccess customer model
 
 
+bar : Int -> Int -> Clientele.Customer -> String
+bar offerInt itemWorth customer =
+    offerString offerInt ++ "\n" ++ purchaseString offerInt itemWorth customer
+
+
 failOnSale : Clientele.Customer -> Model -> Model
 failOnSale customer model =
-    updateConvoWithFailureOffer customer <| updateTimeFailure customer <| model
+    updateConversationWithActionMessage (rejectString customer) <| updateTimeFailure customer <| model
 
 
 fuckOffCustomer : Model -> Model
 fuckOffCustomer model =
-    kickOutCurrentCustomer <| updateConvoWithCustomerFuckOff <| updateTimeFuckOff <| model
+    updateConversationWithActionMessage (Clientele.customerFuckOffMessage model.customers) <| kickOutCurrentCustomer <| updateTimeFuckOff <| model
 
 
 cleanStore : Model -> Model
 cleanStore model =
-    updateConvoWithCleanStore <| updateTimeCleanStore <| model
+    updateConversationWithActionMessage (cleanStoreMessage model.cleanTime) <| updateTimeCleanStore <| model
 
 
 schmoozeCustomer : Model -> Model
 schmoozeCustomer model =
     case model.customers.currentCustomer of
         Just customer ->
-            (\mdl -> { mdl | customers = Clientele.schmoozeCurrentCustomer mdl.customers }) <| updateConvoWithCustomerSchmooze customer <| updateTimeSchmooze customer <| model
+            (\mdl -> { mdl | customers = Clientele.schmoozeCurrentCustomer mdl.customers }) <| updateConversationWithActionMessage (Clientele.schmoozeCustomerMessage customer) <| updateTimeSchmooze customer <| model
 
         Nothing ->
-            updateConvoWithAction model "Who are you trying to schmooze?"
+            updateConversationWithActionMessage "Who are you trying to schmooze?" model
 
 
 callNextCustomer : Clientele.Customer -> Model -> Model
 callNextCustomer customer model =
-    updateConvoWithCustomerEntry customer <|
+    updateConversationWithActionMessage (Clientele.customerCallMessage customer) <|
         { model | customers = Clientele.callCustomer model.customers customer }
 
 
@@ -181,53 +193,6 @@ updateTimeFuckOff model =
 updateTimeCleanStore : Model -> Model
 updateTimeCleanStore model =
     { model | time = incrementTimeWithMin model.time model.cleanTime }
-
-
-updateConvoWithAction : Model -> String -> Model
-updateConvoWithAction model message =
-    { model
-        | conversation =
-            model.conversation
-                ++ [ [ displayTime model.time
-                     , message
-                     , ""
-                     ]
-                   ]
-    }
-
-
-updateConvoWithCustomerSchmooze : Clientele.Customer -> Model -> Model
-updateConvoWithCustomerSchmooze customer model =
-    updateConvoWithAction model (Clientele.schmoozeCustomerMessage customer)
-
-
-updateConvoWithCustomerFuckOff : Model -> Model
-updateConvoWithCustomerFuckOff model =
-    updateConvoWithAction model (Clientele.customerFuckOffMessage model.customers)
-
-
-updateConvoWithCleanStore : Model -> Model
-updateConvoWithCleanStore model =
-    updateConvoWithAction model (cleanStoreMessage model)
-
-
-updateConvoWithCustomerEntry : Clientele.Customer -> Model -> Model
-updateConvoWithCustomerEntry customer model =
-    updateConvoWithAction model (Clientele.customerCallMessage customer)
-
-
-updateConvoWithSuccessOffer : Clientele.Customer -> Model -> Model
-updateConvoWithSuccessOffer customer model =
-    updateConvoWithAction model (offerString model ++ "\n" ++ purchaseString model customer)
-
-
-updateConvoWithFailureOffer : Clientele.Customer -> Model -> Model
-updateConvoWithFailureOffer customer model =
-    updateConvoWithAction model
-        (offerString model
-            ++ "\n"
-            ++ rejectString customer
-        )
 
 
 kickOutCurrentCustomer : Model -> Model
@@ -284,26 +249,26 @@ incrementTimeWithMin time mins =
 -- Strings --
 
 
-cleanStoreMessage : Model -> String
-cleanStoreMessage model =
-    "You clean the store for " ++ String.fromInt model.cleanTime ++ " minutes."
+cleanStoreMessage : Int -> String
+cleanStoreMessage cleaningTimeMin =
+    "You clean the store for " ++ String.fromInt cleaningTimeMin ++ " minutes."
 
 
-offerString : Model -> String
-offerString model =
+offerString : Int -> String
+offerString pcOfferInt =
     "You offered the sword for: "
-        ++ String.fromInt model.pcOfferInt
+        ++ String.fromInt pcOfferInt
         ++ "gp."
 
 
-purchaseString : Model -> Clientele.Customer -> String
-purchaseString model customer =
+purchaseString : Int -> Int -> Clientele.Customer -> String
+purchaseString pcOfferInt itemWorth customer =
     "The customer, "
         ++ customer.name
         ++ ", bought 1 sword at "
-        ++ String.fromInt model.pcOfferInt
+        ++ String.fromInt pcOfferInt
         ++ "gp (cost price "
-        ++ String.fromInt model.itemWorth
+        ++ String.fromInt itemWorth
         ++ "gp)"
         ++ ", and leaves happy, taking "
         ++ String.fromInt customer.minTakenOnSuccess

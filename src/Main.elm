@@ -273,7 +273,7 @@ offerString : OfferInfo -> String
 offerString info =
     "You offered the "
         ++ info.itemName
-        ++ " for: "
+        ++ " for a price of "
         ++ String.fromInt info.pcOffer
         ++ "gp."
 
@@ -298,7 +298,7 @@ rejectString : Clientele.Customer -> OfferInfo -> String
 rejectString customer offer =
     "The customer, "
         ++ customer.name
-        ++ ", rejected the offer of "
+        ++ ", rejected the sales price of "
         ++ String.fromInt offer.pcOffer
         ++ "gp for the "
         ++ offer.itemName
@@ -319,8 +319,11 @@ view model =
         --       , h2 [] [ text "Debug" ]
         --      , text
         --         ("Customer Max Price: " ++ String.fromInt model.customers.customer.maxPrice)
-        , h2 [] [ text "Game" ]
-        , h3 [] [ text ("Time: " ++ displayTime model.time) ]
+        , h2 [] [ text "Store" ]
+        , div [] [ text ("Time: " ++ displayTime model.time) ]
+        , div [] [ text ("Your gold: " ++ String.fromInt model.pcGold ++ "gp") ]
+        , h3 [] [ text "Stock" ]
+        , div [] [ text "Infinite swords" ]
         , h3 [] [ text "Customers" ]
         , div []
             (Clientele.customerEntryButtons
@@ -346,8 +349,9 @@ view model =
             , button [ onClick KickOutCustomer ] [ text "Fuckk Off" ]
             , button [ onClick CleanStore ] [ text "Clean Store" ]
             ]
-        , h4 [] [ text "Offer" ]
-        , text ("Your gold: " ++ String.fromInt model.pcGold)
+        , h4 [] [ text "Sale" ]
+        , div [] [ text ("Selling item: " ++ model.offerInfo.itemName) ]
+        , div [] [ text ("Your sales price: " ++ String.fromInt model.offerInfo.pcOffer ++ "gp") ]
         , br [] []
         , div []
             [ button [ onClick (ModifyPcOffer -100) ] [ text "-100" ]
@@ -356,10 +360,9 @@ view model =
             , button [ onClick (ModifyPcOffer 10) ] [ text "+10" ]
             , button [ onClick (ModifyPcOffer 100) ] [ text "+100" ]
             ]
-        , div [] [ text ("Your Offer: " ++ String.fromInt model.offerInfo.pcOffer) ]
-        , button [ onClick SubmitOffer ] [ text "Submit Offer" ]
-        , div [] []
         , br [] []
+        , button [ onClick SubmitOffer ] [ text "Offer sale" ]
+        , div [] []
         , h3 [] [ text "The story thus far: " ]
         , button [ onClick ClearStory ] [ text "Clear Story" ]
         , button [ onClick ReverseStory ] [ text "Reverse Story" ]

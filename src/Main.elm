@@ -2,7 +2,7 @@ module Main exposing (Model, Msg(..), hoursInDay, init, main, purchaseString, up
 
 import Browser
 import Clientele
-import Html exposing (Html, br, button, div, h1, h2, h3, h4, img, input, li, text, textarea, ul)
+import Html exposing (Html, br, button, div, h1, h2, h3, h4, hr, img, input, li, text, textarea, ul)
 import Html.Attributes as Attr exposing (placeholder, src, value)
 import Html.Events exposing (onClick, onInput)
 import String
@@ -311,6 +311,94 @@ rejectString customer offer =
 ---- VIEW ----
 
 
+borderStyle : Html.Attribute msg
+borderStyle =
+    Attr.style "border" "2px solid black"
+
+
+halfThick : String
+halfThick =
+    "5px"
+
+
+fullThick : String
+fullThick =
+    "10px"
+
+
+halfBlock : List (Html msg) -> Html msg
+halfBlock theHtml =
+    div
+        [ Attr.style "float" "left"
+        , Attr.style "width" "50%"
+        ]
+        [ div
+            [ borderStyle
+            , Attr.style "margin-top" halfThick
+            , Attr.style "margin-bottom" "0px"
+            , Attr.style "margin-left" halfThick
+            , Attr.style "margin-right" halfThick
+            , Attr.style "padding-top" "0px"
+            , Attr.style "padding-bottom" fullThick
+            , Attr.style "padding-left" "0px"
+            , Attr.style "padding-right" "0px"
+            ]
+            theHtml
+        ]
+
+
+topBlock : List (Html msg) -> Html msg
+topBlock theHtml =
+    div
+        [ Attr.style "width" "100%"
+        ]
+        [ div
+            [ borderStyle
+            , Attr.style "margin-bottom" halfThick
+            , Attr.style "margin-left" fullThick
+            , Attr.style "margin-right" fullThick
+            , Attr.style "padding-bottom" fullThick
+            ]
+            theHtml
+        ]
+
+
+blockOfBlocks : List (Html msg) -> Html msg
+blockOfBlocks theHtml =
+    div
+        [ Attr.style "width" "100%"
+        , Attr.style "clear" "both"
+        , Attr.style "display" "table"
+        ]
+        [ div
+            [ Attr.style "margin-top" halfThick
+            , Attr.style "margin-bottom" halfThick
+            , Attr.style "margin-left" halfThick
+            , Attr.style "margin-right" halfThick
+            ]
+            theHtml
+        ]
+
+
+oneBlock : List (Html msg) -> Html msg
+oneBlock theHtml =
+    div
+        [ Attr.style "width" "100%"
+        , Attr.style "clear" "both"
+        , Attr.style "display" "table"
+        ]
+        [ div
+            [ borderStyle
+            , Attr.style "margin-top" halfThick
+            , Attr.style "margin-bottom" halfThick
+            , Attr.style "margin-left" fullThick
+            , Attr.style "margin-right" fullThick
+            , Attr.style "padding-bottom" fullThick
+            ]
+            theHtml
+        ]
+
+
 view : Model -> Html Msg
 view model =
     div []
@@ -319,65 +407,103 @@ view model =
         --       , h2 [] [ text "Debug" ]
         --      , text
         --         ("Customer Max Price: " ++ String.fromInt model.customers.customer.maxPrice)
-        , h2 [] [ text "Store" ]
-        , div [] [ text ("Time: " ++ displayTime model.time) ]
-        , div [] [ text ("Your gold: " ++ String.fromInt model.pcGold ++ "gp") ]
-        , h3 [] [ text "Stock" ]
-        , div [] [ text "Infinite swords" ]
-        , h3 [] [ text "Customers" ]
-        , div []
-            (Clientele.customerEntryButtons
-                (\c -> onClick (CustomerEntry c))
-                model.customers
-            )
-        , div []
-            [ text
-                ("You are speaking to: "
-                    ++ (case model.customers.currentCustomer of
-                            Just customer ->
-                                customer.name
-
-                            Nothing ->
-                                "No-one"
-                       )
-                    ++ "."
-                )
-            ]
-        , h3 [] [ text "Actions" ]
-        , div []
-            [ button [ onClick SchmoozeCustomer ] [ text "Schmooze Customer" ]
-            , button [ onClick KickOutCustomer ] [ text "Fuckk Off" ]
-            , button [ onClick CleanStore ] [ text "Clean Store" ]
-            ]
-        , h4 [] [ text "Sale" ]
-        , div [] [ text ("Selling item: " ++ model.offerInfo.itemName) ]
-        , div [] [ text ("Your sales price: " ++ String.fromInt model.offerInfo.pcOffer ++ "gp") ]
-        , br [] []
-        , div []
-            [ button [ onClick (ModifyPcOffer -100) ] [ text "-100" ]
-            , button [ onClick (ModifyPcOffer -10) ] [ text "-10" ]
-            , input [ Attr.type_ "number", Attr.min "0", Attr.max "50000", placeholder "Your Offer", value (String.fromInt model.offerInfo.pcOffer), onInput PcOffer ] []
-            , button [ onClick (ModifyPcOffer 10) ] [ text "+10" ]
-            , button [ onClick (ModifyPcOffer 100) ] [ text "+100" ]
+        , topBlock <| storeInfo model
+        , blockOfBlocks
+            [ halfBlock <| stockBlock model
+            , halfBlock <| actionsBlock model
+            , halfBlock <| saleBlock model
+            , halfBlock <| customersBlock model
             ]
         , br [] []
-        , button [ onClick SubmitOffer ] [ text "Offer sale" ]
-        , div [] []
-        , h3 [] [ text "The story thus far: " ]
-        , button [ onClick ClearStory ] [ text "Clear Story" ]
-        , button [ onClick ReverseStory ] [ text "Reverse Story" ]
-        , div []
-            []
-        , textarea [ Attr.id "convoText", Attr.cols 80, Attr.rows 20 ]
-            ((if model.isConvoReverse then
-                List.reverse
+        , oneBlock <| storyBlock model
+        ]
 
-              else
-                \l -> l
-             )
-                (List.map (\s -> text <| s ++ "\n") <| flattenStringListList model.conversation)
+
+storeInfo : Model -> List (Html Msg)
+storeInfo model =
+    [ h2 [] [ text "Store" ]
+    , div [] [ text ("Time: " ++ displayTime model.time) ]
+    , div [] [ text ("Your gold: " ++ String.fromInt model.pcGold ++ "gp") ]
+    ]
+
+
+saleBlock : Model -> List (Html Msg)
+saleBlock model =
+    [ h4 [] [ text "Sale" ]
+    , div [] [ text ("Selling item: " ++ model.offerInfo.itemName) ]
+    , div [] [ text ("Your sales price: " ++ String.fromInt model.offerInfo.pcOffer ++ "gp") ]
+    , br [] []
+    , div []
+        [ button [ onClick (ModifyPcOffer -100) ] [ text "-100" ]
+        , button [ onClick (ModifyPcOffer -10) ] [ text "-10" ]
+        , input [ Attr.type_ "number", Attr.min "0", Attr.max "50000", placeholder "Your Offer", value (String.fromInt model.offerInfo.pcOffer), onInput PcOffer ] []
+        , button [ onClick (ModifyPcOffer 10) ] [ text "+10" ]
+        , button [ Attr.style "margin" "5px", onClick (ModifyPcOffer 100) ] [ text "+100" ]
+        ]
+    , br [] []
+    , button [ onClick SubmitOffer ] [ text "Offer sale" ]
+    ]
+
+
+stockBlock : Model -> List (Html Msg)
+stockBlock model =
+    [ h3 [] [ text "Stock" ]
+    , div [] [ text "Infinite swords" ]
+    ]
+
+
+customersBlock : Model -> List (Html Msg)
+customersBlock model =
+    [ h3 [] [ text "Customers" ]
+    , div []
+        (Clientele.customerEntryButtons
+            (\c -> onClick (CustomerEntry c))
+            model.customers
+        )
+    , div []
+        [ text
+            ("You are speaking to: "
+                ++ (case model.customers.currentCustomer of
+                        Just customer ->
+                            customer.name
+
+                        Nothing ->
+                            "No-one"
+                   )
+                ++ "."
             )
         ]
+    ]
+
+
+actionsBlock : Model -> List (Html Msg)
+actionsBlock model =
+    [ h3 [] [ text "Actions" ]
+    , div []
+        [ button [ onClick SchmoozeCustomer ] [ text "Schmooze Customer" ]
+        , button [ onClick KickOutCustomer ] [ text "Fuckk Off" ]
+        , button [ onClick CleanStore ] [ text "Clean Store" ]
+        ]
+    ]
+
+
+storyBlock : Model -> List (Html Msg)
+storyBlock model =
+    [ h3 [] [ text "The story thus far: " ]
+    , button [ onClick ClearStory ] [ text "Clear Story" ]
+    , button [ onClick ReverseStory ] [ text "Reverse Story" ]
+    , div []
+        []
+    , textarea [ Attr.id "convoText", Attr.cols 80, Attr.rows 20 ]
+        ((if model.isConvoReverse then
+            List.reverse
+
+          else
+            \l -> l
+         )
+            (List.map (\s -> text <| s ++ "\n") <| flattenStringListList model.conversation)
+        )
+    ]
 
 
 flattenStringListList : List (List String) -> List String

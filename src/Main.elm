@@ -25,7 +25,8 @@ type alias Model =
 
 
 type alias OfferInfo =
-    { pcOfferInt : Int
+    { pcOffer : Int
+    , itemName : String
     , itemWorth : Int
     }
 
@@ -45,7 +46,7 @@ init =
             )
         )
         { time = { hour = 8, minute = 0 }
-        , offerInfo = { pcOfferInt = 0, itemWorth = 20 }
+        , offerInfo = { pcOffer = 0, itemName = "sword", itemWorth = 20 }
         , pcGold = 0
         , cleanTime = 10
         , customers = Clientele.initCustomers
@@ -82,8 +83,8 @@ update msg model =
         PcOffer newOffer ->
             ( updateOffer newOffer model, Cmd.none )
 
-        ModifyPcOffer amount ->
-            ( modifyOffer model amount, Cmd.none )
+        ModifyPcOffer increaseAmount ->
+            ( modifyOffer model increaseAmount, Cmd.none )
 
         SubmitOffer ->
             ( submitOffer <| model, Cmd.none )
@@ -114,7 +115,7 @@ updateOffer newOfferString model =
 
 calculateUpdatedOffer : String -> OfferInfo -> OfferInfo
 calculateUpdatedOffer newOfferString info =
-    { info | pcOfferInt = max 0 (Maybe.withDefault info.pcOfferInt (String.toInt newOfferString)) }
+    { info | pcOffer = max 0 (Maybe.withDefault info.pcOffer (String.toInt newOfferString)) }
 
 
 modifyOffer : Model -> Int -> Model
@@ -124,7 +125,7 @@ modifyOffer model increaseAmount =
 
 calculateModifiedOffer : Int -> OfferInfo -> OfferInfo
 calculateModifiedOffer increaseAmount offerInfo =
-    { offerInfo | pcOfferInt = max 0 (offerInfo.pcOfferInt + increaseAmount) }
+    { offerInfo | pcOffer = max 0 (offerInfo.pcOffer + increaseAmount) }
 
 
 
@@ -135,11 +136,11 @@ submitOffer : Model -> Model
 submitOffer model =
     case model.customers.currentCustomer of
         Just customer ->
-            if model.offerInfo.pcOfferInt <= customer.maxPrice then
+            if model.offerInfo.pcOffer <= customer.maxPrice then
                 succeedOnSale customer model
 
             else
-                failOnSale customer model
+                failOnSale customer model.offerInfo model
 
         Nothing ->
             updateConversationWithActionMessage "There is no customer in store to whom to submit that offer." model
@@ -153,19 +154,19 @@ updateConversationWithActionMessage message model =
 succeedOnSale : Clientele.Customer -> Model -> Model
 succeedOnSale customer model =
     kickOutCurrentCustomer <|
-        updateConversationWithActionMessage (bar model.offerInfo.pcOfferInt model.offerInfo.itemWorth customer) <|
+        updateConversationWithActionMessage (offerAndPurchaseString customer model.offerInfo) <|
             updateGold <|
                 updateTimeSuccess customer model
 
 
-bar : Int -> Int -> Clientele.Customer -> String
-bar offerInt itemWorth customer =
-    offerString offerInt ++ "\n" ++ purchaseString offerInt itemWorth customer
+offerAndPurchaseString : Clientele.Customer -> OfferInfo -> String
+offerAndPurchaseString customer offerInfo =
+    offerString offerInfo ++ "\n" ++ purchaseString customer offerInfo
 
 
-failOnSale : Clientele.Customer -> Model -> Model
-failOnSale customer model =
-    updateConversationWithActionMessage (rejectString customer) <| updateTimeFailure customer <| model
+failOnSale : Clientele.Customer -> OfferInfo -> Model -> Model
+failOnSale customer offer model =
+    updateConversationWithActionMessage (rejectString customer offer) <| updateTimeFailure customer <| model
 
 
 fuckOffCustomer : Model -> Model
@@ -231,7 +232,7 @@ updateTimeFailure customer model =
 
 updateGold : Model -> Model
 updateGold model =
-    { model | pcGold = model.pcGold + model.offerInfo.pcOfferInt }
+    { model | pcGold = model.pcGold + model.offerInfo.pcOffer }
 
 
 minutesInHour : Int
@@ -268,32 +269,40 @@ cleanStoreMessage cleaningTimeMin =
     "You clean the store for " ++ String.fromInt cleaningTimeMin ++ " minutes."
 
 
-offerString : Int -> String
-offerString pcOfferInt =
-    "You offered the sword for: "
-        ++ String.fromInt pcOfferInt
+offerString : OfferInfo -> String
+offerString info =
+    "You offered the "
+        ++ info.itemName
+        ++ " for: "
+        ++ String.fromInt info.pcOffer
         ++ "gp."
 
 
-purchaseString : Int -> Int -> Clientele.Customer -> String
-purchaseString pcOfferInt itemWorth customer =
+purchaseString : Clientele.Customer -> OfferInfo -> String
+purchaseString customer offerInfo =
     "The customer, "
         ++ customer.name
-        ++ ", bought 1 sword at "
-        ++ String.fromInt pcOfferInt
+        ++ ", bought 1 "
+        ++ offerInfo.itemName
+        ++ " at "
+        ++ String.fromInt offerInfo.pcOffer
         ++ "gp (cost price "
-        ++ String.fromInt itemWorth
+        ++ String.fromInt offerInfo.itemWorth
         ++ "gp)"
         ++ ", and leaves happy, taking "
         ++ String.fromInt customer.minTakenOnSuccess
         ++ " minutes."
 
 
-rejectString : Clientele.Customer -> String
-rejectString customer =
+rejectString : Clientele.Customer -> OfferInfo -> String
+rejectString customer offer =
     "The customer, "
         ++ customer.name
-        ++ ", rejected the offer, taking "
+        ++ ", rejected the offer of "
+        ++ String.fromInt offer.pcOffer
+        ++ "gp for the "
+        ++ offer.itemName
+        ++ ", taking "
         ++ String.fromInt customer.minTakenOnFail
         ++ " minutes."
 
@@ -343,11 +352,11 @@ view model =
         , div []
             [ button [ onClick (ModifyPcOffer -100) ] [ text "-100" ]
             , button [ onClick (ModifyPcOffer -10) ] [ text "-10" ]
-            , input [ Attr.type_ "number", Attr.min "0", Attr.max "50000", placeholder "Your Offer", value (String.fromInt model.offerInfo.pcOfferInt), onInput PcOffer ] []
+            , input [ Attr.type_ "number", Attr.min "0", Attr.max "50000", placeholder "Your Offer", value (String.fromInt model.offerInfo.pcOffer), onInput PcOffer ] []
             , button [ onClick (ModifyPcOffer 10) ] [ text "+10" ]
             , button [ onClick (ModifyPcOffer 100) ] [ text "+100" ]
             ]
-        , div [] [ text ("Your Offer: " ++ String.fromInt model.offerInfo.pcOfferInt) ]
+        , div [] [ text ("Your Offer: " ++ String.fromInt model.offerInfo.pcOffer) ]
         , button [ onClick SubmitOffer ] [ text "Submit Offer" ]
         , div [] []
         , br [] []

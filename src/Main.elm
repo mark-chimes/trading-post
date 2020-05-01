@@ -54,14 +54,6 @@ init =
 ---- UPDATE ----
 
 
-minutesInHour =
-    60
-
-
-hoursInDay =
-    24
-
-
 type Msg
     = NoOp
     | PcOffer String
@@ -261,6 +253,16 @@ updateTimeFailure customer model =
 updateGold : Model -> Model
 updateGold model =
     { model | pcGold = model.pcGold + model.pcOfferInt }
+
+
+minutesInHour : Int
+minutesInHour =
+    60
+
+
+hoursInDay : Int
+hoursInDay =
+    24
 
 
 minToTime : Int -> Time

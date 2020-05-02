@@ -46,11 +46,11 @@ init =
             )
         )
         { time = { hour = 8, minute = 0 }
-        , offerInfo = { pcOffer = 0, itemName = "sword", itemWorth = 20 }
+        , offerInfo = { pcOffer = 20, itemName = "sword", itemWorth = 20 }
         , pcGold = 0
         , cleanTime = 10
         , customers = Clientele.initCustomers
-        , isConvoReverse = False
+        , isConvoReverse = True
         , conversation = []
         }
     , Cmd.none
@@ -72,6 +72,7 @@ type Msg
     | ReverseStory
     | SchmoozeCustomer
     | CustomerEntry Clientele.Customer
+    | ResetPrice
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -107,6 +108,9 @@ update msg model =
         CustomerEntry customer ->
             ( callNextCustomer customer model, Cmd.none )
 
+        ResetPrice ->
+            ( updatePriceReset model, Cmd.none )
+
 
 updateOffer : String -> Model -> Model
 updateOffer newOfferString model =
@@ -126,6 +130,18 @@ modifyOffer model increaseAmount =
 calculateModifiedOffer : Int -> OfferInfo -> OfferInfo
 calculateModifiedOffer increaseAmount offerInfo =
     { offerInfo | pcOffer = max 0 (offerInfo.pcOffer + increaseAmount) }
+
+
+updatePriceReset : Model -> Model
+updatePriceReset model =
+    { model | offerInfo = resetPrice model.offerInfo }
+
+
+resetPrice : OfferInfo -> OfferInfo
+resetPrice offerInfo =
+    { offerInfo
+        | pcOffer = offerInfo.itemWorth
+    }
 
 
 
@@ -372,7 +388,7 @@ blockOfBlocks theHtml =
         ]
         [ div
             [ Attr.style "margin-top" halfThick
-            , Attr.style "margin-bottom" halfThick
+            , Attr.style "margin-bottom" fullThick
             , Attr.style "margin-left" halfThick
             , Attr.style "margin-right" halfThick
             ]
@@ -389,7 +405,7 @@ oneBlock theHtml =
         ]
         [ div
             [ borderStyle
-            , Attr.style "margin-top" halfThick
+            , Attr.style "margin-top" fullThick
             , Attr.style "margin-bottom" halfThick
             , Attr.style "margin-left" fullThick
             , Attr.style "margin-right" fullThick
@@ -410,11 +426,11 @@ view model =
         , topBlock <| storeInfo model
         , blockOfBlocks
             [ halfBlock <| stockBlock model
-            , halfBlock <| actionsBlock model
+            , halfBlock <| actionsBlock
             , halfBlock <| saleBlock model
             , halfBlock <| customersBlock model
             ]
-        , br [] []
+        , oneBlock <| currentSituationBlock model
         , oneBlock <| storyBlock model
         ]
 
@@ -427,22 +443,72 @@ storeInfo model =
     ]
 
 
+currentSituationBlock : Model -> List (Html Msg)
+currentSituationBlock model =
+    [ h3 [] [ text "Current Sale" ]
+    , case model.customers.currentCustomer of
+        Nothing ->
+            div [] [ text "There is no-one in store." ]
+
+        Just customer ->
+            div []
+                [ div [ Attr.style "margin-bottom" halfThick ] [ text <| currentSituationString customer model.offerInfo ]
+                , basicButton [ onClick SubmitOffer ] [ text "Offer sale" ]
+                ]
+    ]
+
+
+currentSituationString : Clientele.Customer -> OfferInfo -> String
+currentSituationString customer offerInfo =
+    "You are selling a "
+        ++ offerInfo.itemName
+        ++ " (cost "
+        ++ String.fromInt offerInfo.itemWorth
+        ++ "gp) to "
+        ++ customer.name
+        ++ " for "
+        ++ String.fromInt offerInfo.pcOffer
+        ++ "gp."
+
+
 saleBlock : Model -> List (Html Msg)
 saleBlock model =
-    [ h4 [] [ text "Sale" ]
-    , div [] [ text ("Selling item: " ++ model.offerInfo.itemName) ]
+    [ h3 [] [ text "Sale" ]
+    , div [] [ text ("Selling item: " ++ model.offerInfo.itemName ++ " (cost " ++ String.fromInt model.offerInfo.itemWorth ++ "gp)") ]
+    , br [] []
     , div [] [ text ("Your sales price: " ++ String.fromInt model.offerInfo.pcOffer ++ "gp") ]
     , br [] []
     , div []
-        [ button [ onClick (ModifyPcOffer -100) ] [ text "-100" ]
-        , button [ onClick (ModifyPcOffer -10) ] [ text "-10" ]
-        , input [ Attr.type_ "number", Attr.min "0", Attr.max "50000", placeholder "Your Offer", value (String.fromInt model.offerInfo.pcOffer), onInput PcOffer ] []
-        , button [ onClick (ModifyPcOffer 10) ] [ text "+10" ]
-        , button [ Attr.style "margin" "5px", onClick (ModifyPcOffer 100) ] [ text "+100" ]
+        [ modifyOfferButton -100
+        , modifyOfferButton -10
+        , input [ Attr.style "margin" "2px", Attr.type_ "number", Attr.min "0", Attr.max "50000", placeholder "Your Offer", value (String.fromInt model.offerInfo.pcOffer), onInput PcOffer ] []
+        , modifyOfferButton 10
+        , modifyOfferButton 100
         ]
     , br [] []
-    , button [ onClick SubmitOffer ] [ text "Offer sale" ]
+    , basicButton [ onClick ResetPrice ] [ text "Reset Price" ]
+    , basicButton [ onClick SubmitOffer ] [ text "Offer sale" ]
     ]
+
+
+basicButton : List (Html.Attribute msg) -> List (Html msg) -> Html msg
+basicButton attributes messages =
+    button (Attr.style "margin" "2px" :: attributes) messages
+
+
+modifyOfferButton : Int -> Html Msg
+modifyOfferButton offer =
+    basicButton [ onClick (ModifyPcOffer offer) ]
+        [ text
+            ((if offer > 0 then
+                "+"
+
+              else
+                ""
+             )
+                ++ String.fromInt offer
+            )
+        ]
 
 
 stockBlock : Model -> List (Html Msg)
@@ -460,6 +526,7 @@ customersBlock model =
             (\c -> onClick (CustomerEntry c))
             model.customers
         )
+    , br [] []
     , div []
         [ text
             ("You are speaking to: "
@@ -476,12 +543,12 @@ customersBlock model =
     ]
 
 
-actionsBlock : Model -> List (Html Msg)
-actionsBlock model =
+actionsBlock : List (Html Msg)
+actionsBlock =
     [ h3 [] [ text "Actions" ]
     , div []
         [ button [ onClick SchmoozeCustomer ] [ text "Schmooze Customer" ]
-        , button [ onClick KickOutCustomer ] [ text "Fuckk Off" ]
+        , button [ onClick KickOutCustomer ] [ text "Fuck Off" ]
         , button [ onClick CleanStore ] [ text "Clean Store" ]
         ]
     ]
@@ -494,7 +561,7 @@ storyBlock model =
     , button [ onClick ReverseStory ] [ text "Reverse Story" ]
     , div []
         []
-    , textarea [ Attr.id "convoText", Attr.cols 80, Attr.rows 20 ]
+    , textarea [ Attr.id "convoText", Attr.cols 80, Attr.rows 15 ]
         ((if model.isConvoReverse then
             List.reverse
 

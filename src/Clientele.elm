@@ -158,12 +158,12 @@ customerFuckOffMessage : ClienteleDetails -> String
 customerFuckOffMessage clientele =
     case clientele.currentCustomer of
         Nothing ->
-            "Who are you telling to fuckk off?"
+            "Who are you telling to fuck off?"
 
         Just customer ->
             "You tell "
                 ++ customer.name
-                ++ " to fuckk off. They get angry, and leave the store, taking "
+                ++ " to fuck off. They get angry, and leave the store, taking "
                 ++ String.fromInt clientele.kickTime
                 ++ " minutes."
 

@@ -510,7 +510,7 @@ currentSituationBlock model =
 
                 Just customer ->
                     div []
-                        [ basicButton [ onClick KickOutCustomer ] [ text <| "Fuck off " ++ customer.name ]
+                        [ basicButton [ onClick KickOutCustomer ] [ text <| "Kick out " ++ customer.name ]
                         ]
 
         Schmooze ->
@@ -633,7 +633,7 @@ actionsBlock =
     [ h3 [] [ text "Actions" ]
     , div []
         [ basicButton [ onClick PrepSchmoozeCustomer ] [ text "Schmooze" ]
-        , basicButton [ onClick PrepKickOutCustomer ] [ text "Fuck Off" ]
+        , basicButton [ onClick PrepKickOutCustomer ] [ text "Kick Out" ]
         , basicButton [ onClick PrepCleanStore ] [ text "Clean" ]
         , basicButton [ onClick PrepSubmitOffer ] [ text "Sale" ]
         ]

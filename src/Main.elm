@@ -13,6 +13,11 @@ import String
 -- pc stands for player character
 
 
+type alias Flags =
+    { windowWidth : Int
+    }
+
+
 type alias Model =
     { time : Time
     , offerInfo : OfferInfo
@@ -22,6 +27,7 @@ type alias Model =
     , isConvoReverse : Bool
     , conversation : List (List String)
     , prepState : PrepState
+    , windowWidth : Int
     }
 
 
@@ -38,8 +44,8 @@ type alias Time =
     }
 
 
-init : ( Model, Cmd Msg )
-init =
+init : Flags -> ( Model, Cmd Msg )
+init flags =
     ( updateConversationWithActionMessage
         (Clientele.customerCallMessage
             (Clientele.generateCustomer
@@ -54,6 +60,7 @@ init =
         , isConvoReverse = True
         , conversation = []
         , prepState = Sale
+        , windowWidth = flags.windowWidth
         }
     , Cmd.none
     )
@@ -528,7 +535,16 @@ currentSituationBlock model =
                                 [ basicButton [ onClick ResetPrice ] [ text "Reset" ]
                                 , modifyOfferButton -100
                                 , modifyOfferButton -10
-                                , input [ Attr.style "margin" "2px", Attr.type_ "number", Attr.min "0", Attr.max "50000", placeholder "Your Offer", value (String.fromInt model.offerInfo.pcOffer), onInput PcOffer ] []
+                                , input
+                                    [ Attr.style "margin" "2px"
+                                    , Attr.type_ "number"
+                                    , Attr.min "0"
+                                    , Attr.max "50000"
+                                    , placeholder "Your Offer"
+                                    , value (String.fromInt model.offerInfo.pcOffer)
+                                    , onInput PcOffer
+                                    ]
+                                    []
                                 , modifyOfferButton 10
                                 , modifyOfferButton 100
                                 ]
@@ -631,7 +647,7 @@ storyBlock model =
     , button [ onClick ReverseStory ] [ text "Reverse Story" ]
     , div []
         []
-    , textarea [ Attr.id "convoText", Attr.cols 80, Attr.rows 15 ]
+    , textarea [ Attr.id "convoText", Attr.cols (model.windowWidth // 10), Attr.rows 15 ]
         ((if model.isConvoReverse then
             List.reverse
 
@@ -671,11 +687,11 @@ displayTime time =
 ---- PROGRAM ----
 
 
-main : Program () Model Msg
+main : Program Flags Model Msg
 main =
     Browser.element
         { view = view
-        , init = \_ -> init
+        , init = init
         , update = update
         , subscriptions = always Sub.none
         }

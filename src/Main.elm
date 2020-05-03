@@ -647,7 +647,7 @@ storyBlock model =
     , button [ onClick ReverseStory ] [ text "Reverse Story" ]
     , div []
         []
-    , textarea [ Attr.id "convoText", Attr.cols (model.windowWidth // 10), Attr.rows 15 ]
+    , textarea [ Attr.readonly True, Attr.cols (model.windowWidth // 10), Attr.rows 15 ]
         ((if model.isConvoReverse then
             List.reverse
 

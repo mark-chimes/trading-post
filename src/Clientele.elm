@@ -52,7 +52,7 @@ schmoozeCustomerMessage customer =
     if customer.schmoozeCount < customer.maxSchmoozes then
         "You tell "
             ++ customer.name
-            ++ " that they have lovely hair. They are impressed and are willing to pay 10% more for the item. This takes "
+            ++ " that they have lovely hair. They are impressed and are willing to pay 50% more for the item. This takes "
             ++ String.fromInt customer.minTakenOnSchmooze
             ++ " minutes"
 
@@ -79,7 +79,7 @@ kickOutCurrentCustomer clientele =
 schmoozeCustomer : Customer -> Customer
 schmoozeCustomer customer =
     if customer.schmoozeCount < customer.maxSchmoozes then
-        { customer | maxPrice = customer.maxPrice + (customer.maxPrice // 10), schmoozeCount = customer.schmoozeCount + 1 }
+        { customer | maxPrice = customer.maxPrice + (customer.maxPrice // 2), schmoozeCount = customer.schmoozeCount + 1 }
 
     else
         { customer | schmoozeCount = customer.schmoozeCount + 1 }

@@ -521,26 +521,22 @@ currentSituationBlock model =
                 Nothing ->
                     div [] [ text "There is no-one in store." ]
 
-                Just _ ->
+                Just customer ->
                     div []
                         [ div [ Attr.style "margin-bottom" halfThick ]
-                            [ h3 []
-                                [ text "Sale" ]
-                            , div
-                                []
-                                [ text ("Selling item: " ++ model.offerInfo.itemName ++ " (cost " ++ String.fromInt model.offerInfo.itemWorth ++ "gp)") ]
-                            , div [] [ text ("Your sales price: " ++ String.fromInt model.offerInfo.pcOffer ++ "gp") ]
-                            , br [] []
-                            , div []
-                                [ modifyOfferButton -100
+                            [ div []
+                                [ basicButton [ onClick ResetPrice ] [ text "Reset" ]
+                                , modifyOfferButton -100
                                 , modifyOfferButton -10
                                 , input [ Attr.style "margin" "2px", Attr.type_ "number", Attr.min "0", Attr.max "50000", placeholder "Your Offer", value (String.fromInt model.offerInfo.pcOffer), onInput PcOffer ] []
                                 , modifyOfferButton 10
                                 , modifyOfferButton 100
                                 ]
                             , br [] []
-                            , basicButton [ onClick ResetPrice ] [ text "Reset Price" ]
-                            , basicButton [ onClick SubmitOffer ] [ text "Offer sale" ]
+                            , div [] []
+                            , basicButton [ onClick SubmitOffer ]
+                                [ text <| currentSituationString customer model.offerInfo
+                                ]
                             ]
                         ]
     ]
@@ -548,7 +544,7 @@ currentSituationBlock model =
 
 currentSituationString : Clientele.Customer -> OfferInfo -> String
 currentSituationString customer offerInfo =
-    "You are selling a "
+    "Sell "
         ++ offerInfo.itemName
         ++ " (cost "
         ++ String.fromInt offerInfo.itemWorth

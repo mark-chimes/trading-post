@@ -471,6 +471,7 @@ view : Model -> Html Msg
 view model =
     div []
         [ h1 [] [ text "Trading Post" ]
+        , text "https://mark-chimes.github.io/trading-post/"
 
         --       , h2 [] [ text "Debug" ]
         --      , text

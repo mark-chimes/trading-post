@@ -21,6 +21,7 @@ type alias Model =
     , customers : Clientele.ClienteleDetails
     , isConvoReverse : Bool
     , conversation : List (List String)
+    , prepState : PrepState
     }
 
 
@@ -52,6 +53,7 @@ init =
         , customers = Clientele.initCustomers
         , isConvoReverse = True
         , conversation = []
+        , prepState = Sale
         }
     , Cmd.none
     )
@@ -63,16 +65,27 @@ init =
 
 type Msg
     = NoOp
+    | PrepSubmitOffer
     | PcOffer String
     | ModifyPcOffer Int
     | SubmitOffer
     | ClearStory
+    | PrepKickOutCustomer
     | KickOutCustomer
+    | PrepCleanStore
     | CleanStore
     | ReverseStory
+    | PrepSchmoozeCustomer
     | SchmoozeCustomer
     | CustomerEntry Clientele.Customer
     | ResetPrice
+
+
+type PrepState
+    = Clean
+    | Kick
+    | Schmooze
+    | Sale
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -80,6 +93,9 @@ update msg model =
     case msg of
         NoOp ->
             ( model, Cmd.none )
+
+        PrepSubmitOffer ->
+            ( prepSubmitOffer model, Cmd.none )
 
         PcOffer newOffer ->
             ( updateOffer newOffer model, Cmd.none )
@@ -93,14 +109,23 @@ update msg model =
         ClearStory ->
             ( { model | conversation = [] }, Cmd.none )
 
+        PrepKickOutCustomer ->
+            ( prepFuckOffCustomer model, Cmd.none )
+
         KickOutCustomer ->
             ( fuckOffCustomer model, Cmd.none )
+
+        PrepCleanStore ->
+            ( prepCleanStore model, Cmd.none )
 
         CleanStore ->
             ( cleanStore model, Cmd.none )
 
         ReverseStory ->
             ( { model | isConvoReverse = not model.isConvoReverse }, Cmd.none )
+
+        PrepSchmoozeCustomer ->
+            ( prepSchmoozeCustomer model, Cmd.none )
 
         SchmoozeCustomer ->
             ( schmoozeCustomer model, Cmd.none )
@@ -142,6 +167,26 @@ resetPrice offerInfo =
     { offerInfo
         | pcOffer = offerInfo.itemWorth
     }
+
+
+prepSubmitOffer : Model -> Model
+prepSubmitOffer model =
+    { model | prepState = Sale }
+
+
+prepFuckOffCustomer : Model -> Model
+prepFuckOffCustomer model =
+    { model | prepState = Kick }
+
+
+prepSchmoozeCustomer : Model -> Model
+prepSchmoozeCustomer model =
+    { model | prepState = Schmooze }
+
+
+prepCleanStore : Model -> Model
+prepCleanStore model =
+    { model | prepState = Clean }
 
 
 
@@ -426,11 +471,11 @@ view model =
         , topBlock <| storeInfo model
         , blockOfBlocks
             [ halfBlock <| stockBlock model
-            , halfBlock <| actionsBlock
-            , halfBlock <| saleBlock model
             , halfBlock <| customersBlock model
+            , halfBlock <| saleBlock model
+            , halfBlock <| actionsBlock
+            , halfBlock <| currentSituationBlock model
             ]
-        , oneBlock <| currentSituationBlock model
         , oneBlock <| storyBlock model
         ]
 
@@ -445,16 +490,43 @@ storeInfo model =
 
 currentSituationBlock : Model -> List (Html Msg)
 currentSituationBlock model =
-    [ h3 [] [ text "Current Sale" ]
-    , case model.customers.currentCustomer of
-        Nothing ->
-            div [] [ text "There is no-one in store." ]
-
-        Just customer ->
+    [ h3 [] [ text "Current Action" ]
+    , case model.prepState of
+        Clean ->
             div []
-                [ div [ Attr.style "margin-bottom" halfThick ] [ text <| currentSituationString customer model.offerInfo ]
-                , basicButton [ onClick SubmitOffer ] [ text "Offer sale" ]
+                [ basicButton [ onClick CleanStore ] [ text "Clean Store" ]
                 ]
+
+        Kick ->
+            case model.customers.currentCustomer of
+                Nothing ->
+                    div [] [ text "There is no-one in store." ]
+
+                Just customer ->
+                    div []
+                        [ basicButton [ onClick KickOutCustomer ] [ text <| "Fuck off " ++ customer.name ]
+                        ]
+
+        Schmooze ->
+            case model.customers.currentCustomer of
+                Nothing ->
+                    div [] [ text "There is no-one in store." ]
+
+                Just customer ->
+                    div []
+                        [ basicButton [ onClick SchmoozeCustomer ] [ text <| "Schmooze " ++ customer.name ]
+                        ]
+
+        Sale ->
+            case model.customers.currentCustomer of
+                Nothing ->
+                    div [] [ text "There is no-one in store." ]
+
+                Just customer ->
+                    div []
+                        [ div [ Attr.style "margin-bottom" halfThick ] [ text <| currentSituationString customer model.offerInfo ]
+                        , basicButton [ onClick SubmitOffer ] [ text "Offer sale" ]
+                        ]
     ]
 
 
@@ -487,7 +559,6 @@ saleBlock model =
         ]
     , br [] []
     , basicButton [ onClick ResetPrice ] [ text "Reset Price" ]
-    , basicButton [ onClick SubmitOffer ] [ text "Offer sale" ]
     ]
 
 
@@ -547,9 +618,10 @@ actionsBlock : List (Html Msg)
 actionsBlock =
     [ h3 [] [ text "Actions" ]
     , div []
-        [ button [ onClick SchmoozeCustomer ] [ text "Schmooze Customer" ]
-        , button [ onClick KickOutCustomer ] [ text "Fuck Off" ]
-        , button [ onClick CleanStore ] [ text "Clean Store" ]
+        [ basicButton [ onClick PrepSchmoozeCustomer ] [ text "Schmooze" ]
+        , basicButton [ onClick PrepKickOutCustomer ] [ text "Fuck Off" ]
+        , basicButton [ onClick PrepCleanStore ] [ text "Clean" ]
+        , basicButton [ onClick PrepSubmitOffer ] [ text "Sale" ]
         ]
     ]
 

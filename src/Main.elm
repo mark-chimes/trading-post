@@ -542,11 +542,11 @@ currentSituationBlock model =
                                 , modifyOfferButton -100
                                 , modifyOfferButton -10
                                 , input
-                                    [ Attr.style "margin" "2px"
+                                    [ Attr.attribute "aria-label" "Price in gold"
+                                    , Attr.style "margin" "2px"
                                     , Attr.type_ "number"
                                     , Attr.min "0"
                                     , Attr.max "50000"
-                                    , placeholder "Your Offer"
                                     , value (String.fromInt model.offerInfo.pcOffer)
                                     , onInput PcOffer
                                     ]
@@ -653,7 +653,7 @@ storyBlock model =
     , button [ onClick ReverseStory ] [ text "Reverse Story" ]
     , div []
         []
-    , textarea [ Attr.readonly True, Attr.cols (model.windowWidth // 10), Attr.rows 15 ]
+    , textarea [ Attr.attribute "aria-live" "assertive", Attr.readonly True, Attr.cols (model.windowWidth // 10), Attr.rows 15 ]
         ((if model.isConvoReverse then
             List.reverse
 

@@ -211,7 +211,7 @@ submitOffer model =
                 failOnSale customer model.offerInfo model
 
         Nothing ->
-            updateConversationWithActionMessage "There is no customer in store to whom to submit that offer." model
+            updateConversationWithActionMessage "Please address a customer before submitting an offer." model
 
 
 updateConversationWithActionMessage : String -> Model -> Model
@@ -494,6 +494,11 @@ storeInfo model =
     ]
 
 
+nooneMessage : String
+nooneMessage =
+    "Select a customer to address."
+
+
 currentSituationBlock : Model -> List (Html Msg)
 currentSituationBlock model =
     [ h3 [] [ text "Current Action" ]
@@ -506,7 +511,7 @@ currentSituationBlock model =
         Kick ->
             case model.customers.currentCustomer of
                 Nothing ->
-                    div [] [ text "There is no-one in store." ]
+                    div [] [ text nooneMessage ]
 
                 Just customer ->
                     div []
@@ -516,7 +521,7 @@ currentSituationBlock model =
         Schmooze ->
             case model.customers.currentCustomer of
                 Nothing ->
-                    div [] [ text "There is no-one in store." ]
+                    div [] [ text nooneMessage ]
 
                 Just customer ->
                     div []
@@ -526,7 +531,7 @@ currentSituationBlock model =
         Sale ->
             case model.customers.currentCustomer of
                 Nothing ->
-                    div [] [ text "There is no-one in store." ]
+                    div [] [ text nooneMessage ]
 
                 Just customer ->
                     div []

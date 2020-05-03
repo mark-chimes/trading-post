@@ -471,9 +471,8 @@ view model =
         , topBlock <| storeInfo model
         , blockOfBlocks
             [ halfBlock <| stockBlock model
-            , halfBlock <| customersBlock model
-            , halfBlock <| saleBlock model
             , halfBlock <| actionsBlock
+            , halfBlock <| customersBlock model
             , halfBlock <| currentSituationBlock model
             ]
         , oneBlock <| storyBlock model
@@ -522,10 +521,27 @@ currentSituationBlock model =
                 Nothing ->
                     div [] [ text "There is no-one in store." ]
 
-                Just customer ->
+                Just _ ->
                     div []
-                        [ div [ Attr.style "margin-bottom" halfThick ] [ text <| currentSituationString customer model.offerInfo ]
-                        , basicButton [ onClick SubmitOffer ] [ text "Offer sale" ]
+                        [ div [ Attr.style "margin-bottom" halfThick ]
+                            [ h3 []
+                                [ text "Sale" ]
+                            , div
+                                []
+                                [ text ("Selling item: " ++ model.offerInfo.itemName ++ " (cost " ++ String.fromInt model.offerInfo.itemWorth ++ "gp)") ]
+                            , div [] [ text ("Your sales price: " ++ String.fromInt model.offerInfo.pcOffer ++ "gp") ]
+                            , br [] []
+                            , div []
+                                [ modifyOfferButton -100
+                                , modifyOfferButton -10
+                                , input [ Attr.style "margin" "2px", Attr.type_ "number", Attr.min "0", Attr.max "50000", placeholder "Your Offer", value (String.fromInt model.offerInfo.pcOffer), onInput PcOffer ] []
+                                , modifyOfferButton 10
+                                , modifyOfferButton 100
+                                ]
+                            , br [] []
+                            , basicButton [ onClick ResetPrice ] [ text "Reset Price" ]
+                            , basicButton [ onClick SubmitOffer ] [ text "Offer sale" ]
+                            ]
                         ]
     ]
 
@@ -545,21 +561,7 @@ currentSituationString customer offerInfo =
 
 saleBlock : Model -> List (Html Msg)
 saleBlock model =
-    [ h3 [] [ text "Sale" ]
-    , div [] [ text ("Selling item: " ++ model.offerInfo.itemName ++ " (cost " ++ String.fromInt model.offerInfo.itemWorth ++ "gp)") ]
-    , br [] []
-    , div [] [ text ("Your sales price: " ++ String.fromInt model.offerInfo.pcOffer ++ "gp") ]
-    , br [] []
-    , div []
-        [ modifyOfferButton -100
-        , modifyOfferButton -10
-        , input [ Attr.style "margin" "2px", Attr.type_ "number", Attr.min "0", Attr.max "50000", placeholder "Your Offer", value (String.fromInt model.offerInfo.pcOffer), onInput PcOffer ] []
-        , modifyOfferButton 10
-        , modifyOfferButton 100
-        ]
-    , br [] []
-    , basicButton [ onClick ResetPrice ] [ text "Reset Price" ]
-    ]
+    []
 
 
 basicButton : List (Html.Attribute msg) -> List (Html msg) -> Html msg

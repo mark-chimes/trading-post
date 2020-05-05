@@ -28,6 +28,7 @@ type alias Model =
     , conversation : List (List String)
     , prepState : PrepState
     , windowWidth : Int
+    , waitTime : Int
     }
 
 
@@ -61,6 +62,7 @@ init flags =
         , conversation = []
         , prepState = Sale
         , windowWidth = flags.windowWidth
+        , waitTime = 0
         }
     , Cmd.none
     )
@@ -74,7 +76,6 @@ type Msg
     = NoOp
     | PrepSubmitOffer
     | PcOffer String
-    | ModifyPcOffer Int
     | SubmitOffer
     | ClearStory
     | PrepKickOutCustomer
@@ -86,12 +87,16 @@ type Msg
     | SchmoozeCustomer
     | CustomerEntry Clientele.Customer
     | ResetPrice
+    | UpdateWaitTime String
+    | PrepWaitAwhile
+    | WaitAwhile
 
 
 type PrepState
     = Clean
     | Kick
     | Schmooze
+    | Wait
     | Sale
 
 
@@ -101,14 +106,14 @@ update msg model =
         NoOp ->
             ( model, Cmd.none )
 
+        PrepWaitAwhile ->
+            ( prepWaitAwhile model, Cmd.none )
+
         PrepSubmitOffer ->
             ( prepSubmitOffer model, Cmd.none )
 
         PcOffer newOffer ->
             ( updateOffer newOffer model, Cmd.none )
-
-        ModifyPcOffer increaseAmount ->
-            ( modifyOffer model increaseAmount, Cmd.none )
 
         SubmitOffer ->
             ( submitOffer <| model, Cmd.none )
@@ -143,10 +148,21 @@ update msg model =
         ResetPrice ->
             ( updatePriceReset model, Cmd.none )
 
+        UpdateWaitTime waitTimeStr ->
+            ( updateWaitTime waitTimeStr model, Cmd.none )
+
+        WaitAwhile ->
+            ( waitAwhile model, Cmd.none )
+
 
 updateOffer : String -> Model -> Model
 updateOffer newOfferString model =
     { model | offerInfo = calculateUpdatedOffer newOfferString model.offerInfo }
+
+
+updateWaitTime : String -> Model -> Model
+updateWaitTime newWaitString model =
+    { model | waitTime = max 0 (Maybe.withDefault model.waitTime (String.toInt newWaitString)) }
 
 
 calculateUpdatedOffer : String -> OfferInfo -> OfferInfo
@@ -179,6 +195,11 @@ resetPrice offerInfo =
 prepSubmitOffer : Model -> Model
 prepSubmitOffer model =
     { model | prepState = Sale }
+
+
+prepWaitAwhile : Model -> Model
+prepWaitAwhile model =
+    { model | prepState = Wait }
 
 
 prepFuckOffCustomer : Model -> Model
@@ -224,7 +245,7 @@ succeedOnSale customer model =
     kickOutCurrentCustomer <|
         updateConversationWithActionMessage (offerAndPurchaseString customer model.offerInfo) <|
             updateGold <|
-                updateTimeSuccess customer model
+                updateTimeSuccess model
 
 
 offerAndPurchaseString : Clientele.Customer -> OfferInfo -> String
@@ -234,7 +255,7 @@ offerAndPurchaseString customer offerInfo =
 
 failOnSale : Clientele.Customer -> OfferInfo -> Model -> Model
 failOnSale customer offer model =
-    updateConversationWithActionMessage (rejectString customer offer) <| updateTimeFailure customer <| model
+    updateConversationWithActionMessage (rejectString customer offer) <| updateTimeFailure <| model
 
 
 fuckOffCustomer : Model -> Model
@@ -247,11 +268,16 @@ cleanStore model =
     updateConversationWithActionMessage (cleanStoreMessage model.cleanTime) <| updateTimeCleanStore <| model
 
 
+waitAwhile : Model -> Model
+waitAwhile model =
+    updateConversationWithActionMessage (waitAwhileMessage model.waitTime) <| updateTimeWaitAwhile model.waitTime <| model
+
+
 schmoozeCustomer : Model -> Model
 schmoozeCustomer model =
     case model.customers.currentCustomer of
         Just customer ->
-            (\mdl -> { mdl | customers = Clientele.schmoozeCurrentCustomer mdl.customers }) <| updateConversationWithActionMessage (Clientele.schmoozeCustomerMessage customer) <| updateTimeSchmooze customer <| model
+            (\mdl -> { mdl | customers = Clientele.schmoozeCurrentCustomer mdl.customers }) <| updateConversationWithActionMessage (Clientele.schmoozeCustomerMessage customer) <| updateTimeSchmooze <| model
 
         Nothing ->
             updateConversationWithActionMessage "Who are you trying to schmooze?" model
@@ -278,24 +304,29 @@ updateTimeCleanStore model =
     { model | time = incrementTimeWithMin model.time model.cleanTime }
 
 
+updateTimeWaitAwhile : Int -> Model -> Model
+updateTimeWaitAwhile waitTimeMin model =
+    { model | time = incrementTimeWithMin model.time waitTimeMin }
+
+
 kickOutCurrentCustomer : Model -> Model
 kickOutCurrentCustomer model =
     { model | customers = Clientele.kickOutCurrentCustomer model.customers }
 
 
-updateTimeSchmooze : Clientele.Customer -> Model -> Model
-updateTimeSchmooze customer model =
-    { model | time = incrementTimeWithMin model.time customer.minTakenOnSchmooze }
+updateTimeSchmooze : Model -> Model
+updateTimeSchmooze model =
+    { model | time = incrementTimeWithMin model.time Clientele.constants.minTakenOnSchmooze }
 
 
-updateTimeSuccess : Clientele.Customer -> Model -> Model
-updateTimeSuccess customer model =
-    { model | time = incrementTimeWithMin model.time customer.minTakenOnSuccess }
+updateTimeSuccess : Model -> Model
+updateTimeSuccess model =
+    { model | time = incrementTimeWithMin model.time Clientele.constants.minTakenOnSuccess }
 
 
-updateTimeFailure : Clientele.Customer -> Model -> Model
-updateTimeFailure customer model =
-    { model | time = incrementTimeWithMin model.time customer.minTakenOnFail }
+updateTimeFailure : Model -> Model
+updateTimeFailure model =
+    { model | time = incrementTimeWithMin model.time Clientele.constants.minTakenOnFail }
 
 
 updateGold : Model -> Model
@@ -328,6 +359,11 @@ incrementTimeWithMin time mins =
     minToTime <| mins + (timeToMin <| time)
 
 
+waitAwhileMessage : Int -> String
+waitAwhileMessage waitingTimeMin =
+    "You sit on your ass for " ++ String.fromInt waitingTimeMin ++ " minutes."
+
+
 
 -- Strings --
 
@@ -358,7 +394,7 @@ purchaseString customer offerInfo =
         ++ String.fromInt offerInfo.itemWorth
         ++ "gp)"
         ++ ", and leaves happy, taking "
-        ++ String.fromInt customer.minTakenOnSuccess
+        ++ String.fromInt Clientele.constants.minTakenOnSuccess
         ++ " minutes."
 
 
@@ -371,7 +407,7 @@ rejectString customer offer =
         ++ "gp for the "
         ++ offer.itemName
         ++ ", taking "
-        ++ String.fromInt customer.minTakenOnFail
+        ++ String.fromInt Clientele.constants.minTakenOnFail
         ++ " minutes."
 
 
@@ -539,8 +575,8 @@ currentSituationBlock model =
                         [ div [ Attr.style "margin-bottom" halfThick ]
                             [ div []
                                 [ basicButton [ onClick ResetPrice ] [ text "Reset" ]
-                                , modifyOfferButton -100
-                                , modifyOfferButton -10
+                                , modifyOfferButton -100 model
+                                , modifyOfferButton -10 model
                                 , input
                                     [ Attr.attribute "aria-label" "Price in gold"
                                     , Attr.style "margin" "2px"
@@ -551,8 +587,8 @@ currentSituationBlock model =
                                     , onInput PcOffer
                                     ]
                                     []
-                                , modifyOfferButton 10
-                                , modifyOfferButton 100
+                                , modifyOfferButton 10 model
+                                , modifyOfferButton 100 model
                                 ]
                             , br [] []
                             , div [] []
@@ -561,6 +597,29 @@ currentSituationBlock model =
                                 ]
                             ]
                         ]
+
+        Wait ->
+            div []
+                [ basicButton [ onClick <| UpdateWaitTime <| String.fromInt 0 ] [ text "Reset" ]
+                , modifyWaitButton -60 model
+                , modifyWaitButton -10 model
+                , input
+                    [ Attr.attribute "aria-label" "Time to wait"
+                    , Attr.style "margin" "2px"
+                    , Attr.type_ "number"
+                    , Attr.min "0"
+                    , Attr.max "1440"
+                    , value (String.fromInt model.waitTime)
+                    , onInput UpdateWaitTime
+                    ]
+                    []
+                , modifyWaitButton 10 model
+                , modifyWaitButton 60 model
+                , div [] []
+                , basicButton
+                    [ onClick WaitAwhile ]
+                    [ text <| "Wait for " ++ String.fromInt model.waitTime ++ " minutes." ]
+                ]
     ]
 
 
@@ -577,27 +636,37 @@ currentSituationString customer offerInfo =
         ++ "gp."
 
 
-saleBlock : Model -> List (Html Msg)
-saleBlock model =
-    []
-
-
 basicButton : List (Html.Attribute msg) -> List (Html msg) -> Html msg
 basicButton attributes messages =
     button (Attr.style "margin" "2px" :: attributes) messages
 
 
-modifyOfferButton : Int -> Html Msg
-modifyOfferButton offer =
-    basicButton [ onClick (ModifyPcOffer offer) ]
+modifyOfferButton : Int -> Model -> Html Msg
+modifyOfferButton offerDiff model =
+    basicButton [ onClick <| PcOffer <| String.fromInt <| model.offerInfo.pcOffer + offerDiff ]
         [ text
-            ((if offer > 0 then
+            ((if offerDiff > 0 then
                 "+"
 
               else
                 ""
              )
-                ++ String.fromInt offer
+                ++ String.fromInt offerDiff
+            )
+        ]
+
+
+modifyWaitButton : Int -> Model -> Html Msg
+modifyWaitButton timeDiff model =
+    basicButton [ onClick <| UpdateWaitTime <| String.fromInt <| model.waitTime + timeDiff ]
+        [ text
+            ((if timeDiff > 0 then
+                "+"
+
+              else
+                ""
+             )
+                ++ String.fromInt timeDiff
             )
         ]
 
@@ -638,10 +707,11 @@ actionsBlock : List (Html Msg)
 actionsBlock =
     [ h3 [] [ text "Actions" ]
     , div []
-        [ basicButton [ onClick PrepSchmoozeCustomer ] [ text "Schmooze" ]
+        [ basicButton [ onClick PrepSubmitOffer ] [ text "Sale" ]
+        , basicButton [ onClick PrepSchmoozeCustomer ] [ text "Schmooze" ]
         , basicButton [ onClick PrepKickOutCustomer ] [ text "Kick Out" ]
         , basicButton [ onClick PrepCleanStore ] [ text "Clean" ]
-        , basicButton [ onClick PrepSubmitOffer ] [ text "Sale" ]
+        , basicButton [ onClick PrepWaitAwhile ] [ text "Wait" ]
         ]
     ]
 

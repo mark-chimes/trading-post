@@ -20,9 +20,6 @@ type alias ClienteleDetails =
 type alias Customer =
     { name : String
     , maxPrice : Int
-    , minTakenOnSuccess : Int
-    , minTakenOnFail : Int
-    , minTakenOnSchmooze : Int
     , schmoozeCount : Int
     , maxSchmoozes : Int
     }
@@ -43,6 +40,21 @@ initCustomers =
     }
 
 
+type alias TimingConstants =
+    { minTakenOnSuccess : Int
+    , minTakenOnFail : Int
+    , minTakenOnSchmooze : Int
+    }
+
+
+constants : TimingConstants
+constants =
+    { minTakenOnSuccess = 5
+    , minTakenOnFail = 10
+    , minTakenOnSchmooze = 20
+    }
+
+
 
 ---- UPDATE ----
 
@@ -53,7 +65,7 @@ schmoozeCustomerMessage customer =
         "You tell "
             ++ customer.name
             ++ " that they have lovely hair. They are impressed and are willing to pay 50% more for the item. This takes "
-            ++ String.fromInt customer.minTakenOnSchmooze
+            ++ String.fromInt constants.minTakenOnSchmooze
             ++ " minutes"
 
     else
@@ -62,7 +74,7 @@ schmoozeCustomerMessage customer =
             ++ " that they have lovely hair. They snap at you that you've said that "
             ++ String.fromInt customer.maxSchmoozes
             ++ " times already. They seem annoyed. This takes "
-            ++ String.fromInt customer.minTakenOnSchmooze
+            ++ String.fromInt constants.minTakenOnSchmooze
             ++ " minutes"
 
 
@@ -95,62 +107,51 @@ generateCustomer index =
     case index of
         0 ->
             { name = "Abby"
-            , maxPrice = 50
-            , minTakenOnSuccess = 5
-            , minTakenOnFail = 10
-            , minTakenOnSchmooze = 20
+            , maxPrice = 30
             , schmoozeCount = 0
             , maxSchmoozes = 3
             }
 
         1 ->
             { name = "Bob"
-            , maxPrice = 60
-            , minTakenOnSuccess = 5
-            , minTakenOnFail = 15
-            , minTakenOnSchmooze = 30
+            , maxPrice = 40
             , schmoozeCount = 0
-            , maxSchmoozes = 3
+            , maxSchmoozes = 2
             }
 
         2 ->
             { name = "Carol"
-            , maxPrice = 30
-            , minTakenOnSuccess = 5
-            , minTakenOnFail = 5
-            , minTakenOnSchmooze = 10
+            , maxPrice = 50
             , schmoozeCount = 0
             , maxSchmoozes = 3
             }
 
         3 ->
             { name = "Dennis"
-            , maxPrice = 80
-            , minTakenOnSuccess = 5
-            , minTakenOnFail = 20
-            , minTakenOnSchmooze = 40
+            , maxPrice = 30
             , schmoozeCount = 0
-            , maxSchmoozes = 3
+            , maxSchmoozes = 1
             }
 
         4 ->
             { name = "Erica"
             , maxPrice = 25
-            , minTakenOnSuccess = 5
-            , minTakenOnFail = 5
-            , minTakenOnSchmooze = 10
+            , schmoozeCount = 0
+            , maxSchmoozes = 5
+            }
+
+        5 ->
+            { name = "Frank"
+            , maxPrice = 40
             , schmoozeCount = 0
             , maxSchmoozes = 3
             }
 
         _ ->
-            { name = "Frank"
-            , maxPrice = 1200
-            , minTakenOnSuccess = 5
-            , minTakenOnFail = 60
-            , minTakenOnSchmooze = 120
+            { name = "Wrong"
+            , maxPrice = 10
             , schmoozeCount = 0
-            , maxSchmoozes = 3
+            , maxSchmoozes = 1
             }
 
 

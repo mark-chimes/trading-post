@@ -232,7 +232,7 @@ updateConversationWithActionMessage message model =
 
 succeedOnSale : Clientele.Customer -> Model -> Model
 succeedOnSale customer model =
-    kickOutCurrentCustomer <|
+    exitCurrentCustomer <|
         updateGold <|
             updateConversationWithActionMessage (offerAndPurchaseString customer model.offerInfo) <|
                 incrementTimeWithMin Clientele.constants.minTakenOnSuccess <|
@@ -246,7 +246,7 @@ failOnSale customer offer model =
 
 fuckOffCustomer : Model -> Model
 fuckOffCustomer model =
-    updateConversationWithActionMessage (Clientele.customerFuckOffMessage model.customers) <| kickOutCurrentCustomer <| updateTimeFuckOff <| model
+    updateConversationWithActionMessage (Clientele.customerFuckOffMessage model.customers) <| exitCurrentCustomer <| updateTimeFuckOff <| model
 
 
 cleanStore : Model -> Model
@@ -288,9 +288,9 @@ updateTimeFuckOff model =
             model
 
 
-kickOutCurrentCustomer : Model -> Model
-kickOutCurrentCustomer model =
-    { model | customers = Clientele.kickOutCurrentCustomer model.customers }
+exitCurrentCustomer : Model -> Model
+exitCurrentCustomer model =
+    { model | customers = Clientele.exitCurrentCustomer model.customers }
 
 
 updateGold : Model -> Model
@@ -320,7 +320,10 @@ timeToMin time =
 
 incrementTimeWithMin : Int -> Model -> Model
 incrementTimeWithMin mins model =
-    { model | time = minToTime <| mins + (timeToMin <| model.time) }
+    { model
+        | time = minToTime <| mins + (timeToMin <| model.time)
+        , customers = Clientele.newWaitingCustomer model.customers
+    }
 
 
 waitAwhileMessage : Int -> String

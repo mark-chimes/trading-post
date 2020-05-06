@@ -82,8 +82,8 @@ schmoozeCurrentCustomer clientele =
     { clientele | currentCustomer = Maybe.map schmoozeCustomer clientele.currentCustomer }
 
 
-kickOutCurrentCustomer : ClienteleDetails -> ClienteleDetails
-kickOutCurrentCustomer clientele =
+exitCurrentCustomer : ClienteleDetails -> ClienteleDetails
+exitCurrentCustomer clientele =
     { clientele | currentCustomer = Nothing }
 
 
@@ -195,23 +195,18 @@ switchCustomer waitingCustomers maybeCurrentCustomer calledCustomer =
            )
 
 
-addCustomer : ClienteleDetails -> Customer -> ClienteleDetails
-addCustomer clientele customer =
+newWaitingCustomer : ClienteleDetails -> ClienteleDetails
+newWaitingCustomer clientele =
     { clientele
-        | waitingCustomers = calculateWaitingCustomers clientele.waitingCustomers clientele.currentCustomer customer clientele.customerIndex
+        | waitingCustomers = calculateWaitingCustomers clientele.waitingCustomers <| getNewCustomerIndex clientele
+        , customerIndex = getNewCustomerIndex clientele
     }
 
 
-calculateWaitingCustomers : List Customer -> Maybe Customer -> Customer -> Int -> List Customer
-calculateWaitingCustomers waitingCustomers maybeCurrentCustomer calledCustomer newCustomerIndex =
-    List.filter (\x -> x /= calledCustomer) waitingCustomers
-        ++ (case maybeCurrentCustomer of
-                Just currentCustomer ->
-                    [ currentCustomer ]
-
-                Nothing ->
-                    [ generateCustomer newCustomerIndex ]
-           )
+calculateWaitingCustomers : List Customer -> Int -> List Customer
+calculateWaitingCustomers waitingCustomers newCustomerIndex =
+    waitingCustomers
+        ++ [ generateCustomer newCustomerIndex ]
 
 
 

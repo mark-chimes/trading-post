@@ -9,8 +9,8 @@ import Html exposing (Attribute, Html, button, text)
 
 type alias ClienteleDetails =
     { maxCustomers : Int
-    , customerIndex : Int
     , waitingCustomers : List Customer
+    , customerPool : CustomerPool
     , currentCustomer : Maybe Customer
     , kickTime : Int
     }
@@ -24,19 +24,89 @@ type alias Customer =
     }
 
 
-numWaitingCustomers : Int
-numWaitingCustomers =
-    2
+type alias CustomerPool =
+    List Customer
+
+
+generateNextCustomer : CustomerPool -> ( Customer, CustomerPool )
+generateNextCustomer customerPool =
+    case customerPool of
+        [] ->
+            ( defaultCustomer, [] )
+
+        x :: [] ->
+            ( x, [] )
+
+        x :: xs ->
+            ( x, xs )
+
+
+addCustomerToPool : CustomerPool -> Customer -> CustomerPool
+addCustomerToPool customerPool customer =
+    customerPool ++ [ customer ]
+
+
+defaultCustomer : Customer
+defaultCustomer =
+    { name = "Wrong"
+    , maxPrice = 10
+    , schmoozeCount = 0
+    , maxSchmoozes = 1
+    }
 
 
 initCustomers : ClienteleDetails
 initCustomers =
     { maxCustomers = 6
-    , customerIndex = numWaitingCustomers
-    , waitingCustomers = List.map (\n -> generateCustomer n) <| List.range 1 numWaitingCustomers
-    , currentCustomer = Just (generateCustomer 0)
+    , waitingCustomers = initWaitingCustomers
+    , currentCustomer = Just initFirstCustomer
+    , customerPool = initCustomerPool
     , kickTime = 2
     }
+
+
+initFirstCustomer : Customer
+initFirstCustomer =
+    { name = "Abby"
+    , maxPrice = 30
+    , schmoozeCount = 0
+    , maxSchmoozes = 3
+    }
+
+
+initWaitingCustomers : List Customer
+initWaitingCustomers =
+    [ { name = "Bob"
+      , maxPrice = 40
+      , schmoozeCount = 0
+      , maxSchmoozes = 2
+      }
+    , { name = "Carol"
+      , maxPrice = 50
+      , schmoozeCount = 0
+      , maxSchmoozes = 3
+      }
+    ]
+
+
+initCustomerPool : CustomerPool
+initCustomerPool =
+    [ { name = "Dennis"
+      , maxPrice = 30
+      , schmoozeCount = 0
+      , maxSchmoozes = 1
+      }
+    , { name = "Erica"
+      , maxPrice = 25
+      , schmoozeCount = 0
+      , maxSchmoozes = 5
+      }
+    , { name = "Frank"
+      , maxPrice = 40
+      , schmoozeCount = 0
+      , maxSchmoozes = 3
+      }
+    ]
 
 
 type alias TimingConstants =
@@ -84,7 +154,15 @@ schmoozeCurrentCustomer clientele =
 
 exitCurrentCustomer : ClienteleDetails -> ClienteleDetails
 exitCurrentCustomer clientele =
-    { clientele | currentCustomer = Nothing }
+    case clientele.currentCustomer of
+        Just exitingCustomer ->
+            { clientele
+                | currentCustomer = Nothing
+                , customerPool = addCustomerToPool clientele.customerPool exitingCustomer
+            }
+
+        Nothing ->
+            clientele
 
 
 schmoozeCustomer : Customer -> Customer
@@ -94,64 +172,6 @@ schmoozeCustomer customer =
 
     else
         { customer | schmoozeCount = customer.schmoozeCount + 1 }
-
-
-getNewCustomerIndex : ClienteleDetails -> Int
-getNewCustomerIndex clientele =
-    remainderBy clientele.maxCustomers (clientele.customerIndex + 1)
-
-
-generateCustomer : Int -> Customer
-generateCustomer index =
-    case index of
-        0 ->
-            { name = "Abby"
-            , maxPrice = 30
-            , schmoozeCount = 0
-            , maxSchmoozes = 3
-            }
-
-        1 ->
-            { name = "Bob"
-            , maxPrice = 40
-            , schmoozeCount = 0
-            , maxSchmoozes = 2
-            }
-
-        2 ->
-            { name = "Carol"
-            , maxPrice = 50
-            , schmoozeCount = 0
-            , maxSchmoozes = 3
-            }
-
-        3 ->
-            { name = "Dennis"
-            , maxPrice = 30
-            , schmoozeCount = 0
-            , maxSchmoozes = 1
-            }
-
-        4 ->
-            { name = "Erica"
-            , maxPrice = 25
-            , schmoozeCount = 0
-            , maxSchmoozes = 5
-            }
-
-        5 ->
-            { name = "Frank"
-            , maxPrice = 40
-            , schmoozeCount = 0
-            , maxSchmoozes = 3
-            }
-
-        _ ->
-            { name = "Wrong"
-            , maxPrice = 10
-            , schmoozeCount = 0
-            , maxSchmoozes = 1
-            }
 
 
 customerFuckOffMessage : ClienteleDetails -> String
@@ -197,16 +217,14 @@ switchCustomer waitingCustomers maybeCurrentCustomer calledCustomer =
 
 newWaitingCustomer : ClienteleDetails -> ClienteleDetails
 newWaitingCustomer clientele =
+    let
+        ( newCustomer, newCustomerPool ) =
+            generateNextCustomer clientele.customerPool
+    in
     { clientele
-        | waitingCustomers = calculateWaitingCustomers clientele.waitingCustomers <| getNewCustomerIndex clientele
-        , customerIndex = getNewCustomerIndex clientele
+        | waitingCustomers = clientele.waitingCustomers ++ [ newCustomer ]
+        , customerPool = newCustomerPool
     }
-
-
-calculateWaitingCustomers : List Customer -> Int -> List Customer
-calculateWaitingCustomers waitingCustomers newCustomerIndex =
-    waitingCustomers
-        ++ [ generateCustomer newCustomerIndex ]
 
 
 

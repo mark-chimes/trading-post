@@ -49,9 +49,7 @@ init : Flags -> ( Model, Cmd Msg )
 init flags =
     ( updateConversationWithActionMessage
         (Clientele.customerCallMessage
-            (Clientele.generateCustomer
-                0
-            )
+            Clientele.initFirstCustomer
         )
         { time = { hour = 8, minute = 0 }
         , offerInfo = { pcOffer = 20, itemName = "sword", itemWorth = 20 }

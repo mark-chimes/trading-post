@@ -29,6 +29,7 @@ type alias Model =
     , prepState : PrepState
     , windowWidth : Int
     , waitTime : Int
+    , timeOfNextCustomer : Time
     }
 
 
@@ -61,6 +62,7 @@ init flags =
         , prepState = Sale
         , windowWidth = flags.windowWidth
         , waitTime = 0
+        , timeOfNextCustomer = { hour = 9, minute = 0 }
         }
     , Cmd.none
     )
@@ -316,12 +318,64 @@ timeToMin time =
     time.hour * minutesInHour + time.minute
 
 
+
+-- True if left time is greater than or equal to right time
+
+
+geqTimes : Time -> Time -> Bool
+geqTimes time1 time2 =
+    timeToMin time1 <= timeToMin time2
+
+
 incrementTimeWithMin : Int -> Model -> Model
 incrementTimeWithMin mins model =
+    let
+        newtime =
+            minToTime <| mins + (timeToMin <| model.time)
+
+        ( lastTimeOfNextCustomer, newClienteleDetails ) =
+            addCustomers newtime model.timeOfNextCustomer model.customers
+    in
     { model
-        | time = minToTime <| mins + (timeToMin <| model.time)
-        , customers = Clientele.newWaitingCustomer model.customers
+        | time = newtime
+        , timeOfNextCustomer = lastTimeOfNextCustomer
+        , customers = newClienteleDetails
     }
+
+
+timeBetweenCustomersMins : Int
+timeBetweenCustomersMins =
+    60
+
+
+addCustomers : Time -> Time -> Clientele.ClienteleDetails -> ( Time, Clientele.ClienteleDetails )
+addCustomers newTime oldTimeOfNextCust customers =
+    let
+        ( newTimeOfNextCust, numRounds ) =
+            calculateTimeOfNextCustomer newTime oldTimeOfNextCust
+    in
+    ( newTimeOfNextCust, loopClienteleNewWaitingCustomer customers numRounds )
+
+
+loopClienteleNewWaitingCustomer : Clientele.ClienteleDetails -> Int -> Clientele.ClienteleDetails
+loopClienteleNewWaitingCustomer customers roundNum =
+    if roundNum > 0 then
+        loopClienteleNewWaitingCustomer (Clientele.newWaitingCustomer customers) (roundNum - 1)
+
+    else
+        customers
+
+
+calculateTimeOfNextCustomer : Time -> Time -> ( Time, Int )
+calculateTimeOfNextCustomer newTime oldTimeOfNextCust =
+    let
+        rounds =
+            (timeToMin newTime - timeToMin oldTimeOfNextCust) // timeBetweenCustomersMins
+
+        newTimeOfNextCust =
+            minToTime (timeToMin oldTimeOfNextCust + rounds * timeBetweenCustomersMins)
+    in
+    ( newTimeOfNextCust, rounds )
 
 
 waitAwhileMessage : Int -> String

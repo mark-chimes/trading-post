@@ -1,4 +1,4 @@
-module Main exposing (Model, Msg(..), hoursInDay, init, main, purchaseString, update, view)
+module Main exposing (Model, Msg(..), hoursInDay, incrementTimeWithMin, init, main, purchaseString, update, view)
 
 import Browser
 import Clientele
@@ -170,16 +170,6 @@ calculateUpdatedOffer newOfferString info =
     { info | pcOffer = max 0 (Maybe.withDefault info.pcOffer (String.toInt newOfferString)) }
 
 
-modifyOffer : Model -> Int -> Model
-modifyOffer model increaseAmount =
-    { model | offerInfo = calculateModifiedOffer increaseAmount model.offerInfo }
-
-
-calculateModifiedOffer : Int -> OfferInfo -> OfferInfo
-calculateModifiedOffer increaseAmount offerInfo =
-    { offerInfo | pcOffer = max 0 (offerInfo.pcOffer + increaseAmount) }
-
-
 updatePriceReset : Model -> Model
 updatePriceReset model =
     { model | offerInfo = resetPrice model.offerInfo }
@@ -245,7 +235,8 @@ succeedOnSale customer model =
     kickOutCurrentCustomer <|
         updateConversationWithActionMessage (offerAndPurchaseString customer model.offerInfo) <|
             updateGold <|
-                updateTimeSuccess model
+                incrementTimeWithMin Clientele.constants.minTakenOnSuccess <|
+                    model
 
 
 offerAndPurchaseString : Clientele.Customer -> OfferInfo -> String
@@ -255,7 +246,7 @@ offerAndPurchaseString customer offerInfo =
 
 failOnSale : Clientele.Customer -> OfferInfo -> Model -> Model
 failOnSale customer offer model =
-    updateConversationWithActionMessage (rejectString customer offer) <| updateTimeFailure <| model
+    updateConversationWithActionMessage (rejectString customer offer) <| incrementTimeWithMin Clientele.constants.minTakenOnFail <| model
 
 
 fuckOffCustomer : Model -> Model
@@ -265,19 +256,22 @@ fuckOffCustomer model =
 
 cleanStore : Model -> Model
 cleanStore model =
-    updateConversationWithActionMessage (cleanStoreMessage model.cleanTime) <| updateTimeCleanStore <| model
+    updateConversationWithActionMessage (cleanStoreMessage model.cleanTime) <| incrementTimeWithMin model.cleanTime <| model
 
 
 waitAwhile : Model -> Model
 waitAwhile model =
-    updateConversationWithActionMessage (waitAwhileMessage model.waitTime) <| updateTimeWaitAwhile model.waitTime <| model
+    updateConversationWithActionMessage (waitAwhileMessage model.waitTime) <| incrementTimeWithMin model.waitTime <| model
 
 
 schmoozeCustomer : Model -> Model
 schmoozeCustomer model =
     case model.customers.currentCustomer of
         Just customer ->
-            (\mdl -> { mdl | customers = Clientele.schmoozeCurrentCustomer mdl.customers }) <| updateConversationWithActionMessage (Clientele.schmoozeCustomerMessage customer) <| updateTimeSchmooze <| model
+            (\mdl -> { mdl | customers = Clientele.schmoozeCurrentCustomer mdl.customers }) <|
+                updateConversationWithActionMessage (Clientele.schmoozeCustomerMessage customer) <|
+                    incrementTimeWithMin Clientele.constants.minTakenOnSchmooze <|
+                        model
 
         Nothing ->
             updateConversationWithActionMessage "Who are you trying to schmooze?" model
@@ -293,40 +287,15 @@ updateTimeFuckOff : Model -> Model
 updateTimeFuckOff model =
     case model.customers.currentCustomer of
         Just _ ->
-            { model | time = incrementTimeWithMin model.time model.customers.kickTime }
+            incrementTimeWithMin model.customers.kickTime model
 
         Nothing ->
             model
 
 
-updateTimeCleanStore : Model -> Model
-updateTimeCleanStore model =
-    { model | time = incrementTimeWithMin model.time model.cleanTime }
-
-
-updateTimeWaitAwhile : Int -> Model -> Model
-updateTimeWaitAwhile waitTimeMin model =
-    { model | time = incrementTimeWithMin model.time waitTimeMin }
-
-
 kickOutCurrentCustomer : Model -> Model
 kickOutCurrentCustomer model =
     { model | customers = Clientele.kickOutCurrentCustomer model.customers }
-
-
-updateTimeSchmooze : Model -> Model
-updateTimeSchmooze model =
-    { model | time = incrementTimeWithMin model.time Clientele.constants.minTakenOnSchmooze }
-
-
-updateTimeSuccess : Model -> Model
-updateTimeSuccess model =
-    { model | time = incrementTimeWithMin model.time Clientele.constants.minTakenOnSuccess }
-
-
-updateTimeFailure : Model -> Model
-updateTimeFailure model =
-    { model | time = incrementTimeWithMin model.time Clientele.constants.minTakenOnFail }
 
 
 updateGold : Model -> Model
@@ -354,9 +323,9 @@ timeToMin time =
     time.hour * minutesInHour + time.minute
 
 
-incrementTimeWithMin : Time -> Int -> Time
-incrementTimeWithMin time mins =
-    minToTime <| mins + (timeToMin <| time)
+incrementTimeWithMin : Int -> Model -> Model
+incrementTimeWithMin mins model =
+    { model | time = minToTime <| mins + (timeToMin <| model.time) }
 
 
 waitAwhileMessage : Int -> String

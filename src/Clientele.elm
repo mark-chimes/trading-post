@@ -1,7 +1,6 @@
 module Clientele exposing (..)
 
 import Html exposing (Attribute, Html, button, text)
-import Html.Attributes
 
 
 

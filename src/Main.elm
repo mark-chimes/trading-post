@@ -233,15 +233,10 @@ updateConversationWithActionMessage message model =
 succeedOnSale : Clientele.Customer -> Model -> Model
 succeedOnSale customer model =
     kickOutCurrentCustomer <|
-        updateConversationWithActionMessage (offerAndPurchaseString customer model.offerInfo) <|
-            updateGold <|
+        updateGold <|
+            updateConversationWithActionMessage (offerAndPurchaseString customer model.offerInfo) <|
                 incrementTimeWithMin Clientele.constants.minTakenOnSuccess <|
                     model
-
-
-offerAndPurchaseString : Clientele.Customer -> OfferInfo -> String
-offerAndPurchaseString customer offerInfo =
-    offerString offerInfo ++ "\n" ++ purchaseString customer offerInfo
 
 
 failOnSale : Clientele.Customer -> OfferInfo -> Model -> Model
@@ -340,6 +335,11 @@ waitAwhileMessage waitingTimeMin =
 cleanStoreMessage : Int -> String
 cleanStoreMessage cleaningTimeMin =
     "You clean the store for " ++ String.fromInt cleaningTimeMin ++ " minutes."
+
+
+offerAndPurchaseString : Clientele.Customer -> OfferInfo -> String
+offerAndPurchaseString customer offerInfo =
+    offerString offerInfo ++ "\n" ++ purchaseString customer offerInfo
 
 
 offerString : OfferInfo -> String

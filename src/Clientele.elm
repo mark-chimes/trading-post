@@ -84,7 +84,7 @@ schmoozeCurrentCustomer clientele =
 
 kickOutCurrentCustomer : ClienteleDetails -> ClienteleDetails
 kickOutCurrentCustomer clientele =
-    { clientele | currentCustomer = Nothing, customerIndex = getNewCustomerIndex clientele }
+    { clientele | currentCustomer = Nothing }
 
 
 schmoozeCustomer : Customer -> Customer
@@ -179,7 +179,26 @@ callCustomer : ClienteleDetails -> Customer -> ClienteleDetails
 callCustomer clientele customer =
     { clientele
         | currentCustomer = Just customer
-        , waitingCustomers = calculateWaitingCustomers clientele.waitingCustomers clientele.currentCustomer customer clientele.customerIndex
+        , waitingCustomers = switchCustomer clientele.waitingCustomers clientele.currentCustomer customer
+    }
+
+
+switchCustomer : List Customer -> Maybe Customer -> Customer -> List Customer
+switchCustomer waitingCustomers maybeCurrentCustomer calledCustomer =
+    List.filter (\x -> x /= calledCustomer) waitingCustomers
+        ++ (case maybeCurrentCustomer of
+                Just currentCustomer ->
+                    [ currentCustomer ]
+
+                Nothing ->
+                    []
+           )
+
+
+addCustomer : ClienteleDetails -> Customer -> ClienteleDetails
+addCustomer clientele customer =
+    { clientele
+        | waitingCustomers = calculateWaitingCustomers clientele.waitingCustomers clientele.currentCustomer customer clientele.customerIndex
     }
 
 

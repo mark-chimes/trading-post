@@ -1,4 +1,4 @@
-module Main exposing (Model, Msg(..), hoursInDay, incrementTimeWithMin, init, main, purchaseString, update, view)
+module Main exposing (Model, Msg(..), calculateTimeOfNextCustomer, hoursInDay, incrementTimeWithMin, init, main, purchaseString, update, view)
 
 import Browser
 import Clientele
@@ -349,7 +349,11 @@ calculateTimeOfNextCustomer : Time -> Time -> ( Time, Int )
 calculateTimeOfNextCustomer newTime oldTimeOfNextCust =
     let
         rounds =
-            ((newTime - oldTimeOfNextCust) // timeBetweenCustomersMins) + 1
+            if newTime >= oldTimeOfNextCust then
+                ((newTime - oldTimeOfNextCust) // timeBetweenCustomersMins) + 1
+
+            else
+                0
 
         newTimeOfNextCust =
             oldTimeOfNextCust + rounds * timeBetweenCustomersMins
@@ -506,30 +510,18 @@ oneBlock theHtml =
         ]
 
 
+
+-- Main view
+
+
 view : Model -> Html Msg
 view model =
     div []
         [ h1 [] [ text "Trading Post" ]
         , text "https://mark-chimes.github.io/trading-post/"
-        , h2 []
-            [ text "Debug" ]
-        , text <|
-            "(timeToMin model.time - timeToMin model.timeOfNextCustomer) // timeBetweenCustomersMins:\n "
-                ++ String.fromInt
-                    ((model.time - model.timeOfNextCustomer)
-                        // timeBetweenCustomersMins
-                    )
-        , div []
-            []
-        , text <|
-            "rounds: "
-                ++ String.fromInt
-                    (((model.time - model.timeOfNextCustomer)
-                        // timeBetweenCustomersMins
-                     )
-                        + 1
-                    )
-        , div [] []
+
+        --        , h2 []
+        --            [ text "Debug" ]
         , text
             ("Time of next customer " ++ displayTime model.timeOfNextCustomer)
         , div [] []

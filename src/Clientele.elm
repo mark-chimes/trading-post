@@ -81,17 +81,17 @@ initWaitingCustomers =
       , schmoozeCount = 0
       , maxSchmoozes = 2
       }
-    , { name = "Carol"
-      , maxPrice = 50
-      , schmoozeCount = 0
-      , maxSchmoozes = 3
-      }
     ]
 
 
 initCustomerPool : CustomerPool
 initCustomerPool =
-    [ { name = "Dennis"
+    [ { name = "Carol"
+      , maxPrice = 50
+      , schmoozeCount = 0
+      , maxSchmoozes = 3
+      }
+    , { name = "Dennis"
       , maxPrice = 30
       , schmoozeCount = 0
       , maxSchmoozes = 1

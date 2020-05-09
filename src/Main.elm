@@ -88,12 +88,15 @@ type Msg
     | UpdateWaitTime String
     | PrepWaitAwhile
     | WaitAwhile
+    | PrepInspectCustomer
+    | InspectCustomer
 
 
 type PrepState
     = Clean
     | Kick
     | Schmooze
+    | Inspect
     | Wait
     | Sale
 
@@ -133,6 +136,12 @@ update msg model =
 
         ReverseStory ->
             ( { model | isConvoReverse = not model.isConvoReverse }, Cmd.none )
+
+        PrepInspectCustomer ->
+            ( prepInspectCustomer model, Cmd.none )
+
+        InspectCustomer ->
+            ( inspectCustomer model, Cmd.none )
 
         PrepSchmoozeCustomer ->
             ( prepSchmoozeCustomer model, Cmd.none )
@@ -198,6 +207,11 @@ prepFuckOffCustomer model =
 prepSchmoozeCustomer : Model -> Model
 prepSchmoozeCustomer model =
     { model | prepState = Schmooze }
+
+
+prepInspectCustomer : Model -> Model
+prepInspectCustomer model =
+    { model | prepState = Inspect }
 
 
 prepCleanStore : Model -> Model
@@ -268,6 +282,18 @@ schmoozeCustomer model =
 
         Nothing ->
             updateConversationWithActionMessage "Who are you trying to schmooze?" model
+
+
+inspectCustomer : Model -> Model
+inspectCustomer model =
+    case model.customers.currentCustomer of
+        Just customer ->
+            updateConversationWithActionMessage (Clientele.inspectCustomerMessage customer) <|
+                incrementTimeWithMin Clientele.constants.minTakenOnInspect <|
+                    model
+
+        Nothing ->
+            updateConversationWithActionMessage "Who are you trying to inspeect?" model
 
 
 callNextCustomer : Clientele.Customer -> Model -> Model
@@ -580,6 +606,16 @@ currentSituationBlock model =
                         [ basicButton [ onClick SchmoozeCustomer ] [ text <| "Schmooze " ++ customer.name ]
                         ]
 
+        Inspect ->
+            case model.customers.currentCustomer of
+                Nothing ->
+                    div [] [ text nooneMessage ]
+
+                Just customer ->
+                    div []
+                        [ basicButton [ onClick InspectCustomer ] [ text <| "Inspect " ++ customer.name ]
+                        ]
+
         Sale ->
             case model.customers.currentCustomer of
                 Nothing ->
@@ -724,6 +760,7 @@ actionsBlock =
     , div []
         [ basicButton [ onClick PrepSubmitOffer ] [ text "Sale" ]
         , basicButton [ onClick PrepSchmoozeCustomer ] [ text "Schmooze" ]
+        , basicButton [ onClick PrepInspectCustomer ] [ text "Inspect" ]
         , basicButton [ onClick PrepKickOutCustomer ] [ text "Kick Out" ]
         , basicButton [ onClick PrepCleanStore ] [ text "Clean" ]
         , basicButton [ onClick PrepWaitAwhile ] [ text "Wait" ]

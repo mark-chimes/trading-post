@@ -129,6 +129,7 @@ type alias TimingConstants =
     { minTakenOnSuccess : Int
     , minTakenOnFail : Int
     , minTakenOnSchmooze : Int
+    , minTakenOnInspect : Int
     }
 
 
@@ -137,6 +138,7 @@ constants =
     { minTakenOnSuccess = 5
     , minTakenOnFail = 10
     , minTakenOnSchmooze = 20
+    , minTakenOnInspect = 10
     }
 
 
@@ -151,7 +153,7 @@ schmoozeCustomerMessage customer =
             ++ customer.name
             ++ " that they have lovely hair. They are impressed and are willing to pay 50% more for the item. This takes "
             ++ String.fromInt constants.minTakenOnSchmooze
-            ++ " minutes"
+            ++ " minutes."
 
     else
         "You tell "
@@ -160,7 +162,17 @@ schmoozeCustomerMessage customer =
             ++ String.fromInt customer.maxSchmoozes
             ++ " times already. They seem annoyed. This takes "
             ++ String.fromInt constants.minTakenOnSchmooze
-            ++ " minutes"
+            ++ " minutes."
+
+
+inspectCustomerMessage : Customer -> String
+inspectCustomerMessage customer =
+    "You inspect "
+        ++ customer.name
+        ++ " for "
+        ++ String.fromInt constants.minTakenOnInspect
+        ++ " minutes. "
+        ++ customer.descriptionMessage
 
 
 schmoozeCurrentCustomer : ClienteleDetails -> ClienteleDetails

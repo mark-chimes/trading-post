@@ -41,9 +41,7 @@ type alias OfferInfo =
 
 
 type alias Time =
-    { hour : Int
-    , minute : Int
-    }
+    Int
 
 
 init : Flags -> ( Model, Cmd Msg )
@@ -52,7 +50,7 @@ init flags =
         (Clientele.customerCallMessage
             Clientele.initFirstCustomer
         )
-        { time = { hour = 8, minute = 0 }
+        { time = 480
         , offerInfo = { pcOffer = 20, itemName = "sword", itemWorth = 20 }
         , pcGold = 0
         , cleanTime = 10
@@ -62,7 +60,7 @@ init flags =
         , prepState = Sale
         , windowWidth = flags.windowWidth
         , waitTime = 0
-        , timeOfNextCustomer = { hour = 9, minute = 0 }
+        , timeOfNextCustomer = 540
         }
     , Cmd.none
     )
@@ -308,30 +306,11 @@ hoursInDay =
     24
 
 
-minToTime : Int -> Time
-minToTime mins =
-    { hour = remainderBy hoursInDay (mins // minutesInHour), minute = remainderBy minutesInHour mins }
-
-
-timeToMin : Time -> Int
-timeToMin time =
-    time.hour * minutesInHour + time.minute
-
-
-
--- True if left time is greater than or equal to right time
-
-
-geqTimes : Time -> Time -> Bool
-geqTimes time1 time2 =
-    timeToMin time1 <= timeToMin time2
-
-
 incrementTimeWithMin : Int -> Model -> Model
 incrementTimeWithMin mins model =
     let
         newtime =
-            minToTime <| mins + (timeToMin <| model.time)
+            mins + model.time
 
         ( lastTimeOfNextCustomer, newClienteleDetails ) =
             addCustomers newtime model.timeOfNextCustomer model.customers
@@ -370,10 +349,10 @@ calculateTimeOfNextCustomer : Time -> Time -> ( Time, Int )
 calculateTimeOfNextCustomer newTime oldTimeOfNextCust =
     let
         rounds =
-            (timeToMin newTime - timeToMin oldTimeOfNextCust) // timeBetweenCustomersMins
+            ((newTime - oldTimeOfNextCust) // timeBetweenCustomersMins) + 1
 
         newTimeOfNextCust =
-            minToTime (timeToMin oldTimeOfNextCust + rounds * timeBetweenCustomersMins)
+            oldTimeOfNextCust + rounds * timeBetweenCustomersMins
     in
     ( newTimeOfNextCust, rounds )
 
@@ -532,10 +511,30 @@ view model =
     div []
         [ h1 [] [ text "Trading Post" ]
         , text "https://mark-chimes.github.io/trading-post/"
-
-        --       , h2 [] [ text "Debug" ]
-        --      , text
-        --         ("Customer Max Price: " ++ String.fromInt model.customers.customer.maxPrice)
+        , h2 []
+            [ text "Debug" ]
+        , text <|
+            "(timeToMin model.time - timeToMin model.timeOfNextCustomer) // timeBetweenCustomersMins:\n "
+                ++ String.fromInt
+                    ((model.time - model.timeOfNextCustomer)
+                        // timeBetweenCustomersMins
+                    )
+        , div []
+            []
+        , text <|
+            "rounds: "
+                ++ String.fromInt
+                    (((model.time - model.timeOfNextCustomer)
+                        // timeBetweenCustomersMins
+                     )
+                        + 1
+                    )
+        , div [] []
+        , text
+            ("Time of next customer " ++ displayTime model.timeOfNextCustomer)
+        , div [] []
+        , text
+            ("Time: " ++ displayTime model.time)
         , topBlock <| storeInfo model
         , blockOfBlocks
             [ halfBlock <| stockBlock model
@@ -764,23 +763,39 @@ flattenStringListList sll =
     List.map (\sl -> String.join "\n" sl) sll
 
 
+timeToHoursMinutes : Time -> ( Int, Int )
+timeToHoursMinutes time =
+    let
+        hour =
+            remainderBy hoursInDay (time // minutesInHour)
+
+        minute =
+            remainderBy minutesInHour time
+    in
+    ( hour, minute )
+
+
 displayTime : Time -> String
 displayTime time =
-    (if time.hour < 10 then
+    let
+        ( hour, minute ) =
+            timeToHoursMinutes time
+    in
+    (if hour < 10 then
         "0"
 
      else
         ""
     )
-        ++ String.fromInt time.hour
+        ++ String.fromInt hour
         ++ ":"
-        ++ (if time.minute < 10 then
+        ++ (if minute < 10 then
                 "0"
 
             else
                 ""
            )
-        ++ String.fromInt time.minute
+        ++ String.fromInt minute
 
 
 

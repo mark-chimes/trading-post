@@ -21,6 +21,8 @@ type alias Customer =
     , maxPrice : Int
     , schmoozeCount : Int
     , maxSchmoozes : Int
+    , introMessage : String
+    , descriptionMessage : String
     }
 
 
@@ -46,15 +48,6 @@ addCustomerToPool customerPool customer =
     customerPool ++ [ customer ]
 
 
-defaultCustomer : Customer
-defaultCustomer =
-    { name = "Wrong"
-    , maxPrice = 10
-    , schmoozeCount = 0
-    , maxSchmoozes = 1
-    }
-
-
 initCustomers : ClienteleDetails
 initCustomers =
     { maxCustomers = 6
@@ -65,21 +58,36 @@ initCustomers =
     }
 
 
+defaultCustomer : Customer
+defaultCustomer =
+    { name = "Wrong"
+    , maxPrice = 10
+    , schmoozeCount = 0
+    , maxSchmoozes = 1
+    , introMessage = "You sense a bizarre otherworldly presence."
+    , descriptionMessage = "They seem wrong, somehow. Like something that shouldn't exist."
+    }
+
+
 initFirstCustomer : Customer
 initFirstCustomer =
     { name = "Abby"
     , maxPrice = 30
     , schmoozeCount = 0
     , maxSchmoozes = 3
+    , introMessage = "She greets you with a smile."
+    , descriptionMessage = "Such a sweet young woman."
     }
 
 
 initWaitingCustomers : List Customer
 initWaitingCustomers =
     [ { name = "Bob"
-      , maxPrice = 40
+      , maxPrice = 25
       , schmoozeCount = 0
       , maxSchmoozes = 2
+      , introMessage = "He eyes your store shiftily."
+      , descriptionMessage = "Sleazy looking guy."
       }
     ]
 
@@ -87,24 +95,32 @@ initWaitingCustomers =
 initCustomerPool : CustomerPool
 initCustomerPool =
     [ { name = "Carol"
-      , maxPrice = 50
+      , maxPrice = 40
       , schmoozeCount = 0
       , maxSchmoozes = 3
+      , introMessage = "She browses your product line."
+      , descriptionMessage = "She has wonderful hair!"
       }
     , { name = "Dennis"
-      , maxPrice = 30
+      , maxPrice = 20
       , schmoozeCount = 0
       , maxSchmoozes = 1
+      , introMessage = "He keeps his hands in his pockets."
+      , descriptionMessage = "Just a teenage dirtbag, baby."
       }
     , { name = "Erica"
-      , maxPrice = 25
+      , maxPrice = 50
       , schmoozeCount = 0
       , maxSchmoozes = 5
+      , introMessage = "She strides up to your counter confidently in full plate."
+      , descriptionMessage = "An iron maiden."
       }
     , { name = "Frank"
       , maxPrice = 40
       , schmoozeCount = 0
       , maxSchmoozes = 3
+      , introMessage = "He seems like he couldn't care less."
+      , descriptionMessage = "Frankly, my dear, I don't give a damn."
       }
     ]
 
@@ -192,7 +208,8 @@ customerCallMessage : Customer -> String
 customerCallMessage customer =
     "You begin speaking to a customer named "
         ++ customer.name
-        ++ "."
+        ++ ". "
+        ++ customer.introMessage
 
 
 callCustomer : ClienteleDetails -> Customer -> ClienteleDetails

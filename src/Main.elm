@@ -1,4 +1,4 @@
-module Main exposing (Model, Msg(..), calculateTimeOfNextCustomer, hoursInDay, incrementTimeWithMin, init, main, purchaseString, update, view)
+module Main exposing (Model, Msg(..), calculateTimeOfNextCustomer, dayOfYear, hourOfDay, hoursInDay, incrementTimeWithMinOpen, init, main, purchaseString, update, view)
 
 import Browser
 import Clientele
@@ -51,7 +51,7 @@ init flags =
         (Clientele.customerCallMessage
             Clientele.initFirstCustomer
         )
-        { time = openHour * 60
+        { time = openHour * minutesInHour
         , offerInfo = { pcOffer = 20, itemName = "sword", itemWorth = 20 }
         , pcGold = 0
         , cleanTime = 10
@@ -251,16 +251,24 @@ updateConversationWithActionMessage message model =
 
 succeedOnSale : Clientele.Customer -> Model -> Model
 succeedOnSale customer model =
-    exitCurrentCustomer <|
-        updateGold <|
-            updateConversationWithActionMessage (offerAndPurchaseString customer model.offerInfo) <|
-                incrementTimeWithMin Clientele.constants.minTakenOnSuccess <|
-                    model
+    if (model.storeState == Open) && wouldStoreClose Clientele.constants.minTakenOnSuccess model.time then
+        closeStore "The customer looked just about ready to buy the item! But unfortunately, what with the curfew and all, you have to tell them to come back tomorrow." model
+
+    else
+        exitCurrentCustomer <|
+            updateGold <|
+                updateConversationWithActionMessage (offerAndPurchaseString customer model.offerInfo) <|
+                    incrementTimeWithMinOpen Clientele.constants.minTakenOnSuccess <|
+                        model
 
 
 failOnSale : Clientele.Customer -> OfferInfo -> Model -> Model
 failOnSale customer offer model =
-    updateConversationWithActionMessage (rejectString customer offer) <| incrementTimeWithMin Clientele.constants.minTakenOnFail <| model
+    if wouldStoreClose Clientele.constants.minTakenOnFail model.time then
+        closeStore "Unfortunately, before the client can reject your offer, the store closes, and you are forced to shoo them out." model
+
+    else
+        updateConversationWithActionMessage (rejectString customer offer) <| incrementTimeWithMinOpen Clientele.constants.minTakenOnFail <| model
 
 
 fuckOffCustomer : Model -> Model
@@ -270,37 +278,53 @@ fuckOffCustomer model =
 
 cleanStore : Model -> Model
 cleanStore model =
-    updateConversationWithActionMessage (cleanStoreMessage model.cleanTime) <| incrementTimeWithMin model.cleanTime <| model
+    if (model.storeState == Open) && wouldStoreClose model.cleanTime model.time then
+        closeStore "The store closes whilst you are busy cleanings." model
+
+    else
+        updateConversationWithActionMessage (cleanStoreMessage model.cleanTime) <| incrementTimeWithMinOpen model.cleanTime <| model
 
 
 waitAwhile : Model -> Model
 waitAwhile model =
-    updateConversationWithActionMessage (waitAwhileMessage model.waitTime) <| incrementTimeWithMin model.waitTime <| model
+    if (model.storeState == Open) && wouldStoreClose model.waitTime model.time then
+        closeStore "Whilst you are busy sitting on your ass, you lose track of the time, and next thing you know, the store is closed and the customers have left." model
+
+    else
+        updateConversationWithActionMessage (waitAwhileMessage model.waitTime) <| incrementTimeWithMinOpen model.waitTime <| model
 
 
 schmoozeCustomer : Model -> Model
 schmoozeCustomer model =
-    case model.customers.currentCustomer of
-        Just customer ->
-            (\mdl -> { mdl | customers = Clientele.schmoozeCurrentCustomer mdl.customers }) <|
-                updateConversationWithActionMessage (Clientele.schmoozeCustomerMessage customer) <|
-                    incrementTimeWithMin Clientele.constants.minTakenOnSchmooze <|
-                        model
+    if (model.storeState == Open) && wouldStoreClose Clientele.constants.minTakenOnSchmooze model.time then
+        closeStore "Whilst you are busy schmoozing the customer, the store closes, and you are forced to schmoo them out." model
 
-        Nothing ->
-            updateConversationWithActionMessage "Who are you trying to schmooze?" model
+    else
+        case model.customers.currentCustomer of
+            Just customer ->
+                (\mdl -> { mdl | customers = Clientele.schmoozeCurrentCustomer mdl.customers }) <|
+                    updateConversationWithActionMessage (Clientele.schmoozeCustomerMessage customer) <|
+                        incrementTimeWithMinOpen Clientele.constants.minTakenOnSchmooze <|
+                            model
+
+            Nothing ->
+                updateConversationWithActionMessage "Who are you trying to schmooze?" model
 
 
 inspectCustomer : Model -> Model
 inspectCustomer model =
-    case model.customers.currentCustomer of
-        Just customer ->
-            updateConversationWithActionMessage (Clientele.inspectCustomerMessage customer) <|
-                incrementTimeWithMin Clientele.constants.minTakenOnInspect <|
-                    model
+    if (model.storeState == Open) && wouldStoreClose Clientele.constants.minTakenOnInspect model.time then
+        closeStore "Whilst you are busy staring at the customer, the store closes, and they leave before you can get a better look." model
 
-        Nothing ->
-            updateConversationWithActionMessage "Who are you trying to inspeect?" model
+    else
+        case model.customers.currentCustomer of
+            Just customer ->
+                updateConversationWithActionMessage (Clientele.inspectCustomerMessage customer) <|
+                    incrementTimeWithMinOpen Clientele.constants.minTakenOnInspect <|
+                        model
+
+            Nothing ->
+                updateConversationWithActionMessage "Who are you trying to inspeect?" model
 
 
 callNextCustomer : Clientele.Customer -> Model -> Model
@@ -311,12 +335,16 @@ callNextCustomer customer model =
 
 updateTimeFuckOff : Model -> Model
 updateTimeFuckOff model =
-    case model.customers.currentCustomer of
-        Just _ ->
-            incrementTimeWithMin model.customers.kickTime model
+    if (model.storeState == Open) && wouldStoreClose model.customers.kickTime model.time then
+        closeStore "Whilst you tell them to fuck off, the store closes anyway" model
 
-        Nothing ->
-            model
+    else
+        case model.customers.currentCustomer of
+            Just _ ->
+                incrementTimeWithMinOpen model.customers.kickTime model
+
+            Nothing ->
+                model
 
 
 exitCurrentCustomer : Model -> Model
@@ -339,20 +367,85 @@ hoursInDay =
     24
 
 
-incrementTimeWithMin : Int -> Model -> Model
-incrementTimeWithMin mins model =
-    let
-        newtime =
-            mins + model.time
+closeMinute : Int
+closeMinute =
+    closeHour * 60
 
+
+minutesInDay : Int
+minutesInDay =
+    minutesInHour * hoursInDay
+
+
+minuteOfDay : Time -> Int
+minuteOfDay time =
+    modBy minutesInDay time
+
+
+calculateClosingTime : Time -> Time
+calculateClosingTime time =
+    dayOfYear time * minutesInDay + closeMinute
+
+
+closeStore : String -> Model -> Model
+closeStore closeMessage model =
+    -- TODO
+    (\mdl ->
+        { mdl | storeState = Closed }
+    )
+    <|
+        updateConversationWithActionMessage closeMessage <|
+            incrementTimeToTimeOpen (calculateClosingTime model.time) model
+
+
+
+-- TODO Should do this with minute of day rather than hour
+
+
+wouldStoreClose : Int -> Time -> Bool
+wouldStoreClose mins oldTime =
+    let
+        newTime =
+            oldTime + mins
+    in
+    -- past closing time
+    minuteOfDay newTime
+        >= closeMinute
+        -- new day
+        || minuteOfDay newTime
+        < minuteOfDay oldTime
+        -- long wait
+        || newTime
+        - oldTime
+        > minutesInDay
+
+
+incrementTimeWithMinOpen : Int -> Model -> Model
+incrementTimeWithMinOpen mins model =
+    incrementTimeToTimeOpen (mins + model.time) model
+
+
+incrementTimeToTimeOpen : Time -> Model -> Model
+incrementTimeToTimeOpen newTime model =
+    let
         ( lastTimeOfNextCustomer, newClienteleDetails ) =
-            addCustomers newtime model.timeOfNextCustomer model.customers
+            addCustomers newTime model.timeOfNextCustomer model.customers
     in
     { model
-        | time = newtime
+        | time = newTime
         , timeOfNextCustomer = lastTimeOfNextCustomer
         , customers = newClienteleDetails
     }
+
+
+hourOfDay : Time -> Int
+hourOfDay minutesSinceZero =
+    modBy hoursInDay (minutesSinceZero // minutesInHour)
+
+
+dayOfYear : Time -> Int
+dayOfYear minutesSinceZero =
+    minutesSinceZero // (minutesInHour * hoursInDay)
 
 
 timeBetweenCustomersMins : Int
@@ -574,6 +667,9 @@ view model =
         , div [] []
         , text
             ("Time: " ++ displayTime model.time)
+        , div [] []
+        , text
+            ("Day: " ++ (String.fromInt <| dayOfYear model.time))
         , topBlock <| storeInfo model
         , uiBasedOnStoreState model.storeState model
         , oneBlock <| storyBlock model

@@ -534,17 +534,60 @@ statsModelMessage model =
 
 statsTrackMessage : StatsTracker -> String
 statsTrackMessage stats =
-    "Stats for the day: You managed to make a turnover of "
-        ++ String.fromInt stats.turnover
-        ++ "gp, and a profit of "
-        ++ String.fromInt stats.profit
-        ++ "gp. You sold items to "
-        ++ String.fromInt stats.customersSold
-        ++ " customers. You told "
-        ++ String.fromInt stats.customersKicked
-        ++ " customers to fuck right off, and your negligence resulted in "
-        ++ String.fromInt stats.customersLeft
-        ++ " customers leaving of their own accord."
+    let
+        turnover =
+            stats.turnover
+
+        profit =
+            stats.profit
+
+        sold =
+            stats.customersSold
+
+        kicked =
+            stats.customersKicked
+
+        left =
+            stats.customersLeft
+    in
+    "Stats for the day: "
+        ++ (if sold > 0 then
+                "You sold items to "
+                    ++ String.fromInt sold
+                    ++ " customer(s). This netted you a total turnover of "
+                    ++ String.fromInt turnover
+                    ++ "gp, "
+                    ++ (if profit > 0 then
+                            "and a profit of "
+                                ++ String.fromInt profit
+                                ++ "gp. "
+
+                        else if profit == 0 then
+                            "but you didn't make any profit! You should sell items for more than you bought them. "
+
+                        else
+                            "but you made a loss of " ++ String.fromInt profit ++ "gp! You should sell items for more than you bought them. "
+                       )
+
+            else
+                "You didn't sell items to anyone, which is a bit worrying considering that you're a store. "
+           )
+        ++ (if kicked > 0 then
+                "You told "
+                    ++ String.fromInt stats.customersKicked
+                    ++ " customer(s) to fuck right off. "
+
+            else
+                ""
+           )
+        ++ (if left > 0 then
+                "Your negligence resulted in "
+                    ++ String.fromInt stats.customersLeft
+                    ++ " customer(s) leaving of their own accord."
+
+            else
+                "You managed to attend to every customer that entered your store, one way or another."
+           )
 
 
 

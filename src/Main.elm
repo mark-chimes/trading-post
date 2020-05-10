@@ -31,6 +31,16 @@ type alias Model =
     , waitTime : Int
     , timeOfNextCustomer : Time
     , storeState : StoreState
+    , statsTracker : StatsTracker
+    }
+
+
+type alias StatsTracker =
+    { profit : Int
+    , turnover : Int
+    , customersSold : Int
+    , customersKicked : Int
+    , customersLeft : Int
     }
 
 
@@ -63,9 +73,20 @@ init flags =
         , waitTime = 0
         , timeOfNextCustomer = (openHour * 60) + timeBetweenCustomersMins
         , storeState = Open
+        , statsTracker = initStatsTracker
         }
     , Cmd.none
     )
+
+
+initStatsTracker : StatsTracker
+initStatsTracker =
+    { profit = 0
+    , turnover = 0
+    , customersSold = 0
+    , customersKicked = 0
+    , customersLeft = 0
+    }
 
 
 
@@ -269,11 +290,36 @@ succeedOnSale customer model =
         closeStore "The customer looked just about ready to buy the item! But unfortunately, what with the curfew and all, you have to tell them to come back tomorrow." model
 
     else
-        exitCurrentCustomer <|
-            updateGold <|
-                updateConversationWithActionMessage (offerAndPurchaseString customer model.offerInfo) <|
-                    incrementTimeWithMinOpen Clientele.constants.minTakenOnSuccess <|
-                        model
+        updateModelStatsTrackerWithSale <|
+            exitCurrentCustomer <|
+                updateModelStatsTrackerWithGold model.offerInfo.pcOffer model.offerInfo.itemWorth <|
+                    updateGold <|
+                        updateConversationWithActionMessage (offerAndPurchaseString customer model.offerInfo) <|
+                            incrementTimeWithMinOpen Clientele.constants.minTakenOnSuccess <|
+                                model
+
+
+updateModelStatsTrackerWithGold : Int -> Int -> Model -> Model
+updateModelStatsTrackerWithGold sale cost model =
+    { model | statsTracker = updateStatsTrackerWithProfitTurnover sale cost model.statsTracker }
+
+
+updateStatsTrackerWithProfitTurnover : Int -> Int -> StatsTracker -> StatsTracker
+updateStatsTrackerWithProfitTurnover sale cost statsTracker =
+    { statsTracker
+        | turnover = statsTracker.turnover + sale
+        , profit = statsTracker.profit + (sale - cost)
+    }
+
+
+updateModelStatsTrackerWithSale : Model -> Model
+updateModelStatsTrackerWithSale model =
+    { model | statsTracker = updateStatsTrackerWithSale model.statsTracker }
+
+
+updateStatsTrackerWithSale : StatsTracker -> StatsTracker
+updateStatsTrackerWithSale statsTracker =
+    { statsTracker | customersSold = statsTracker.customersSold + 1 }
 
 
 failOnSale : Clientele.Customer -> OfferInfo -> Model -> Model
@@ -287,7 +333,17 @@ failOnSale customer offer model =
 
 fuckOffCustomer : Model -> Model
 fuckOffCustomer model =
-    updateConversationWithActionMessage (Clientele.customerFuckOffMessage model.customers) <| exitCurrentCustomer <| updateTimeFuckOff <| model
+    updateModelStatsTrackerWithFuckoff <| updateConversationWithActionMessage (Clientele.customerFuckOffMessage model.customers) <| exitCurrentCustomer <| updateTimeFuckOff <| model
+
+
+updateModelStatsTrackerWithFuckoff : Model -> Model
+updateModelStatsTrackerWithFuckoff model =
+    { model | statsTracker = updateStatsTrackerWithKickout model.statsTracker }
+
+
+updateStatsTrackerWithKickout : StatsTracker -> StatsTracker
+updateStatsTrackerWithKickout statsTracker =
+    { statsTracker | customersKicked = statsTracker.customersKicked + 1 }
 
 
 cleanStore : Model -> Model
@@ -429,20 +485,66 @@ incTimeAndOpenStore model =
         , timeOfNextCustomer = ((dayOfYear model.time + 1) * minutesInDay) + (openHour * 60) + timeBetweenCustomersMins
         , prepState = Sale
         , customers = Clientele.callCustomerFromPool model.customers
+        , statsTracker = initStatsTracker
     }
 
 
 closeStore : String -> Model -> Model
 closeStore closeMessage model =
-    (\mdl ->
-        { mdl
-            | storeState = Closed
-            , customers = Clientele.exitAllCustomers model.customers
-        }
-    )
-    <|
-        updateConversationWithActionMessage closeMessage <|
-            incrementTimeToTimeWhilstOpen (calculateClosingTime model.time) model
+    (\mdl -> updateConversationWithActionMessage (statsModelMessage mdl) mdl) <|
+        (\mdl ->
+            { mdl
+                | storeState = Closed
+                , customers = Clientele.exitAllCustomers model.customers
+            }
+        )
+        <|
+            recordNeglectedCustomers <|
+                updateConversationWithActionMessage closeMessage <|
+                    incrementTimeToTimeWhilstOpen (calculateClosingTime model.time) model
+
+
+recordNeglectedCustomers : Model -> Model
+recordNeglectedCustomers model =
+    { model
+        | statsTracker =
+            neglectedCustomers
+                (List.length model.customers.waitingCustomers
+                    + (case model.customers.currentCustomer of
+                        Just _ ->
+                            1
+
+                        Nothing ->
+                            0
+                      )
+                )
+                model.statsTracker
+    }
+
+
+neglectedCustomers : Int -> StatsTracker -> StatsTracker
+neglectedCustomers numCust statsTracker =
+    { statsTracker | customersLeft = statsTracker.customersLeft + numCust }
+
+
+statsModelMessage : Model -> String
+statsModelMessage model =
+    statsTrackMessage model.statsTracker
+
+
+statsTrackMessage : StatsTracker -> String
+statsTrackMessage stats =
+    "Stats for the day: You managed to make a turnover of "
+        ++ String.fromInt stats.turnover
+        ++ "gp, and a profit of "
+        ++ String.fromInt stats.profit
+        ++ "gp. You sold items to "
+        ++ String.fromInt stats.customersSold
+        ++ " customers. You told "
+        ++ String.fromInt stats.customersKicked
+        ++ " customers to fuck right off, and your negligence resulted in "
+        ++ String.fromInt stats.customersLeft
+        ++ " customers leaving of their own accord."
 
 
 

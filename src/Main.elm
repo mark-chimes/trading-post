@@ -350,7 +350,7 @@ incrementTimeWithMin mins model =
 
 timeBetweenCustomersMins : Int
 timeBetweenCustomersMins =
-    60
+    30
 
 
 addCustomers : Time -> Time -> Clientele.ClienteleDetails -> ( Time, Clientele.ClienteleDetails )

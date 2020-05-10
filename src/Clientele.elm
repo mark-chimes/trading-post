@@ -116,6 +116,18 @@ exitCurrentCustomer clientele =
             clientele
 
 
+exitAllCustomers : ClienteleDetails -> ClienteleDetails
+exitAllCustomers clientele =
+    (\clt ->
+        { clt
+            | waitingCustomers = []
+            , customerPool = clt.customerPool ++ clt.waitingCustomers
+        }
+    )
+    <|
+        exitCurrentCustomer clientele
+
+
 schmoozeCustomer : Customer -> Customer
 schmoozeCustomer customer =
     if customer.schmoozeCount < constants.maxSchmoozes then
@@ -145,6 +157,18 @@ customerCallMessage customer =
         ++ customer.name
         ++ ". "
         ++ customer.introMessage
+
+
+callCustomerFromPool : ClienteleDetails -> ClienteleDetails
+callCustomerFromPool clientele =
+    let
+        ( newCustomer, newCustomerPool ) =
+            generateNextCustomer clientele.customerPool
+    in
+    { clientele
+        | currentCustomer = Just newCustomer
+        , customerPool = newCustomerPool
+    }
 
 
 callCustomer : ClienteleDetails -> Customer -> ClienteleDetails

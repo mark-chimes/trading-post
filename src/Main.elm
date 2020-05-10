@@ -92,6 +92,8 @@ type Msg
     | WaitAwhile
     | PrepInspectCustomer
     | InspectCustomer
+    | PrepOpenStore
+    | OpenStore
 
 
 type StoreState
@@ -106,6 +108,7 @@ type PrepState
     | Inspect
     | Wait
     | Sale
+    | PrepOpen
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -168,6 +171,12 @@ update msg model =
         WaitAwhile ->
             ( waitAwhile model, Cmd.none )
 
+        PrepOpenStore ->
+            ( prepOpenStore model, Cmd.none )
+
+        OpenStore ->
+            ( openStore model, Cmd.none )
+
 
 updateOffer : String -> Model -> Model
 updateOffer newOfferString model =
@@ -204,6 +213,11 @@ prepSubmitOffer model =
 prepWaitAwhile : Model -> Model
 prepWaitAwhile model =
     { model | prepState = Wait }
+
+
+prepOpenStore : Model -> Model
+prepOpenStore model =
+    { model | prepState = PrepOpen }
 
 
 prepFuckOffCustomer : Model -> Model
@@ -387,15 +401,48 @@ calculateClosingTime time =
     dayOfYear time * minutesInDay + closeMinute
 
 
+openStore : Model -> Model
+openStore model =
+    updateConversationWithActionMessage
+        (Clientele.customerCallMessage
+            Clientele.initFirstCustomer
+        )
+    <|
+        (\mdl ->
+            updateConversationWithActionMessage
+                ("You open your doors on day "
+                    ++ String.fromInt (dayOfYear mdl.time)
+                    ++ " of many!"
+                )
+                mdl
+        )
+        <|
+            incTimeAndOpenStore <|
+                model
+
+
+incTimeAndOpenStore : Model -> Model
+incTimeAndOpenStore model =
+    { model
+        | storeState = Open
+        , time = ((dayOfYear model.time + 1) * minutesInDay) + (openHour * minutesInHour)
+        , timeOfNextCustomer = ((dayOfYear model.time + 1) * minutesInDay) + (openHour * 60) + timeBetweenCustomersMins
+        , prepState = Sale
+        , customers = Clientele.callCustomerFromPool model.customers
+    }
+
+
 closeStore : String -> Model -> Model
 closeStore closeMessage model =
-    -- TODO
     (\mdl ->
-        { mdl | storeState = Closed }
+        { mdl
+            | storeState = Closed
+            , customers = Clientele.exitAllCustomers model.customers
+        }
     )
     <|
         updateConversationWithActionMessage closeMessage <|
-            incrementTimeToTimeOpen (calculateClosingTime model.time) model
+            incrementTimeToTimeWhilstOpen (calculateClosingTime model.time) model
 
 
 
@@ -422,11 +469,11 @@ wouldStoreClose mins oldTime =
 
 incrementTimeWithMinOpen : Int -> Model -> Model
 incrementTimeWithMinOpen mins model =
-    incrementTimeToTimeOpen (mins + model.time) model
+    incrementTimeToTimeWhilstOpen (mins + model.time) model
 
 
-incrementTimeToTimeOpen : Time -> Model -> Model
-incrementTimeToTimeOpen newTime model =
+incrementTimeToTimeWhilstOpen : Time -> Model -> Model
+incrementTimeToTimeWhilstOpen newTime model =
     let
         ( lastTimeOfNextCustomer, newClienteleDetails ) =
             addCustomers newTime model.timeOfNextCustomer model.customers
@@ -659,11 +706,12 @@ view model =
     div []
         [ h1 [] [ text "Trading Post" ]
         , text "https://mark-chimes.github.io/trading-post/"
-
-        --        , h2 []
-        --            [ text "Debug" ]
+        , h2 []
+            [ text "Debug" ]
         , text
             ("Time of next customer " ++ displayTime model.timeOfNextCustomer)
+        , div [] []
+        , text ("minutesSinceZero: " ++ String.fromInt model.time)
         , div [] []
         , text
             ("Time: " ++ displayTime model.time)
@@ -808,6 +856,11 @@ currentSituationBlockOpen model =
                     [ onClick WaitAwhile ]
                     [ text <| "Wait for " ++ String.fromInt model.waitTime ++ " minutes." ]
                 ]
+
+        PrepOpen ->
+            div []
+                [ text "The store must be closed for you to be able to open it."
+                ]
     ]
 
 
@@ -816,9 +869,7 @@ currentSituationBlockClosed model =
     [ h3 [] [ text "Current Action" ]
     , case model.prepState of
         Clean ->
-            div []
-                [ basicButton [ onClick CleanStore ] [ text "Clean Store" ]
-                ]
+            div [] [ text storeClosedMessage ]
 
         Kick ->
             div [] [ text storeClosedMessage ]
@@ -833,26 +884,11 @@ currentSituationBlockClosed model =
             div [] [ text storeClosedMessage ]
 
         Wait ->
+            div [] [ text storeClosedMessage ]
+
+        PrepOpen ->
             div []
-                [ basicButton [ onClick <| UpdateWaitTime <| String.fromInt 0 ] [ text "Reset" ]
-                , modifyWaitButton -60 model
-                , modifyWaitButton -10 model
-                , input
-                    [ Attr.attribute "aria-label" "Time to wait"
-                    , Attr.style "margin" "2px"
-                    , Attr.type_ "number"
-                    , Attr.min "0"
-                    , Attr.max "1440"
-                    , value (String.fromInt model.waitTime)
-                    , onInput UpdateWaitTime
-                    ]
-                    []
-                , modifyWaitButton 10 model
-                , modifyWaitButton 60 model
-                , div [] []
-                , basicButton
-                    [ onClick WaitAwhile ]
-                    [ text <| "Wait for " ++ String.fromInt model.waitTime ++ " minutes." ]
+                [ basicButton [ onClick OpenStore ] [ text <| "Skip until tomorrow and open store at " ++ String.fromInt openHour ++ " o Clock." ]
                 ]
     ]
 
@@ -963,8 +999,7 @@ actionsBlockClosed : List (Html Msg)
 actionsBlockClosed =
     [ h3 [] [ text "Actions" ]
     , div []
-        [ basicButton [ onClick PrepCleanStore ] [ text "Clean" ]
-        , basicButton [ onClick PrepWaitAwhile ] [ text "Wait" ]
+        [ basicButton [ onClick PrepOpenStore ] [ text "Open Store" ]
         ]
     ]
 

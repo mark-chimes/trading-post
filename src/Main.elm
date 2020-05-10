@@ -30,6 +30,7 @@ type alias Model =
     , windowWidth : Int
     , waitTime : Int
     , timeOfNextCustomer : Time
+    , storeState : StoreState
     }
 
 
@@ -50,7 +51,7 @@ init flags =
         (Clientele.customerCallMessage
             Clientele.initFirstCustomer
         )
-        { time = 480
+        { time = openHour * 60
         , offerInfo = { pcOffer = 20, itemName = "sword", itemWorth = 20 }
         , pcGold = 0
         , cleanTime = 10
@@ -60,7 +61,8 @@ init flags =
         , prepState = Sale
         , windowWidth = flags.windowWidth
         , waitTime = 0
-        , timeOfNextCustomer = 540
+        , timeOfNextCustomer = (openHour * 60) + timeBetweenCustomersMins
+        , storeState = Open
         }
     , Cmd.none
     )
@@ -90,6 +92,11 @@ type Msg
     | WaitAwhile
     | PrepInspectCustomer
     | InspectCustomer
+
+
+type StoreState
+    = Open
+    | Closed
 
 
 type PrepState
@@ -445,6 +452,20 @@ rejectString customer offer =
 
 
 
+---- Opening and Closing ----
+
+
+openHour : Int
+openHour =
+    9
+
+
+closeHour : Int
+closeHour =
+    17
+
+
+
 ---- VIEW ----
 
 
@@ -554,14 +575,29 @@ view model =
         , text
             ("Time: " ++ displayTime model.time)
         , topBlock <| storeInfo model
-        , blockOfBlocks
-            [ halfBlock <| stockBlock model
-            , halfBlock <| actionsBlock
-            , halfBlock <| customersBlock model
-            , halfBlock <| currentSituationBlock model
-            ]
+        , uiBasedOnStoreState model.storeState model
         , oneBlock <| storyBlock model
         ]
+
+
+uiBasedOnStoreState : StoreState -> Model -> Html Msg
+uiBasedOnStoreState storeState model =
+    case storeState of
+        Open ->
+            blockOfBlocks
+                [ halfBlock <| stockBlock model
+                , halfBlock <| actionsBlockOpen
+                , halfBlock <| customersBlockOpen model
+                , halfBlock <| currentSituationBlockOpen model
+                ]
+
+        Closed ->
+            blockOfBlocks
+                [ halfBlock <| stockBlock model
+                , halfBlock <| actionsBlockClosed
+                , halfBlock <| customersBlockClosed
+                , halfBlock <| currentSituationBlockClosed model
+                ]
 
 
 storeInfo : Model -> List (Html Msg)
@@ -577,8 +613,13 @@ nooneMessage =
     "Select a customer to address."
 
 
-currentSituationBlock : Model -> List (Html Msg)
-currentSituationBlock model =
+storeClosedMessage : String
+storeClosedMessage =
+    "The store is now closed."
+
+
+currentSituationBlockOpen : Model -> List (Html Msg)
+currentSituationBlockOpen model =
     [ h3 [] [ text "Current Action" ]
     , case model.prepState of
         Clean ->
@@ -674,6 +715,52 @@ currentSituationBlock model =
     ]
 
 
+currentSituationBlockClosed : Model -> List (Html Msg)
+currentSituationBlockClosed model =
+    [ h3 [] [ text "Current Action" ]
+    , case model.prepState of
+        Clean ->
+            div []
+                [ basicButton [ onClick CleanStore ] [ text "Clean Store" ]
+                ]
+
+        Kick ->
+            div [] [ text storeClosedMessage ]
+
+        Schmooze ->
+            div [] [ text storeClosedMessage ]
+
+        Inspect ->
+            div [] [ text storeClosedMessage ]
+
+        Sale ->
+            div [] [ text storeClosedMessage ]
+
+        Wait ->
+            div []
+                [ basicButton [ onClick <| UpdateWaitTime <| String.fromInt 0 ] [ text "Reset" ]
+                , modifyWaitButton -60 model
+                , modifyWaitButton -10 model
+                , input
+                    [ Attr.attribute "aria-label" "Time to wait"
+                    , Attr.style "margin" "2px"
+                    , Attr.type_ "number"
+                    , Attr.min "0"
+                    , Attr.max "1440"
+                    , value (String.fromInt model.waitTime)
+                    , onInput UpdateWaitTime
+                    ]
+                    []
+                , modifyWaitButton 10 model
+                , modifyWaitButton 60 model
+                , div [] []
+                , basicButton
+                    [ onClick WaitAwhile ]
+                    [ text <| "Wait for " ++ String.fromInt model.waitTime ++ " minutes." ]
+                ]
+    ]
+
+
 currentSituationString : Clientele.Customer -> OfferInfo -> String
 currentSituationString customer offerInfo =
     "Sell "
@@ -729,8 +816,8 @@ stockBlock model =
     ]
 
 
-customersBlock : Model -> List (Html Msg)
-customersBlock model =
+customersBlockOpen : Model -> List (Html Msg)
+customersBlockOpen model =
     [ h3 [] [ text "Customers" ]
     , div []
         (Clientele.customerEntryButtons
@@ -754,8 +841,16 @@ customersBlock model =
     ]
 
 
-actionsBlock : List (Html Msg)
-actionsBlock =
+customersBlockClosed : List (Html Msg)
+customersBlockClosed =
+    [ h3 [] [ text "Customers" ]
+    , div []
+        [ text storeClosedMessage ]
+    ]
+
+
+actionsBlockOpen : List (Html Msg)
+actionsBlockOpen =
     [ h3 [] [ text "Actions" ]
     , div []
         [ basicButton [ onClick PrepSubmitOffer ] [ text "Sale" ]
@@ -763,6 +858,16 @@ actionsBlock =
         , basicButton [ onClick PrepInspectCustomer ] [ text "Inspect" ]
         , basicButton [ onClick PrepKickOutCustomer ] [ text "Kick Out" ]
         , basicButton [ onClick PrepCleanStore ] [ text "Clean" ]
+        , basicButton [ onClick PrepWaitAwhile ] [ text "Wait" ]
+        ]
+    ]
+
+
+actionsBlockClosed : List (Html Msg)
+actionsBlockClosed =
+    [ h3 [] [ text "Actions" ]
+    , div []
+        [ basicButton [ onClick PrepCleanStore ] [ text "Clean" ]
         , basicButton [ onClick PrepWaitAwhile ] [ text "Wait" ]
         ]
     ]

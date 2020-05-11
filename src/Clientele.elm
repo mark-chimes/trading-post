@@ -1,6 +1,7 @@
 module Clientele exposing (..)
 
 import Html exposing (Attribute, Html, button, text)
+import Stock exposing (..)
 
 
 
@@ -131,10 +132,10 @@ exitAllCustomers clientele =
 schmoozeCustomer : Customer -> Customer
 schmoozeCustomer customer =
     if customer.schmoozeCount < constants.maxSchmoozes then
-        { customer | maxPrice = customer.maxPrice + (customer.maxPrice // 2), schmoozeCount = customer.schmoozeCount + 1 }
+        { customer | schmoozeCount = customer.schmoozeCount + 1 }
 
     else
-        { customer | schmoozeCount = customer.schmoozeCount + 1 }
+        customer
 
 
 customerFuckOffMessage : ClienteleDetails -> String
@@ -237,7 +238,6 @@ type WealthLevel
 type alias Customer =
     { name : String
     , wealthLevel : WealthLevel
-    , maxPrice : Int
     , schmoozeCount : Int
     , introMessage : String
     , descriptionMessage : String
@@ -256,49 +256,57 @@ createCustomer : CustomerInit -> Customer
 createCustomer ci =
     { name = ci.name
     , wealthLevel = ci.wealthLevel
-    , maxPrice = maxPriceFromWealth ci.wealthLevel
     , schmoozeCount = 0
     , introMessage = ci.introMessage
     , descriptionMessage = ci.descriptionMessage
     }
 
 
+maxPrice : Item -> Customer -> Int
+maxPrice item customer =
+    (item.itemWorth * maxPriceFromWealth customer.wealthLevel * (100 + 50 * customer.schmoozeCount)) // (100 * 100)
+
+
 maxPriceFromWealth : WealthLevel -> Int
 maxPriceFromWealth wealthLevel =
     case wealthLevel of
         Destitute ->
-            15
+            80
 
         Poor ->
-            20
+            100
 
         Average ->
-            30
+            150
 
         WellOff ->
-            40
+            200
 
         Rich ->
-            60
+            300
 
 
 wealthMessagFromWealth : WealthLevel -> String
 wealthMessagFromWealth wealthLevel =
-    case wealthLevel of
+    (case wealthLevel of
         Destitute ->
-            "They seem pretty much destitute."
+            "They seem pretty much destitute; "
 
         Poor ->
-            "They seem quite poor."
+            "They seem quite poor; "
 
         Average ->
-            "They seem to be of average wealth."
+            "They seem to be of average wealth; "
 
         WellOff ->
-            "They seem to be quite well-off"
+            "They seem to be quite well-off; "
 
         Rich ->
-            "They appear to be rather wealthy."
+            "They appear to be rather wealthy; "
+    )
+        ++ "they'd probably pay about "
+        ++ String.fromInt (maxPriceFromWealth wealthLevel)
+        ++ "% of the item's value without being schmoozed."
 
 
 defaultCustomer : Customer

@@ -5,6 +5,7 @@ import Clientele
 import Html exposing (Html, br, button, div, h1, h2, h3, h4, hr, img, input, li, text, textarea, ul)
 import Html.Attributes as Attr exposing (placeholder, src, value)
 import Html.Events exposing (onClick, onInput)
+import Stock exposing (..)
 import String
 
 
@@ -46,8 +47,7 @@ type alias StatsTracker =
 
 type alias OfferInfo =
     { pcOffer : Int
-    , itemName : String
-    , itemWorth : Int
+    , item : Item
     }
 
 
@@ -62,7 +62,7 @@ init flags =
             Clientele.initFirstCustomer
         )
         { time = openHour * minutesInHour
-        , offerInfo = { pcOffer = 20, itemName = "sword", itemWorth = 20 }
+        , offerInfo = { pcOffer = 20, item = swordItem }
         , pcGold = 0
         , cleanTime = 10
         , customers = Clientele.initCustomers
@@ -89,10 +89,6 @@ initStatsTracker =
     }
 
 
-
----- UPDATE ----
-
-
 type Msg
     = NoOp
     | PrepSubmitOffer
@@ -115,6 +111,7 @@ type Msg
     | InspectCustomer
     | PrepOpenStore
     | OpenStore
+    | OfferItem Item
 
 
 type StoreState
@@ -130,6 +127,10 @@ type PrepState
     | Wait
     | Sale
     | PrepOpen
+
+
+
+---- UPDATE ----
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -198,6 +199,9 @@ update msg model =
         OpenStore ->
             ( openStore model, Cmd.none )
 
+        OfferItem item ->
+            ( offerItem item model, Cmd.none )
+
 
 updateOffer : String -> Model -> Model
 updateOffer newOfferString model =
@@ -222,7 +226,7 @@ updatePriceReset model =
 resetPrice : OfferInfo -> OfferInfo
 resetPrice offerInfo =
     { offerInfo
-        | pcOffer = offerInfo.itemWorth
+        | pcOffer = offerInfo.item.itemWorth
     }
 
 
@@ -261,6 +265,16 @@ prepCleanStore model =
     { model | prepState = Clean }
 
 
+offerItem : Item -> Model -> Model
+offerItem item model =
+    { model | offerInfo = itemToOffer item model.offerInfo }
+
+
+itemToOffer : Item -> OfferInfo -> OfferInfo
+itemToOffer item offer =
+    { offer | item = item }
+
+
 
 -- TODO modify the next function (including its types) to be more functional
 
@@ -269,7 +283,7 @@ submitOffer : Model -> Model
 submitOffer model =
     case model.customers.currentCustomer of
         Just customer ->
-            if model.offerInfo.pcOffer <= customer.maxPrice then
+            if model.offerInfo.pcOffer <= Clientele.maxPrice model.offerInfo.item customer then
                 succeedOnSale customer model
 
             else
@@ -292,7 +306,7 @@ succeedOnSale customer model =
     else
         updateModelStatsTrackerWithSale <|
             exitCurrentCustomer <|
-                updateModelStatsTrackerWithGold model.offerInfo.pcOffer model.offerInfo.itemWorth <|
+                updateModelStatsTrackerWithGold model.offerInfo.pcOffer model.offerInfo.item.itemWorth <|
                     updateGold <|
                         updateConversationWithActionMessage (offerAndPurchaseString customer model.offerInfo) <|
                             incrementTimeWithMinOpen Clientele.constants.minTakenOnSuccess <|
@@ -701,7 +715,7 @@ offerAndPurchaseString customer offerInfo =
 offerString : OfferInfo -> String
 offerString info =
     "You offered the "
-        ++ info.itemName
+        ++ info.item.itemName
         ++ " for a price of "
         ++ String.fromInt info.pcOffer
         ++ "gp."
@@ -712,11 +726,11 @@ purchaseString customer offerInfo =
     "The customer, "
         ++ customer.name
         ++ ", bought 1 "
-        ++ offerInfo.itemName
+        ++ offerInfo.item.itemName
         ++ " at "
         ++ String.fromInt offerInfo.pcOffer
         ++ "gp (cost price "
-        ++ String.fromInt offerInfo.itemWorth
+        ++ String.fromInt offerInfo.item.itemWorth
         ++ "gp)"
         ++ ", and leaves happy, taking "
         ++ String.fromInt Clientele.constants.minTakenOnSuccess
@@ -730,7 +744,7 @@ rejectString customer offer =
         ++ ", rejected the sales price of "
         ++ String.fromInt offer.pcOffer
         ++ "gp for the "
-        ++ offer.itemName
+        ++ offer.item.itemName
         ++ ", taking "
         ++ String.fromInt Clientele.constants.minTakenOnFail
         ++ " minutes."
@@ -858,11 +872,17 @@ view model =
         , div [] []
         , text ("minutesSinceZero: " ++ String.fromInt model.time)
         , div [] []
-        , text
-            ("Time: " ++ displayTime model.time)
-        , div [] []
-        , text
-            ("Day: " ++ (String.fromInt <| dayOfYear model.time))
+        , div []
+            [ text <|
+                "Customer max price: "
+                    ++ (case model.customers.currentCustomer of
+                            Just customer ->
+                                String.fromInt <| Clientele.maxPrice model.offerInfo.item customer
+
+                            Nothing ->
+                                "No Customer"
+                       )
+            ]
         , topBlock <| storeInfo model
         , uiBasedOnStoreState model.storeState model
         , oneBlock <| storyBlock model
@@ -893,6 +913,7 @@ storeInfo : Model -> List (Html Msg)
 storeInfo model =
     [ h2 [] [ text "Store" ]
     , div [] [ text ("Time: " ++ displayTime model.time) ]
+    , div [] [text ("Day: " ++ (String.fromInt <| dayOfYear model.time))]
     , div [] [ text ("Your gold: " ++ String.fromInt model.pcGold ++ "gp") ]
     ]
 
@@ -1041,9 +1062,9 @@ currentSituationBlockClosed model =
 currentSituationString : Clientele.Customer -> OfferInfo -> String
 currentSituationString customer offerInfo =
     "Sell "
-        ++ offerInfo.itemName
+        ++ offerInfo.item.itemName
         ++ " (cost "
-        ++ String.fromInt offerInfo.itemWorth
+        ++ String.fromInt offerInfo.item.itemWorth
         ++ "gp) to "
         ++ customer.name
         ++ " for "
@@ -1089,7 +1110,8 @@ modifyWaitButton timeDiff model =
 stockBlock : Model -> List (Html Msg)
 stockBlock model =
     [ h3 [] [ text "Stock" ]
-    , div [] [ text "Infinite swords" ]
+    , basicButton [ onClick <| OfferItem swordItem ] [ text "Sword" ]
+    , basicButton [ onClick <| OfferItem trailMixItem ] [ text "Bag of trail mix" ]
     ]
 
 
@@ -1206,6 +1228,16 @@ displayTime time =
                 ""
            )
         ++ String.fromInt minute
+
+
+swordItem : Item
+swordItem =
+    { itemName = "sword", itemWorth = 20 }
+
+
+trailMixItem : Item
+trailMixItem =
+    { itemName = "packet of trail mix", itemWorth = 5 }
 
 
 

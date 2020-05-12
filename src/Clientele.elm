@@ -204,6 +204,19 @@ newWaitingCustomer clientele =
     }
 
 
+markCurrentCustomerAsInspected : ClienteleDetails -> ClienteleDetails
+markCurrentCustomerAsInspected clientele =
+    { clientele
+        | currentCustomer =
+            case clientele.currentCustomer of
+                Just customer ->
+                    Just { customer | inspectedState = Inspected }
+
+                Nothing ->
+                    Nothing
+    }
+
+
 
 ---- VIEW ----
 
@@ -241,7 +254,13 @@ type alias Customer =
     , schmoozeCount : Int
     , introMessage : String
     , descriptionMessage : String
+    , inspectedState : InspectedState
     }
+
+
+type InspectedState
+    = Inspected
+    | Uninspected
 
 
 type alias CustomerInit =
@@ -259,6 +278,7 @@ createCustomer ci =
     , schmoozeCount = 0
     , introMessage = ci.introMessage
     , descriptionMessage = ci.descriptionMessage
+    , inspectedState = Uninspected
     }
 
 
@@ -307,6 +327,23 @@ wealthMessagFromWealth wealthLevel =
         ++ "they'd probably pay about "
         ++ String.fromInt (maxPriceFromWealth wealthLevel)
         ++ "% of the item's value without being schmoozed."
+
+
+customerDisplay : Customer -> List String
+customerDisplay customer =
+    [ customer.name
+    , customer.introMessage
+    ]
+        ++ (case customer.inspectedState of
+                Inspected ->
+                    [ customer.descriptionMessage
+                    , wealthMessagFromWealth customer.wealthLevel
+                    ]
+
+                Uninspected ->
+                    [ "" ]
+           )
+        ++ [ "You have schmoozed them " ++ String.fromInt customer.schmoozeCount ++ " times." ]
 
 
 defaultCustomer : Customer

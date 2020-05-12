@@ -403,12 +403,18 @@ inspectCustomer model =
     else
         case model.customers.currentCustomer of
             Just customer ->
-                updateConversationWithActionMessage (Clientele.inspectCustomerMessage customer) <|
-                    incrementTimeWithMinOpen Clientele.constants.minTakenOnInspect <|
-                        model
+                markCurrentCustomerAsInspected <|
+                    updateConversationWithActionMessage (Clientele.inspectCustomerMessage customer) <|
+                        incrementTimeWithMinOpen Clientele.constants.minTakenOnInspect <|
+                            model
 
             Nothing ->
                 updateConversationWithActionMessage "Who are you trying to inspeect?" model
+
+
+markCurrentCustomerAsInspected : Model -> Model
+markCurrentCustomerAsInspected model =
+    { model | customers = Clientele.markCurrentCustomerAsInspected model.customers }
 
 
 callNextCustomer : Clientele.Customer -> Model -> Model
@@ -889,6 +895,14 @@ view model =
         ]
 
 
+fillerBlock : Html Msg
+fillerBlock =
+    div
+        [ Attr.style "width" "100%"
+        ]
+        [ text "O" ]
+
+
 uiBasedOnStoreState : StoreState -> Model -> Html Msg
 uiBasedOnStoreState storeState model =
     case storeState of
@@ -896,16 +910,22 @@ uiBasedOnStoreState storeState model =
             blockOfBlocks
                 [ halfBlock <| stockBlock model
                 , halfBlock <| actionsBlockOpen
+                , fillerBlock
                 , halfBlock <| customersBlockOpen model
                 , halfBlock <| currentSituationBlockOpen model
+                , fillerBlock
+                , halfBlock <| customerInfoPanelOpen model
                 ]
 
         Closed ->
             blockOfBlocks
                 [ halfBlock <| stockBlock model
                 , halfBlock <| actionsBlockClosed
+                , fillerBlock
                 , halfBlock <| customersBlockClosed
                 , halfBlock <| currentSituationBlockClosed model
+                , fillerBlock
+                , halfBlock <| customerInfoPanelClosed model
                 ]
 
 
@@ -913,7 +933,7 @@ storeInfo : Model -> List (Html Msg)
 storeInfo model =
     [ h2 [] [ text "Store" ]
     , div [] [ text ("Time: " ++ displayTime model.time) ]
-    , div [] [text ("Day: " ++ (String.fromInt <| dayOfYear model.time))]
+    , div [] [ text ("Day: " ++ (String.fromInt <| dayOfYear model.time)) ]
     , div [] [ text ("Your gold: " ++ String.fromInt model.pcGold ++ "gp") ]
     ]
 
@@ -1056,6 +1076,28 @@ currentSituationBlockClosed model =
             div []
                 [ basicButton [ onClick OpenStore ] [ text <| "Skip until tomorrow and open store at " ++ String.fromInt openHour ++ " o Clock." ]
                 ]
+    ]
+
+
+customerInfoPanelOpen : Model -> List (Html Msg)
+customerInfoPanelOpen model =
+    [ h3 [] [ text "Customer Info" ]
+    , div []
+        [ case model.customers.currentCustomer of
+            Just customer ->
+                div [] <| List.map (\s -> div [] [ text s ]) <| Clientele.customerDisplay customer
+
+            Nothing ->
+                div [] [ text "No customer" ]
+        ]
+    ]
+
+
+customerInfoPanelClosed : Model -> List (Html Msg)
+customerInfoPanelClosed model =
+    [ h3 [] [ text "Customer Info" ]
+    , div []
+        [ text storeClosedMessage ]
     ]
 
 

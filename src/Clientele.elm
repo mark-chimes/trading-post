@@ -251,6 +251,7 @@ type WealthLevel
 type alias Customer =
     { name : String
     , wealthLevel : WealthLevel
+    , moneyInPurse : Int
     , schmoozeCount : Int
     , introMessage : String
     , descriptionMessage : String
@@ -275,6 +276,7 @@ createCustomer : CustomerInit -> Customer
 createCustomer ci =
     { name = ci.name
     , wealthLevel = ci.wealthLevel
+    , moneyInPurse = calculateMoneyInPurse ci.wealthLevel
     , schmoozeCount = 0
     , introMessage = ci.introMessage
     , descriptionMessage = ci.descriptionMessage
@@ -282,9 +284,14 @@ createCustomer ci =
     }
 
 
-maxPrice : Item -> Customer -> Int
-maxPrice item customer =
-    (item.itemWorth * maxPriceFromWealth customer.wealthLevel * (100 + 50 * customer.schmoozeCount)) // (100 * 100)
+calculateMoneyInPurse : WealthLevel -> Int
+calculateMoneyInPurse wealthLevel =
+    maxPriceFromWealth wealthLevel * 2
+
+
+maxPrice : Int -> Customer -> Int
+maxPrice itemWorth customer =
+    (itemWorth * maxPriceFromWealth customer.wealthLevel * (100 + 50 * customer.schmoozeCount)) // (100 * 100)
 
 
 maxPriceFromWealth : WealthLevel -> Int
@@ -331,17 +338,25 @@ wealthMessagFromWealth wealthLevel =
 
 customerDisplay : Customer -> List String
 customerDisplay customer =
-    [ customer.name
-    , customer.introMessage
-    ]
-        ++ (case customer.inspectedState of
+    customer.name
+        :: (case customer.inspectedState of
                 Inspected ->
-                    [ customer.descriptionMessage
-                    , wealthMessagFromWealth customer.wealthLevel
+                    [ "Gold in purse: " ++ String.fromInt customer.moneyInPurse ++ "gp"
+                    , "Max price: " ++ String.fromInt (maxPrice 100 customer) ++ "%"
+                    , "-"
                     ]
 
                 Uninspected ->
                     [ "" ]
+           )
+        ++ (case customer.inspectedState of
+                Inspected ->
+                    [ customer.introMessage ++ customer.descriptionMessage
+                    , wealthMessagFromWealth customer.wealthLevel
+                    ]
+
+                Uninspected ->
+                    [ customer.introMessage ]
            )
         ++ [ "You have schmoozed them " ++ String.fromInt customer.schmoozeCount ++ " times." ]
 

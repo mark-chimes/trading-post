@@ -283,7 +283,7 @@ submitOffer : Model -> Model
 submitOffer model =
     case model.customers.currentCustomer of
         Just customer ->
-            if model.offerInfo.pcOffer <= Clientele.maxPrice model.offerInfo.item customer then
+            if model.offerInfo.pcOffer <= Clientele.maxPrice model.offerInfo.item.itemWorth customer then
                 succeedOnSale customer model
 
             else
@@ -883,7 +883,7 @@ view model =
                 "Customer max price: "
                     ++ (case model.customers.currentCustomer of
                             Just customer ->
-                                String.fromInt <| Clientele.maxPrice model.offerInfo.item customer
+                                String.fromInt <| Clientele.maxPrice model.offerInfo.item.itemWorth customer
 
                             Nothing ->
                                 "No Customer"
@@ -895,14 +895,6 @@ view model =
         ]
 
 
-fillerBlock : Html Msg
-fillerBlock =
-    div
-        [ Attr.style "width" "100%"
-        ]
-        [ text "O" ]
-
-
 uiBasedOnStoreState : StoreState -> Model -> Html Msg
 uiBasedOnStoreState storeState model =
     case storeState of
@@ -910,10 +902,8 @@ uiBasedOnStoreState storeState model =
             blockOfBlocks
                 [ halfBlock <| stockBlock model
                 , halfBlock <| actionsBlockOpen
-                , fillerBlock
                 , halfBlock <| customersBlockOpen model
                 , halfBlock <| currentSituationBlockOpen model
-                , fillerBlock
                 , halfBlock <| customerInfoPanelOpen model
                 ]
 
@@ -921,10 +911,8 @@ uiBasedOnStoreState storeState model =
             blockOfBlocks
                 [ halfBlock <| stockBlock model
                 , halfBlock <| actionsBlockClosed
-                , fillerBlock
                 , halfBlock <| customersBlockClosed
                 , halfBlock <| currentSituationBlockClosed model
-                , fillerBlock
                 , halfBlock <| customerInfoPanelClosed model
                 ]
 

@@ -22,6 +22,7 @@ type alias Flags =
 type alias Model =
     { time : Time
     , offerInfo : OfferInfo
+    , basketInfo : BasketInfo
     , pcGold : Int
     , cleanTime : Int
     , customers : Clientele.ClienteleDetails
@@ -51,6 +52,10 @@ type alias OfferInfo =
     }
 
 
+type alias BasketInfo =
+    List OfferInfo
+
+
 type alias Time =
     Int
 
@@ -63,6 +68,7 @@ init flags =
         )
         { time = openHour * minutesInHour
         , offerInfo = { pcOffer = 20, item = swordItem }
+        , basketInfo = []
         , pcGold = 0
         , cleanTime = 10
         , customers = Clientele.initCustomers
@@ -93,7 +99,8 @@ type Msg
     = NoOp
     | PrepSubmitOffer
     | PcOffer String
-    | SubmitOffer
+    | SubmitAddToBasket
+    | SubmitConfirmOffer
     | ClearStory
     | PrepKickOutCustomer
     | KickOutCustomer
@@ -148,8 +155,11 @@ update msg model =
         PcOffer newOffer ->
             ( updateOffer newOffer model, Cmd.none )
 
-        SubmitOffer ->
-            ( submitOffer <| model, Cmd.none )
+        SubmitAddToBasket ->
+            ( submitAddToBasket <| model, Cmd.none )
+
+        SubmitConfirmOffer ->
+            ( submitConfirmOffer <| model, Cmd.none )
 
         ClearStory ->
             ( { model | conversation = [] }, Cmd.none )
@@ -279,13 +289,13 @@ itemToOffer item offer =
 -- TODO modify the next function (including its types) to be more functional
 
 
-submitOffer : Model -> Model
-submitOffer model =
+submitAddToBasket : Model -> Model
+submitAddToBasket model =
     case model.customers.currentCustomer of
         Just customer ->
             case determineIfSale customer model of
                 Success ->
-                    succeedOnSale customer model
+                    addToBasket customer model
 
                 BadDeal ->
                     failOnSaleBadDeal customer model.offerInfo model
@@ -295,6 +305,16 @@ submitOffer model =
 
         Nothing ->
             updateConversationWithActionMessage "Please address a customer before submitting an offer." model
+
+
+submitConfirmOffer : Model -> Model
+submitConfirmOffer model =
+    case model.customers.currentCustomer of
+        Just customer ->
+            confirmOffer customer model
+
+        Nothing ->
+            updateConversationWithActionMessage "Please address a customer before confirming an offer." model
 
 
 type CustomerSaleSuccess
@@ -324,21 +344,39 @@ updateConversationWithActionMessage message model =
     { model | conversation = model.conversation ++ [ [ displayTime model.time, message, "" ] ] }
 
 
-succeedOnSale : Clientele.Customer -> Model -> Model
-succeedOnSale customer model =
+addToBasket : Clientele.Customer -> Model -> Model
+addToBasket customer model =
     if (model.storeState == Open) && wouldStoreClose Clientele.constants.minTakenOnSuccess model.time then
         closeStore "The customer looked just about ready to buy the item! But unfortunately, what with the curfew and all, you have to tell them to come back tomorrow." model
 
     else
+        updateBasket <|
+            updateCustomerGold <|
+                updateGold <|
+                    updateConversationWithActionMessage (offerAndPurchaseString customer model.offerInfo) <|
+                        incrementTimeWithMinOpen Clientele.constants.minTakenOnSuccess <|
+                            model
+
+
+confirmOffer : Clientele.Customer -> Model -> Model
+confirmOffer customer model =
+    clearBasket <|
         updateModelStatsTrackerWithSale <|
-            -- exitCurrentCustomer <|
-            updateModelStatsTrackerWithGold model.offerInfo.pcOffer model.offerInfo.item.itemWorth
-            <|
-                updateCustomerGold <|
+            exitCurrentCustomer <|
+                updateModelStatsTrackerWithGold model.offerInfo.pcOffer model.offerInfo.item.itemWorth <|
                     updateGold <|
-                        updateConversationWithActionMessage (offerAndPurchaseString customer model.offerInfo) <|
-                            incrementTimeWithMinOpen Clientele.constants.minTakenOnSuccess <|
-                                model
+                        updateConversationWithActionMessage (confirmOfferString customer) <|
+                            model
+
+
+clearBasket : Model -> Model
+clearBasket model =
+    { model | basketInfo = [] }
+
+
+updateBasket : Model -> Model
+updateBasket model =
+    { model | basketInfo = model.basketInfo ++ [ model.offerInfo ] }
 
 
 updateCustomerGold : Model -> Model
@@ -760,6 +798,19 @@ offerAndPurchaseString customer offerInfo =
     offerString offerInfo ++ "\n" ++ purchaseString customer offerInfo
 
 
+confirmOfferString : Clientele.Customer -> String
+confirmOfferString customer =
+    "You provide "
+        ++ customer.name
+        ++ "\n"
+        ++ " with their items and they leave the store. "
+        ++ customer.name
+        ++ ": \"Goodbye, and thanks for everything!\"\n"
+        ++ "This took: "
+        ++ String.fromInt Clientele.constants.minTakenOnSuccess
+        ++ " minutes."
+
+
 offerString : OfferInfo -> String
 offerString info =
     "You offered the "
@@ -1039,32 +1090,7 @@ currentSituationBlockOpen model =
                     div [] [ text nooneMessage ]
 
                 Just customer ->
-                    div []
-                        [ div [ Attr.style "margin-bottom" halfThick ]
-                            [ div []
-                                [ basicButton [ onClick ResetPrice ] [ text "Reset" ]
-                                , modifyOfferButton -100 model
-                                , modifyOfferButton -10 model
-                                , input
-                                    [ Attr.attribute "aria-label" "Price in gold"
-                                    , Attr.style "margin" "2px"
-                                    , Attr.type_ "number"
-                                    , Attr.min "0"
-                                    , Attr.max "50000"
-                                    , value (String.fromInt model.offerInfo.pcOffer)
-                                    , onInput PcOffer
-                                    ]
-                                    []
-                                , modifyOfferButton 10 model
-                                , modifyOfferButton 100 model
-                                ]
-                            , br [] []
-                            , div [] []
-                            , basicButton [ onClick SubmitOffer ]
-                                [ text <| currentSituationString customer model.offerInfo
-                                ]
-                            ]
-                        ]
+                    div [] [ priceBox customer model, br [] [], basketBox model ]
 
         Wait ->
             div []
@@ -1094,6 +1120,59 @@ currentSituationBlockOpen model =
                 [ text "The store must be closed for you to be able to open it."
                 ]
     ]
+
+
+priceBox : Clientele.Customer -> Model -> Html Msg
+priceBox customer model =
+    div []
+        [ div [ Attr.style "margin-bottom" halfThick ]
+            [ div []
+                [ basicButton [ onClick ResetPrice ] [ text "Reset" ]
+                , modifyOfferButton -100 model
+                , modifyOfferButton -10 model
+                , input
+                    [ Attr.attribute "aria-label" "Price in gold"
+                    , Attr.style "margin" "2px"
+                    , Attr.type_ "number"
+                    , Attr.min "0"
+                    , Attr.max "50000"
+                    , value (String.fromInt model.offerInfo.pcOffer)
+                    , onInput PcOffer
+                    ]
+                    []
+                , modifyOfferButton 10 model
+                , modifyOfferButton 100 model
+                ]
+            , br [] []
+            , div [] []
+            , basicButton [ onClick SubmitAddToBasket ]
+                [ text <| currentSituationString customer model.offerInfo
+                ]
+            ]
+        ]
+
+
+basketBox : Model -> Html Msg
+basketBox model =
+    div [] <|
+        (List.map
+            (\s -> div [] [ text s ])
+         <|
+            [ "Items in basket:"
+            ]
+                ++ List.map itemDisplay model.basketInfo
+        )
+            ++ [ basicButton [ onClick SubmitConfirmOffer ] [ text "Confirm Offer Offer" ] ]
+
+
+itemDisplay : OfferInfo -> String
+itemDisplay offerInfo =
+    offerInfo.item.itemName
+        ++ " ("
+        ++ String.fromInt offerInfo.item.itemWorth
+        ++ "gp) "
+        ++ String.fromInt offerInfo.pcOffer
+        ++ "gp"
 
 
 currentSituationBlockClosed : Model -> List (Html Msg)

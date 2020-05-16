@@ -1,4 +1,4 @@
-module Main exposing (Model, Msg(..), calculateTimeOfNextCustomer, dayOfYear, hourOfDay, hoursInDay, incrementTimeWithMinOpen, init, main, purchaseString, update, view)
+module Main exposing (Model, Msg(..), calculateTimeOfNextCustomer, dayOfYear, failOnSaleNoMoney, hourOfDay, hoursInDay, incrementTimeWithMinOpen, init, main, purchaseString, update, view)
 
 import Browser
 import Clientele
@@ -283,14 +283,40 @@ submitOffer : Model -> Model
 submitOffer model =
     case model.customers.currentCustomer of
         Just customer ->
-            if model.offerInfo.pcOffer <= Clientele.maxPrice model.offerInfo.item.itemWorth customer then
-                succeedOnSale customer model
+            case determineIfSale customer model of
+                Success ->
+                    succeedOnSale customer model
 
-            else
-                failOnSale customer model.offerInfo model
+                BadDeal ->
+                    failOnSaleBadDeal customer model.offerInfo model
+
+                NoMoney ->
+                    failOnSaleNoMoney customer model.offerInfo model
 
         Nothing ->
             updateConversationWithActionMessage "Please address a customer before submitting an offer." model
+
+
+type CustomerSaleSuccess
+    = Success
+    | BadDeal
+    | NoMoney
+
+
+determineIfSale : Clientele.Customer -> Model -> CustomerSaleSuccess
+determineIfSale customer model =
+    let
+        offer =
+            model.offerInfo.pcOffer
+    in
+    if model.offerInfo.pcOffer > customer.moneyInPurse then
+        NoMoney
+
+    else if offer > Clientele.maxPrice model.offerInfo.item.itemWorth customer then
+        BadDeal
+
+    else
+        Success
 
 
 updateConversationWithActionMessage : String -> Model -> Model
@@ -305,12 +331,19 @@ succeedOnSale customer model =
 
     else
         updateModelStatsTrackerWithSale <|
-            exitCurrentCustomer <|
-                updateModelStatsTrackerWithGold model.offerInfo.pcOffer model.offerInfo.item.itemWorth <|
+            -- exitCurrentCustomer <|
+            updateModelStatsTrackerWithGold model.offerInfo.pcOffer model.offerInfo.item.itemWorth
+            <|
+                updateCustomerGold <|
                     updateGold <|
                         updateConversationWithActionMessage (offerAndPurchaseString customer model.offerInfo) <|
                             incrementTimeWithMinOpen Clientele.constants.minTakenOnSuccess <|
                                 model
+
+
+updateCustomerGold : Model -> Model
+updateCustomerGold model =
+    { model | customers = Clientele.updateCurrentCustomerGold model.offerInfo.pcOffer model.customers }
 
 
 updateModelStatsTrackerWithGold : Int -> Int -> Model -> Model
@@ -336,13 +369,22 @@ updateStatsTrackerWithSale statsTracker =
     { statsTracker | customersSold = statsTracker.customersSold + 1 }
 
 
-failOnSale : Clientele.Customer -> OfferInfo -> Model -> Model
-failOnSale customer offer model =
+failOnSaleNoMoney : Clientele.Customer -> OfferInfo -> Model -> Model
+failOnSaleNoMoney customer offer model =
     if wouldStoreClose Clientele.constants.minTakenOnFail model.time then
         closeStore "Unfortunately, before the client can reject your offer, the store closes, and you are forced to shoo them out." model
 
     else
-        updateConversationWithActionMessage (rejectString customer offer) <| incrementTimeWithMinOpen Clientele.constants.minTakenOnFail <| model
+        updateConversationWithActionMessage (rejectStringNoMoney customer offer) <| incrementTimeWithMinOpen Clientele.constants.minTakenOnFail <| model
+
+
+failOnSaleBadDeal : Clientele.Customer -> OfferInfo -> Model -> Model
+failOnSaleBadDeal customer offer model =
+    if wouldStoreClose Clientele.constants.minTakenOnFail model.time then
+        closeStore "Unfortunately, before the client can reject your offer, the store closes, and you are forced to shoo them out." model
+
+    else
+        updateConversationWithActionMessage (rejectStringBadDeal customer offer) <| incrementTimeWithMinOpen Clientele.constants.minTakenOnFail <| model
 
 
 fuckOffCustomer : Model -> Model
@@ -724,34 +766,50 @@ offerString info =
         ++ info.item.itemName
         ++ " for a price of "
         ++ String.fromInt info.pcOffer
-        ++ "gp."
+        ++ "gp. (Item cost: "
+        ++ String.fromInt info.item.itemWorth
+        ++ "gp)."
 
 
 purchaseString : Clientele.Customer -> OfferInfo -> String
 purchaseString customer offerInfo =
-    "The customer, "
-        ++ customer.name
-        ++ ", bought 1 "
+    customer.name
+        ++ ": \"A "
         ++ offerInfo.item.itemName
-        ++ " at "
+        ++ " for "
         ++ String.fromInt offerInfo.pcOffer
-        ++ "gp (cost price "
-        ++ String.fromInt offerInfo.item.itemWorth
-        ++ "gp)"
-        ++ ", and leaves happy, taking "
+        ++ " gold sounds like a good deal!\" \nThey add the "
+        ++ offerInfo.item.itemName
+        ++ " to their basket.\n"
+        ++ "This took: "
         ++ String.fromInt Clientele.constants.minTakenOnSuccess
         ++ " minutes."
 
 
-rejectString : Clientele.Customer -> OfferInfo -> String
-rejectString customer offer =
-    "The customer, "
+rejectStringBadDeal : Clientele.Customer -> OfferInfo -> String
+rejectStringBadDeal customer offer =
+    offerString offer
+        ++ "\n"
         ++ customer.name
-        ++ ", rejected the sales price of "
+        ++ ": \""
         ++ String.fromInt offer.pcOffer
-        ++ "gp for the "
+        ++ " gold is too expensive for a "
         ++ offer.item.itemName
-        ++ ", taking "
+        ++ "!\". \nThis exchange took "
+        ++ String.fromInt Clientele.constants.minTakenOnFail
+        ++ " minutes."
+
+
+rejectStringNoMoney : Clientele.Customer -> OfferInfo -> String
+rejectStringNoMoney customer offer =
+    offerString offer
+        ++ "\n"
+        ++ customer.name
+        ++ ": \"I'm afraid I just don't have another "
+        ++ String.fromInt offer.pcOffer
+        ++ " gold for a "
+        ++ offer.item.itemName
+        ++ ".\" \nThis exchange took "
         ++ String.fromInt Clientele.constants.minTakenOnFail
         ++ " minutes."
 

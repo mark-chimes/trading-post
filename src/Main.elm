@@ -1433,16 +1433,6 @@ displayTime time =
         ++ String.fromInt minute
 
 
-swordItem : Item
-swordItem =
-    { itemName = "sword", itemWorth = 20 }
-
-
-trailMixItem : Item
-trailMixItem =
-    { itemName = "packet of trail mix", itemWorth = 5 }
-
-
 
 ---- PROGRAM ----
 

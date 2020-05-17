@@ -1,5 +1,6 @@
 module Clientele exposing (..)
 
+import Dict exposing (Dict)
 import Html exposing (Attribute, Html, button, text)
 import Html.Attributes as Attr
 import Stock exposing (..)
@@ -136,7 +137,9 @@ inspectCustomerMessage customer =
         ++ " minutes. "
         ++ customer.descriptionMessage
         ++ " "
-        ++ wealthMessagFromWealth customer.wealthLevel
+        ++ wealthMessageFromWealth customer.wealthLevel
+        ++ " "
+        ++ customer.template.description
 
 
 schmoozeCurrentCustomer : ClienteleDetails -> ClienteleDetails
@@ -298,6 +301,7 @@ type alias Customer =
     , introMessage : String
     , descriptionMessage : String
     , inspectedState : InspectedState
+    , template : CustomerTemplate
     }
 
 
@@ -311,6 +315,7 @@ type alias CustomerInit =
     , wealthLevel : WealthLevel
     , introMessage : String
     , descriptionMessage : String
+    , template : CustomerTemplate
     }
 
 
@@ -324,6 +329,7 @@ createCustomer ci =
     , introMessage = ci.introMessage
     , descriptionMessage = ci.descriptionMessage
     , inspectedState = Uninspected
+    , template = ci.template
     }
 
 
@@ -334,7 +340,7 @@ calculateMoneyInPurse wealthLevel =
 
 maxPrice : Item -> Customer -> Int
 maxPrice item customer =
-    round (toFloat item.itemWorth * maxPriceFromWealth customer.wealthLevel * (1 + 0.5 * toFloat customer.schmoozeCount))
+    round (toFloat item.itemWorth * customer.template.itemPreferences item.itemType * maxPriceFromWealth customer.wealthLevel * (1 + 0.5 * toFloat customer.schmoozeCount))
 
 
 maxPriceFromWealth : WealthLevel -> Float
@@ -356,58 +362,67 @@ maxPriceFromWealth wealthLevel =
             3.0
 
 
-wealthMessagFromWealth : WealthLevel -> String
-wealthMessagFromWealth wealthLevel =
-    (case wealthLevel of
-        Destitute ->
-            "They seem pretty much destitute; "
-
-        Poor ->
-            "They seem quite poor; "
-
-        Average ->
-            "They seem to be of average wealth; "
-
-        WellOff ->
-            "They seem to be quite well-off; "
-
-        Rich ->
-            "They appear to be rather wealthy; "
-    )
-        ++ "they'd probably pay about "
+wealthMessageFromWealth : WealthLevel -> String
+wealthMessageFromWealth wealthLevel =
+    wealthDescriptionFromWealth wealthLevel
+        ++ "They'd probably pay about "
         ++ String.fromInt (round (100 * maxPriceFromWealth wealthLevel))
         ++ "% of the item's value without being schmoozed."
+
+
+wealthDescriptionFromWealth : WealthLevel -> String
+wealthDescriptionFromWealth wealthLevel =
+    case wealthLevel of
+        Destitute ->
+            "They seem pretty much destitute. "
+
+        Poor ->
+            "They seem quite poor. "
+
+        Average ->
+            "They seem to be of average wealth. "
+
+        WellOff ->
+            "They seem to be quite well-off. "
+
+        Rich ->
+            "They appear to be rather wealthy. "
 
 
 customerDisplay : Customer -> List String
 customerDisplay customer =
     customer.name
+        :: ("Schmoozed: "
+                ++ String.fromInt customer.schmoozeCount
+                ++ " times."
+           )
         :: (case customer.inspectedState of
                 Inspected ->
                     [ "Gold in purse: " ++ String.fromInt customer.moneyInPurse ++ "gp"
-                    , "Max price: " ++ String.fromInt (maxPrice stockItem customer) ++ "%"
+                    , " - Max prices - "
+                    , "Base: " ++ String.fromInt (round (maxPriceFromWealth customer.wealthLevel * (1 + 0.5 * toFloat customer.schmoozeCount) * 100)) ++ "%"
+                    , "Food: " ++ percentageForDisplay customer Stock.FoodType
+                    , "Weapons: " ++ percentageForDisplay customer Stock.WeaponType
                     ]
 
                 Uninspected ->
                     [ "" ]
            )
-        ++ (case customer.inspectedState of
+        ++ "-\n"
+        :: (case customer.inspectedState of
                 Inspected ->
                     [ customer.introMessage ++ " " ++ customer.descriptionMessage
-                    , wealthMessagFromWealth customer.wealthLevel
+                    , wealthDescriptionFromWealth customer.wealthLevel
                     ]
 
                 Uninspected ->
                     [ customer.introMessage ]
            )
-        ++ [ "You have schmoozed them " ++ String.fromInt customer.schmoozeCount ++ " times." ]
 
 
-stockItem : Item
-stockItem =
-    { itemName = "stock"
-    , itemWorth = 100
-    }
+percentageForDisplay : Customer -> Stock.ItemType -> String
+percentageForDisplay customer itemType =
+    String.fromInt (round (customer.template.itemPreferences itemType * maxPriceFromWealth customer.wealthLevel * (1 + 0.5 * toFloat customer.schmoozeCount) * 100)) ++ "%"
 
 
 defaultCustomer : Customer
@@ -417,6 +432,7 @@ defaultCustomer =
         , wealthLevel = Destitute
         , introMessage = "You sense a bizarre otherworldly presence."
         , descriptionMessage = "They seem wrong, somehow. Like something that shouldn't exist."
+        , template = templateWeird
         }
 
 
@@ -427,6 +443,7 @@ initFirstCustomer =
         , wealthLevel = Poor
         , introMessage = "She greets you with a smile."
         , descriptionMessage = "The smile was endearing at first, but it starts to get creepy after awhile."
+        , template = templateTraveller
         }
 
 
@@ -437,6 +454,7 @@ initWaitingCustomers =
         , wealthLevel = Poor
         , introMessage = "He eyes your store shiftily."
         , descriptionMessage = "Sleazy looking guy. You'd be willing to sell to him, but probably shouldn't trust anything he sold you."
+        , template = templateTraveller
         }
     ]
 
@@ -454,126 +472,202 @@ initCustomerPool =
     List.map createCustomer initCustomerPoolInit
 
 
+type alias ItemPreferences =
+    ItemType -> Float
+
+
+type alias CustomerTemplate =
+    { description : String
+    , itemPreferences : ItemPreferences
+    }
+
+
+templateKnight : CustomerTemplate
+templateKnight =
+    { description = "They are a knight! They'll pay normal price for food and double for weapons."
+    , itemPreferences =
+        \itemType ->
+            case itemType of
+                WeaponType ->
+                    2.0
+
+                FoodType ->
+                    1.0
+    }
+
+
+templateTraveller : CustomerTemplate
+templateTraveller =
+    { description = "They are a traveller! They'll pay half price for weapons and double for food."
+    , itemPreferences =
+        \itemType ->
+            case itemType of
+                WeaponType ->
+                    0.5
+
+                FoodType ->
+                    2.0
+    }
+
+
+templateWeird : CustomerTemplate
+templateWeird =
+    { description = "They are weird! You can't tell what they want."
+    , itemPreferences =
+        \itemType ->
+            case itemType of
+                WeaponType ->
+                    0.0
+
+                FoodType ->
+                    0.0
+    }
+
+
 initCustomerPoolInit : CustomerPoolInit
 initCustomerPoolInit =
     [ { name = "Carol Cooper-Iardlynoer"
       , wealthLevel = Average
       , introMessage = "She browses your product line."
       , descriptionMessage = "She has wonderful hair!"
+      , template = templateTraveller
       }
     , { name = "Dennis Demacia"
       , wealthLevel = Poor
       , introMessage = "He keeps his hands in his pockets."
       , descriptionMessage = "Just a teenage dirtbag baby."
+      , template = templateTraveller
       }
     , { name = "Erica Earful"
       , wealthLevel = Rich
       , introMessage = "She strides up to your counter confidently in full plate."
       , descriptionMessage = "An iron maiden."
+      , template = templateKnight
       }
     , { name = "Frank Mann-Free"
       , wealthLevel = Average
       , introMessage = "He seems like he couldn't care less."
       , descriptionMessage = "Frankly, my dear, he doesn't give a damn."
+      , template = templateKnight
       }
     , { name = "Gertrude Ganderstudies"
       , wealthLevel = Average
       , introMessage = "A prim and proper older lady."
       , descriptionMessage = "Her clothes are expensive, but well-worn - a wealthy woman who has fallen on harder times."
+      , template = templateKnight
       }
     , { name = "Harold Harbinger"
       , wealthLevel = Rich
       , introMessage = "A dark and mysterious cloaked figure."
       , descriptionMessage = "He growls when he speaks, and strange jewellery flashes from under his cloak. He keeps muttering about broken swords and half-things."
+      , template = templateKnight
       }
     , { name = "Ingrid Isntmael"
       , wealthLevel = WellOff
       , introMessage = "A middle-aged woman with surprisingly pointy ears."
       , descriptionMessage = "On closer inspection, the ears appear to be a form of costume jewellery."
+      , template = templateKnight
       }
     , { name = "Jerome Jackinthebox"
       , wealthLevel = Poor
       , introMessage = "A an attractive, confident man who'll flirt with anyone in the store."
       , descriptionMessage = "It is quickly obvious the confidence is just a ruse to hide deep-seated insecurities."
+      , template = templateKnight
       }
     , { name = "Kyla Killthemall"
       , wealthLevel = WellOff
       , introMessage = "Why is it so chilly in here all of a sudden?"
       , descriptionMessage = "She speaks in dark and gravelly voice that tends to make people uncomfortable."
+      , template = templateKnight
       }
     , { name = "Liam Lemonmeringue"
       , wealthLevel = WellOff
       , introMessage = "An athletic figure."
       , descriptionMessage = "His clothes are tighter than they need to be."
+      , template = templateKnight
       }
     , { name = "Marion Mansion"
       , wealthLevel = Rich
       , introMessage = "Very stylish and fashionable"
       , descriptionMessage = "Looking to make an impression."
+      , template = templateTraveller
       }
     , { name = "Noddy Noboddy"
       , wealthLevel = Destitute
       , introMessage = "A beggar has made his way into your store."
       , descriptionMessage = "A friendly chap who manages to maintain a positive attitude despite his unfortunate conditions."
+      , template = templateTraveller
       }
     , { name = "Olivia Oldbutgold"
       , wealthLevel = WellOff
       , introMessage = "A kindly looking old lady."
       , descriptionMessage = "She speaks at length about her grandchildren in the East."
+      , template = templateTraveller
       }
     , { name = "Patrick Pleasepassthepepper"
       , wealthLevel = Average
       , introMessage = "A fragrant and spicy smell wafts through the store."
       , descriptionMessage = "He has numerous bags of colourful spices arrayed inside his jacket."
+      , template = templateTraveller
       }
     , { name = "Quinette Qualityquilt"
       , wealthLevel = WellOff
       , introMessage = "A dappled and eye-catching array of clothing."
       , descriptionMessage = "Dressed thick and warm, as if expecting a cold winter."
+      , template = templateKnight
       }
     , { name = "Rawry Ragna-Rock"
       , wealthLevel = Average
       , introMessage = "Creeping in with back hunched, eying the racks suspiciously."
       , descriptionMessage = "Actually quite friendly and well-mannered, just has a hunch back and a lazy eye."
+      , template = templateKnight
       }
     , { name = "Samantha Saltoftheearth"
       , wealthLevel = Poor
       , introMessage = "A plump middle-aged woman."
       , descriptionMessage = "She keeps offering you to try some of her quadruple-ginger cookies."
+      , template = templateTraveller
       }
     , { name = "Toby Tell-Noboddy"
       , wealthLevel = Poor
       , introMessage = "A quiet gentelman standing off on his own."
       , descriptionMessage = "His responses are brief and his mind appears to be elsewhere."
+      , template = templateKnight
       }
     , { name = "Ursula Ur"
       , wealthLevel = Rich
       , introMessage = "A large and confident lady dressed in enormous robes of purple and strutting in with purpose."
       , descriptionMessage = "She gives the impression that she always gets what she wants, sooner or later..."
+      , template = templateKnight
       }
     , { name = "Vaughn Vatofacid"
       , wealthLevel = Average
       , introMessage = "A burn mark scars his face."
       , descriptionMessage = "He tells all about his hobby as a beekeeper and offers to let you try some honey."
+      , template = templateKnight
       }
     , { name = "Wendy Mann-Woo"
       , wealthLevel = Average
       , introMessage = "An attractive young woman."
       , descriptionMessage = "She's wearing quite a lot of makeup, and flirts with everyone in store."
+      , template = templateTraveller
       }
     , { name = "Xavier Xtraspicy"
       , wealthLevel = Average
       , introMessage = "A big, burly man covered in tattoos"
       , descriptionMessage = "He seems incredibly eager to kill goblins."
+      , template = templateTraveller
       }
     , { name = "Yennefer Yodalayheehoo"
       , wealthLevel = WellOff
       , introMessage = "Her muscles ripple as she walks."
       , descriptionMessage = "Her voice booms loudly, and yet remains pleasant to the ears."
+      , template = templateKnight
       }
     , { name = "Zander Zoinkies"
       , wealthLevel = Poor
       , introMessage = "An attractive young man with a scraggly beard and reddish eyes."
       , descriptionMessage = "He speaks slowly and often seems to be a bit lost in his own world."
+      , template = templateTraveller
       }
     ]

@@ -113,7 +113,7 @@ schmoozeCustomerMessage customer =
     if customer.schmoozeCount < constants.maxSchmoozes then
         "You tell "
             ++ customer.name
-            ++ " that they have lovely hair. They are impressed and are willing to pay 50% more for the item. This takes "
+            ++ " that they have lovely hair. They are impressed and are willing to pay more for the item. This takes "
             ++ String.fromInt constants.minTakenOnSchmooze
             ++ " minutes."
 
@@ -329,31 +329,31 @@ createCustomer ci =
 
 calculateMoneyInPurse : WealthLevel -> Int
 calculateMoneyInPurse wealthLevel =
-    maxPriceFromWealth wealthLevel * 2
+    round (maxPriceFromWealth wealthLevel * 200)
 
 
-maxPrice : Int -> Customer -> Int
-maxPrice itemWorth customer =
-    (itemWorth * maxPriceFromWealth customer.wealthLevel * (100 + 50 * customer.schmoozeCount)) // (100 * 100)
+maxPrice : Item -> Customer -> Int
+maxPrice item customer =
+    round (toFloat item.itemWorth * maxPriceFromWealth customer.wealthLevel * (1 + 0.5 * toFloat customer.schmoozeCount))
 
 
-maxPriceFromWealth : WealthLevel -> Int
+maxPriceFromWealth : WealthLevel -> Float
 maxPriceFromWealth wealthLevel =
     case wealthLevel of
         Destitute ->
-            80
+            0.8
 
         Poor ->
-            100
+            1.0
 
         Average ->
-            150
+            1.5
 
         WellOff ->
-            200
+            2.0
 
         Rich ->
-            300
+            3.0
 
 
 wealthMessagFromWealth : WealthLevel -> String
@@ -375,7 +375,7 @@ wealthMessagFromWealth wealthLevel =
             "They appear to be rather wealthy; "
     )
         ++ "they'd probably pay about "
-        ++ String.fromInt (maxPriceFromWealth wealthLevel)
+        ++ String.fromInt (round (100 * maxPriceFromWealth wealthLevel))
         ++ "% of the item's value without being schmoozed."
 
 
@@ -385,7 +385,7 @@ customerDisplay customer =
         :: (case customer.inspectedState of
                 Inspected ->
                     [ "Gold in purse: " ++ String.fromInt customer.moneyInPurse ++ "gp"
-                    , "Max price: " ++ String.fromInt (maxPrice 100 customer) ++ "%"
+                    , "Max price: " ++ String.fromInt (maxPrice stockItem customer) ++ "%"
                     ]
 
                 Uninspected ->
@@ -393,7 +393,7 @@ customerDisplay customer =
            )
         ++ (case customer.inspectedState of
                 Inspected ->
-                    [ customer.introMessage ++ customer.descriptionMessage
+                    [ customer.introMessage ++ " " ++ customer.descriptionMessage
                     , wealthMessagFromWealth customer.wealthLevel
                     ]
 
@@ -401,6 +401,13 @@ customerDisplay customer =
                     [ customer.introMessage ]
            )
         ++ [ "You have schmoozed them " ++ String.fromInt customer.schmoozeCount ++ " times." ]
+
+
+stockItem : Item
+stockItem =
+    { itemName = "stock"
+    , itemWorth = 100
+    }
 
 
 defaultCustomer : Customer

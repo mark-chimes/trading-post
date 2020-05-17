@@ -15,8 +15,7 @@ import String
 
 
 type alias Flags =
-    { windowWidth : Int
-    }
+    { windowWidth : Int }
 
 
 type alias Model =
@@ -324,7 +323,7 @@ determineIfSale customer model =
     if model.offerInfo.pcOffer > customer.moneyInPurse then
         NoMoney
 
-    else if offer > Clientele.maxPrice model.offerInfo.item.itemWorth customer then
+    else if offer > Clientele.maxPrice model.offerInfo.item customer then
         BadDeal
 
     else
@@ -1016,7 +1015,7 @@ view model =
                 "Customer max price: "
                     ++ (case model.customers.currentCustomer of
                             Just customer ->
-                                String.fromInt <| Clientele.maxPrice model.offerInfo.item.itemWorth customer
+                                String.fromInt <| Clientele.maxPrice model.offerInfo.item customer
 
                             Nothing ->
                                 "No Customer"

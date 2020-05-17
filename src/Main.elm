@@ -493,7 +493,8 @@ markCurrentCustomerAsInspected model =
 callNextCustomer : Clientele.Customer -> Model -> Model
 callNextCustomer customer model =
     updateConversationWithActionMessage (Clientele.customerCallMessage customer) <|
-        { model | customers = Clientele.callCustomer model.customers customer }
+        incrementTimeWithMinOpen Clientele.constants.minTakenOnSpeakingTo <|
+            { model | customers = Clientele.callCustomer model.customers customer }
 
 
 updateTimeFuckOff : Model -> Model
@@ -1034,8 +1035,8 @@ uiBasedOnStoreState storeState model =
             blockOfBlocks
                 [ halfBlock <| stockBlock model
                 , halfBlock <| actionsBlockOpen
-                , halfBlock <| customersBlockOpen model
                 , halfBlock <| currentSituationBlockOpen model
+                , halfBlock <| customersBlockOpen model
                 , halfBlock <| customerInfoPanelOpen model
                 ]
 
@@ -1043,8 +1044,8 @@ uiBasedOnStoreState storeState model =
             blockOfBlocks
                 [ halfBlock <| stockBlock model
                 , halfBlock <| actionsBlockClosed
-                , halfBlock <| customersBlockClosed
                 , halfBlock <| currentSituationBlockClosed model
+                , halfBlock <| customersBlockClosed
                 , halfBlock <| customerInfoPanelClosed
                 ]
 
@@ -1117,7 +1118,7 @@ currentSituationBlockOpen model =
 
         Wait ->
             div []
-                [ basicButton [ onClick <| UpdateWaitTime <| String.fromInt 0 ] [ text "Reset" ]
+                [ basicButton [ Attr.attribute "aria-label" "Reset waiting time to 0", onClick <| UpdateWaitTime <| String.fromInt 0 ] [ text "Reset" ]
                 , modifyWaitButton -60 model
                 , modifyWaitButton -10 model
                 , input
@@ -1135,7 +1136,7 @@ currentSituationBlockOpen model =
                 , div [] []
                 , basicButton
                     [ onClick WaitAwhile ]
-                    [ text <| "Wait for " ++ String.fromInt model.waitTime ++ " minutes." ]
+                    [ text <| "Wait for " ++ String.fromInt model.waitTime ++ " minutes" ]
                 ]
 
         PrepOpen ->
@@ -1150,7 +1151,7 @@ priceBox customer model =
     div []
         [ div [ Attr.style "margin-bottom" halfThick ]
             [ div []
-                [ basicButton [ onClick ResetPrice ] [ text "Reset" ]
+                [ basicButton [ Attr.attribute "aria-label" "Reset offer to cost price", onClick ResetPrice ] [ text "Cost" ]
                 , modifyOfferButton -100 model
                 , modifyOfferButton -10 model
                 , input
@@ -1178,14 +1179,14 @@ priceBox customer model =
 basketBox : Clientele.Customer -> Html Msg
 basketBox customer =
     div [] <|
-        (List.map
-            (\s -> div [] [ text s ])
-         <|
-            [ "Items in basket:"
-            ]
-                ++ List.map itemDisplay customer.basket
-        )
-            ++ [ basicButton [ onClick SubmitConfirmOffer ] [ text "Confirm Sale and Say Goodbye" ] ]
+        [ basicButton [ onClick SubmitConfirmOffer ] [ text <| "Confirm Sale of " ++ String.fromInt (List.length customer.basket) ++ " items and Say Goodbye" ] ]
+            ++ (List.map
+                    (\s -> div [] [ text s ])
+                <|
+                    [ "Items in basket:"
+                    ]
+                        ++ List.map itemDisplay customer.basket
+               )
 
 
 itemDisplay : OfferInfo -> String
@@ -1259,7 +1260,7 @@ currentSituationString customer offerInfo =
         ++ customer.name
         ++ " for "
         ++ String.fromInt offerInfo.pcOffer
-        ++ " gp."
+        ++ " gp"
 
 
 basicButton : List (Html.Attribute msg) -> List (Html msg) -> Html msg
@@ -1269,7 +1270,10 @@ basicButton attributes messages =
 
 modifyOfferButton : Int -> Model -> Html Msg
 modifyOfferButton offerDiff model =
-    basicButton [ onClick <| PcOffer <| String.fromInt <| model.offerInfo.pcOffer + offerDiff ]
+    basicButton
+        [ Attr.attribute "aria-label" (String.fromInt offerDiff ++ " offer price modify")
+        , onClick <| PcOffer <| String.fromInt <| model.offerInfo.pcOffer + offerDiff
+        ]
         [ text
             ((if offerDiff > 0 then
                 "+"
@@ -1284,7 +1288,10 @@ modifyOfferButton offerDiff model =
 
 modifyWaitButton : Int -> Model -> Html Msg
 modifyWaitButton timeDiff model =
-    basicButton [ onClick <| UpdateWaitTime <| String.fromInt <| model.waitTime + timeDiff ]
+    basicButton
+        [ Attr.attribute "aria-label" (String.fromInt timeDiff ++ " waiting time modify")
+        , onClick <| UpdateWaitTime <| String.fromInt <| model.waitTime + timeDiff
+        ]
         [ text
             ((if timeDiff > 0 then
                 "+"
@@ -1300,8 +1307,8 @@ modifyWaitButton timeDiff model =
 stockBlock : Model -> List (Html Msg)
 stockBlock model =
     [ h3 [] [ text "Stock" ]
-    , basicButton [ onClick <| OfferItem swordItem ] [ text "Sword" ]
-    , basicButton [ onClick <| OfferItem trailMixItem ] [ text "Bag of trail mix" ]
+    , basicButton [ Attr.attribute "aria-label" "Sword offer", onClick <| OfferItem swordItem ] [ text "Sword" ]
+    , basicButton [ Attr.attribute "aria-label" "Bag of trail mix offer", onClick <| OfferItem trailMixItem ] [ text "Bag of trail mix" ]
     ]
 
 

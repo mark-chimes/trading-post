@@ -1,6 +1,7 @@
 module Clientele exposing (..)
 
 import Html exposing (Attribute, Html, button, text)
+import Html.Attributes as Attr
 import Stock exposing (..)
 
 
@@ -60,7 +61,8 @@ initCustomers =
 
 
 type alias TimingConstants =
-    { minTakenOnSuccess : Int
+    { minTakenOnSpeakingTo : Int
+    , minTakenOnSuccess : Int
     , minTakenOnFail : Int
     , minTakenOnSchmooze : Int
     , minTakenOnInspect : Int
@@ -70,7 +72,8 @@ type alias TimingConstants =
 
 constants : TimingConstants
 constants =
-    { minTakenOnSuccess = 5
+    { minTakenOnSpeakingTo = 1
+    , minTakenOnSuccess = 5
     , minTakenOnFail = 10
     , minTakenOnSchmooze = 20
     , minTakenOnInspect = 10
@@ -266,7 +269,8 @@ customerEntryButtons command customers =
     List.map
         (\c ->
             button
-                [ command c
+                [ Attr.attribute "aria-label" (c.name ++ " speak to")
+                , command c
                 ]
                 [ text c.name ]
         )
@@ -382,7 +386,6 @@ customerDisplay customer =
                 Inspected ->
                     [ "Gold in purse: " ++ String.fromInt customer.moneyInPurse ++ "gp"
                     , "Max price: " ++ String.fromInt (maxPrice 100 customer) ++ "%"
-                    , "-"
                     ]
 
                 Uninspected ->

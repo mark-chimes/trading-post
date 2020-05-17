@@ -1,4 +1,4 @@
-module Main exposing (Model, Msg(..), calculateTimeOfNextCustomer, dayOfYear, failOnSaleNoMoney, hourOfDay, hoursInDay, incrementTimeWithMinOpen, init, main, purchaseString, update, view)
+module Main exposing (Model, Msg(..), calculateTimeOfNextCustomer, dayOfYear, failOnSaleNoMoney, hourOfDay, hoursInDay, incrementTimeWithMinOpen, init, main, purchaseString, totalSaleValueOfBasket, update, view)
 
 import Browser
 import Clientele
@@ -22,7 +22,6 @@ type alias Flags =
 type alias Model =
     { time : Time
     , offerInfo : OfferInfo
-    , basketInfo : BasketInfo
     , pcGold : Int
     , cleanTime : Int
     , customers : Clientele.ClienteleDetails
@@ -40,20 +39,12 @@ type alias Model =
 type alias StatsTracker =
     { profit : Int
     , turnover : Int
+    , itemsOffered : Int
+    , itemsSold : Int
     , customersSold : Int
     , customersKicked : Int
     , customersLeft : Int
     }
-
-
-type alias OfferInfo =
-    { pcOffer : Int
-    , item : Item
-    }
-
-
-type alias BasketInfo =
-    List OfferInfo
 
 
 type alias Time =
@@ -68,7 +59,6 @@ init flags =
         )
         { time = openHour * minutesInHour
         , offerInfo = { pcOffer = 20, item = swordItem }
-        , basketInfo = []
         , pcGold = 0
         , cleanTime = 10
         , customers = Clientele.initCustomers
@@ -89,6 +79,8 @@ initStatsTracker : StatsTracker
 initStatsTracker =
     { profit = 0
     , turnover = 0
+    , itemsOffered = 0
+    , itemsSold = 0
     , customersSold = 0
     , customersKicked = 0
     , customersLeft = 0
@@ -350,9 +342,9 @@ addToBasket customer model =
         closeStore "The customer looked just about ready to buy the item! But unfortunately, what with the curfew and all, you have to tell them to come back tomorrow." model
 
     else
-        updateBasket <|
-            updateCustomerGold <|
-                updateGold <|
+        updateModelStatsTrackerWithOffer <|
+            updateBasket <|
+                updateCustomerGold <|
                     updateConversationWithActionMessage (offerAndPurchaseString customer model.offerInfo) <|
                         incrementTimeWithMinOpen Clientele.constants.minTakenOnSuccess <|
                             model
@@ -360,23 +352,16 @@ addToBasket customer model =
 
 confirmOffer : Clientele.Customer -> Model -> Model
 confirmOffer customer model =
-    clearBasket <|
-        updateModelStatsTrackerWithSale <|
-            exitCurrentCustomer <|
-                updateModelStatsTrackerWithGold model.offerInfo.pcOffer model.offerInfo.item.itemWorth <|
-                    updateGold <|
-                        updateConversationWithActionMessage (confirmOfferString customer) <|
-                            model
-
-
-clearBasket : Model -> Model
-clearBasket model =
-    { model | basketInfo = [] }
+    updateModelStatsTrackerWithConfirmSale customer <|
+        exitCurrentCustomer <|
+            updateGold customer <|
+                updateConversationWithActionMessage (confirmSaleString customer) <|
+                    model
 
 
 updateBasket : Model -> Model
 updateBasket model =
-    { model | basketInfo = model.basketInfo ++ [ model.offerInfo ] }
+    { model | customers = Clientele.updateCurrentCustomerBasket model.offerInfo model.customers }
 
 
 updateCustomerGold : Model -> Model
@@ -384,27 +369,29 @@ updateCustomerGold model =
     { model | customers = Clientele.updateCurrentCustomerGold model.offerInfo.pcOffer model.customers }
 
 
-updateModelStatsTrackerWithGold : Int -> Int -> Model -> Model
-updateModelStatsTrackerWithGold sale cost model =
-    { model | statsTracker = updateStatsTrackerWithProfitTurnover sale cost model.statsTracker }
+updateModelStatsTrackerWithConfirmSale : Clientele.Customer -> Model -> Model
+updateModelStatsTrackerWithConfirmSale customer model =
+    { model | statsTracker = updateStatsTrackerWithConfirmSale customer model.statsTracker }
 
 
-updateStatsTrackerWithProfitTurnover : Int -> Int -> StatsTracker -> StatsTracker
-updateStatsTrackerWithProfitTurnover sale cost statsTracker =
-    { statsTracker
-        | turnover = statsTracker.turnover + sale
-        , profit = statsTracker.profit + (sale - cost)
+updateStatsTrackerWithConfirmSale : Clientele.Customer -> StatsTracker -> StatsTracker
+updateStatsTrackerWithConfirmSale customer stats =
+    { stats
+        | customersSold = stats.customersSold + 1
+        , itemsSold = stats.itemsSold + List.length customer.basket
+        , turnover = stats.turnover + totalSaleValueOfBasket customer
+        , profit = stats.profit + totalSaleValueOfBasket customer - totalCostPriceOfBasket customer
     }
 
 
-updateModelStatsTrackerWithSale : Model -> Model
-updateModelStatsTrackerWithSale model =
-    { model | statsTracker = updateStatsTrackerWithSale model.statsTracker }
+updateModelStatsTrackerWithOffer : Model -> Model
+updateModelStatsTrackerWithOffer model =
+    { model | statsTracker = updateStatsTrackerWithOffer model.statsTracker }
 
 
-updateStatsTrackerWithSale : StatsTracker -> StatsTracker
-updateStatsTrackerWithSale statsTracker =
-    { statsTracker | customersSold = statsTracker.customersSold + 1 }
+updateStatsTrackerWithOffer : StatsTracker -> StatsTracker
+updateStatsTrackerWithOffer statsTracker =
+    { statsTracker | itemsOffered = statsTracker.itemsOffered + 1 }
 
 
 failOnSaleNoMoney : Clientele.Customer -> OfferInfo -> Model -> Model
@@ -413,7 +400,10 @@ failOnSaleNoMoney customer offer model =
         closeStore "Unfortunately, before the client can reject your offer, the store closes, and you are forced to shoo them out." model
 
     else
-        updateConversationWithActionMessage (rejectStringNoMoney customer offer) <| incrementTimeWithMinOpen Clientele.constants.minTakenOnFail <| model
+        updateModelStatsTrackerWithOffer <|
+            updateConversationWithActionMessage (rejectStringNoMoney customer offer) <|
+                incrementTimeWithMinOpen Clientele.constants.minTakenOnFail <|
+                    model
 
 
 failOnSaleBadDeal : Clientele.Customer -> OfferInfo -> Model -> Model
@@ -422,7 +412,10 @@ failOnSaleBadDeal customer offer model =
         closeStore "Unfortunately, before the client can reject your offer, the store closes, and you are forced to shoo them out." model
 
     else
-        updateConversationWithActionMessage (rejectStringBadDeal customer offer) <| incrementTimeWithMinOpen Clientele.constants.minTakenOnFail <| model
+        updateModelStatsTrackerWithOffer <|
+            updateConversationWithActionMessage (rejectStringBadDeal customer offer) <|
+                incrementTimeWithMinOpen Clientele.constants.minTakenOnFail <|
+                    model
 
 
 fuckOffCustomer : Model -> Model
@@ -522,9 +515,19 @@ exitCurrentCustomer model =
     { model | customers = Clientele.exitCurrentCustomer model.customers }
 
 
-updateGold : Model -> Model
-updateGold model =
-    { model | pcGold = model.pcGold + model.offerInfo.pcOffer }
+updateGold : Clientele.Customer -> Model -> Model
+updateGold customer model =
+    { model | pcGold = model.pcGold + totalSaleValueOfBasket customer }
+
+
+totalSaleValueOfBasket : Clientele.Customer -> Int
+totalSaleValueOfBasket customer =
+    List.foldl (+) 0 <| List.map (\o -> o.pcOffer) customer.basket
+
+
+totalCostPriceOfBasket : Clientele.Customer -> Int
+totalCostPriceOfBasket customer =
+    List.foldl (+) 0 <| List.map (\o -> o.item.itemWorth) customer.basket
 
 
 minutesInHour : Int
@@ -641,7 +644,13 @@ statsTrackMessage stats =
         profit =
             stats.profit
 
-        sold =
+        offered =
+            stats.itemsOffered
+
+        itemsSold =
+            stats.itemsSold
+
+        customersSold =
             stats.customersSold
 
         kicked =
@@ -651,26 +660,36 @@ statsTrackMessage stats =
             stats.customersLeft
     in
     "Stats for the day: "
-        ++ (if sold > 0 then
-                "You sold items to "
-                    ++ String.fromInt sold
-                    ++ " customer(s). This netted you a total turnover of "
-                    ++ String.fromInt turnover
-                    ++ "gp, "
-                    ++ (if profit > 0 then
-                            "and a profit of "
-                                ++ String.fromInt profit
-                                ++ "gp. "
+        ++ (if offered > 0 then
+                "You made a total of "
+                    ++ String.fromInt offered
+                    ++ " offers to customers. "
+                    ++ (if itemsSold > 0 then
+                            "You sold a total of "
+                                ++ String.fromInt itemsSold
+                                ++ " items to "
+                                ++ String.fromInt customersSold
+                                ++ " customer(s). This netted you a total turnover of "
+                                ++ String.fromInt turnover
+                                ++ " gp, "
+                                ++ (if profit > 0 then
+                                        "and a profit of "
+                                            ++ String.fromInt profit
+                                            ++ " gp. "
 
-                        else if profit == 0 then
-                            "but you didn't make any profit! You should sell items for more than you bought them. "
+                                    else if profit == 0 then
+                                        "but you didn't make any profit! You should sell items for more than you bought them. "
+
+                                    else
+                                        "but you made a loss of " ++ String.fromInt profit ++ " gp! You should sell items for more than you bought them. "
+                                   )
 
                         else
-                            "but you made a loss of " ++ String.fromInt profit ++ "gp! You should sell items for more than you bought them. "
+                            "You didn't sell items to anyone, which is a bit worrying considering that you're running a store. "
                        )
 
             else
-                "You didn't sell items to anyone, which is a bit worrying considering that you're a store. "
+                "You didn't so much as offer an item to anyone. That's no way to run a business! "
            )
         ++ (if kicked > 0 then
                 "You told "
@@ -798,17 +817,21 @@ offerAndPurchaseString customer offerInfo =
     offerString offerInfo ++ "\n" ++ purchaseString customer offerInfo
 
 
-confirmOfferString : Clientele.Customer -> String
-confirmOfferString customer =
-    "You provide "
+confirmSaleString : Clientele.Customer -> String
+confirmSaleString customer =
+    "You sell "
+        ++ String.fromInt (List.length customer.basket)
+        ++ " item(s) to "
         ++ customer.name
-        ++ "\n"
-        ++ " with their items and they leave the store. "
+        ++ " for a total of "
+        ++ String.fromInt (totalSaleValueOfBasket customer)
+        ++ " gp. Cost price was "
+        ++ String.fromInt (totalCostPriceOfBasket customer)
+        ++ " gp, netting you a profit of "
+        ++ String.fromInt (totalSaleValueOfBasket customer - totalCostPriceOfBasket customer)
+        ++ " gp.\n"
         ++ customer.name
         ++ ": \"Goodbye, and thanks for everything!\"\n"
-        ++ "This took: "
-        ++ String.fromInt Clientele.constants.minTakenOnSuccess
-        ++ " minutes."
 
 
 offerString : OfferInfo -> String
@@ -817,9 +840,9 @@ offerString info =
         ++ info.item.itemName
         ++ " for a price of "
         ++ String.fromInt info.pcOffer
-        ++ "gp. (Item cost: "
+        ++ " gp. (Item cost: "
         ++ String.fromInt info.item.itemWorth
-        ++ "gp)."
+        ++ " gp)."
 
 
 purchaseString : Clientele.Customer -> OfferInfo -> String
@@ -1022,7 +1045,7 @@ uiBasedOnStoreState storeState model =
                 , halfBlock <| actionsBlockClosed
                 , halfBlock <| customersBlockClosed
                 , halfBlock <| currentSituationBlockClosed model
-                , halfBlock <| customerInfoPanelClosed model
+                , halfBlock <| customerInfoPanelClosed
                 ]
 
 
@@ -1031,7 +1054,7 @@ storeInfo model =
     [ h2 [] [ text "Store" ]
     , div [] [ text ("Time: " ++ displayTime model.time) ]
     , div [] [ text ("Day: " ++ (String.fromInt <| dayOfYear model.time)) ]
-    , div [] [ text ("Your gold: " ++ String.fromInt model.pcGold ++ "gp") ]
+    , div [] [ text ("Your gold: " ++ String.fromInt model.pcGold ++ " gp") ]
     ]
 
 
@@ -1090,7 +1113,7 @@ currentSituationBlockOpen model =
                     div [] [ text nooneMessage ]
 
                 Just customer ->
-                    div [] [ priceBox customer model, br [] [], basketBox model ]
+                    div [] [ priceBox customer model, br [] [], basketBox customer ]
 
         Wait ->
             div []
@@ -1152,17 +1175,17 @@ priceBox customer model =
         ]
 
 
-basketBox : Model -> Html Msg
-basketBox model =
+basketBox : Clientele.Customer -> Html Msg
+basketBox customer =
     div [] <|
         (List.map
             (\s -> div [] [ text s ])
          <|
             [ "Items in basket:"
             ]
-                ++ List.map itemDisplay model.basketInfo
+                ++ List.map itemDisplay customer.basket
         )
-            ++ [ basicButton [ onClick SubmitConfirmOffer ] [ text "Confirm Offer Offer" ] ]
+            ++ [ basicButton [ onClick SubmitConfirmOffer ] [ text "Confirm Sale and Say Goodbye" ] ]
 
 
 itemDisplay : OfferInfo -> String
@@ -1170,9 +1193,9 @@ itemDisplay offerInfo =
     offerInfo.item.itemName
         ++ " ("
         ++ String.fromInt offerInfo.item.itemWorth
-        ++ "gp) "
+        ++ " gp) "
         ++ String.fromInt offerInfo.pcOffer
-        ++ "gp"
+        ++ " gp"
 
 
 currentSituationBlockClosed : Model -> List (Html Msg)
@@ -1218,8 +1241,8 @@ customerInfoPanelOpen model =
     ]
 
 
-customerInfoPanelClosed : Model -> List (Html Msg)
-customerInfoPanelClosed model =
+customerInfoPanelClosed : List (Html Msg)
+customerInfoPanelClosed =
     [ h3 [] [ text "Customer Info" ]
     , div []
         [ text storeClosedMessage ]
@@ -1228,15 +1251,15 @@ customerInfoPanelClosed model =
 
 currentSituationString : Clientele.Customer -> OfferInfo -> String
 currentSituationString customer offerInfo =
-    "Sell "
+    "Offer "
         ++ offerInfo.item.itemName
         ++ " (cost "
         ++ String.fromInt offerInfo.item.itemWorth
-        ++ "gp) to "
+        ++ " gp) to "
         ++ customer.name
         ++ " for "
         ++ String.fromInt offerInfo.pcOffer
-        ++ "gp."
+        ++ " gp."
 
 
 basicButton : List (Html.Attribute msg) -> List (Html msg) -> Html msg

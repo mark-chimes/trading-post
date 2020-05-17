@@ -1372,7 +1372,14 @@ storyBlock : Model -> List (Html Msg)
 storyBlock model =
     [ h3 [] [ text "The story thus far: " ]
     , button [ onClick ClearStory ] [ text "Clear Story" ]
-    , button [ onClick ReverseStory ] [ text "Reverse Story" ]
+    , button [ onClick ReverseStory ]
+        [ text <|
+            if model.isConvoReverse then
+                "Story reversed"
+
+            else
+                "Story forwards"
+        ]
     , div []
         []
     , textarea [ Attr.attribute "aria-live" "assertive", Attr.readonly True, Attr.cols (model.windowWidth // 10), Attr.rows 15 ]

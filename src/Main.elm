@@ -294,6 +294,9 @@ submitAddToBasket model =
                 NoMoney ->
                     failOnSaleNoMoney customer model.offerInfo model
 
+                TooManyItems ->
+                    failOnSaleTooManyItems customer model.offerInfo model
+
         Nothing ->
             updateConversationWithActionMessage "Please address a customer before submitting an offer." model
 
@@ -311,6 +314,7 @@ submitConfirmOffer model =
 type CustomerSaleSuccess
     = Success
     | BadDeal
+    | TooManyItems
     | NoMoney
 
 
@@ -324,7 +328,11 @@ determineIfSale customer model =
         NoMoney
 
     else if offer > Clientele.maxPrice model.offerInfo.item customer then
-        BadDeal
+        if customer.numItemsInBasket model.offerInfo.item.itemType == 0 then
+            BadDeal
+
+        else
+            TooManyItems
 
     else
         Success
@@ -393,6 +401,10 @@ updateStatsTrackerWithOffer statsTracker =
     { statsTracker | itemsOffered = statsTracker.itemsOffered + 1 }
 
 
+
+-- TODO extract common code of the lower functions up by one function
+
+
 failOnSaleNoMoney : Clientele.Customer -> OfferInfo -> Model -> Model
 failOnSaleNoMoney customer offer model =
     if wouldStoreClose Clientele.constants.minTakenOnFail model.time then
@@ -413,6 +425,18 @@ failOnSaleBadDeal customer offer model =
     else
         updateModelStatsTrackerWithOffer <|
             updateConversationWithActionMessage (rejectStringBadDeal customer offer) <|
+                incrementTimeWithMinOpen Clientele.constants.minTakenOnFail <|
+                    model
+
+
+failOnSaleTooManyItems : Clientele.Customer -> OfferInfo -> Model -> Model
+failOnSaleTooManyItems customer offer model =
+    if wouldStoreClose Clientele.constants.minTakenOnFail model.time then
+        closeStore "Unfortunately, before the client can reject your offer, the store closes, and you are forced to shoo them out." model
+
+    else
+        updateModelStatsTrackerWithOffer <|
+            updateConversationWithActionMessage (rejectStringTooManyItems customer offer) <|
                 incrementTimeWithMinOpen Clientele.constants.minTakenOnFail <|
                     model
 
@@ -475,10 +499,15 @@ inspectCustomer model =
     else
         case model.customers.currentCustomer of
             Just customer ->
-                markCurrentCustomerAsInspected <|
-                    updateConversationWithActionMessage (Clientele.inspectCustomerMessage customer) <|
-                        incrementTimeWithMinOpen Clientele.constants.minTakenOnInspect <|
-                            model
+                case customer.inspectedState of
+                    Clientele.Inspected ->
+                        updateConversationWithActionMessage ("You've already inspected " ++ customer.name ++ ".") model
+
+                    Clientele.Uninspected ->
+                        markCurrentCustomerAsInspected <|
+                            updateConversationWithActionMessage (Clientele.inspectCustomerMessage customer) <|
+                                incrementTimeWithMinOpen Clientele.constants.minTakenOnInspect <|
+                                    model
 
             Nothing ->
                 updateConversationWithActionMessage "Who are you trying to inspeect?" model
@@ -884,6 +913,19 @@ rejectStringNoMoney customer offer =
         ++ " gold for a "
         ++ offer.item.itemName
         ++ ".\" \nThis exchange took "
+        ++ String.fromInt Clientele.constants.minTakenOnFail
+        ++ " minutes."
+
+
+rejectStringTooManyItems : Clientele.Customer -> OfferInfo -> String
+rejectStringTooManyItems customer offer =
+    offerString offer
+        ++ "\n"
+        ++ customer.name
+        ++ ": \""
+        ++ "I don't really need another "
+        ++ offer.item.itemName
+        ++ ". You'd have to give me a really good deal!\"\nThis exchange took "
         ++ String.fromInt Clientele.constants.minTakenOnFail
         ++ " minutes."
 

@@ -96,7 +96,17 @@ updateCurrentCustomerBasket offerInfo clientele =
 
 updateCustomerBasket : OfferInfo -> Customer -> Customer
 updateCustomerBasket offerInfo customer =
-    { customer | basket = customer.basket ++ [ offerInfo ] }
+    { customer | basket = customer.basket ++ [ offerInfo ], numItemsInBasket = incrementCustomerNumItemsInBasket offerInfo.item.itemType customer.numItemsInBasket }
+
+
+incrementCustomerNumItemsInBasket : ItemType -> (ItemType -> Int) -> (ItemType -> Int)
+incrementCustomerNumItemsInBasket incrementedItem numItemsInBasket =
+    \itemType ->
+        if itemType == incrementedItem then
+            numItemsInBasket itemType + 1
+
+        else
+            numItemsInBasket itemType
 
 
 updateCurrentCustomerGold : Int -> ClienteleDetails -> ClienteleDetails
@@ -302,6 +312,7 @@ type alias Customer =
     , descriptionMessage : String
     , inspectedState : InspectedState
     , template : CustomerTemplate
+    , numItemsInBasket : ItemType -> Int
     }
 
 
@@ -330,6 +341,7 @@ createCustomer ci =
     , descriptionMessage = ci.descriptionMessage
     , inspectedState = Uninspected
     , template = ci.template
+    , numItemsInBasket = \_ -> 0
     }
 
 
@@ -340,7 +352,12 @@ calculateMoneyInPurse wealthLevel =
 
 maxPrice : Item -> Customer -> Int
 maxPrice item customer =
-    round (toFloat item.itemWorth * customer.template.itemPreferences item.itemType * maxPriceFromWealth customer.wealthLevel * (1 + 0.5 * toFloat customer.schmoozeCount))
+    round (toFloat item.itemWorth * paymentForItemType item.itemType customer)
+
+
+paymentForItemType : ItemType -> Customer -> Float
+paymentForItemType itemType customer =
+    customer.template.itemPreferences itemType * maxPriceFromWealth customer.wealthLevel * (1 + 0.5 * toFloat customer.schmoozeCount) * (1.0 / (1.0 + (toFloat <| customer.numItemsInBasket itemType)))
 
 
 maxPriceFromWealth : WealthLevel -> Float
@@ -401,17 +418,33 @@ customerDisplay customer =
                     [ "Gold in purse: " ++ String.fromInt customer.moneyInPurse ++ "gp"
                     , " - Max prices - "
                     , "Base: " ++ String.fromInt (round (maxPriceFromWealth customer.wealthLevel * (1 + 0.5 * toFloat customer.schmoozeCount) * 100)) ++ "%"
-                    , "Food: " ++ percentageForDisplay customer Stock.FoodType
-                    , "Weapons: " ++ percentageForDisplay customer Stock.WeaponType
+                    , "Food: (" ++ String.fromInt (customer.numItemsInBasket Stock.FoodType) ++ ") " ++ percentageForDisplay Stock.FoodType customer
+                    , "Weapons: (" ++ String.fromInt (customer.numItemsInBasket Stock.WeaponType) ++ ") " ++ percentageForDisplay Stock.WeaponType customer
                     ]
 
                 Uninspected ->
                     [ "" ]
            )
+        {- ++ [ "DEBUG"
+           , "SwordItem: "
+           , String.fromInt <| maxPrice swordItem customer
+           , "item.itemWorth: "
+           , String.fromInt <| swordItem.itemWorth
+           , "paymentForItemType item.itemType customer: "
+           , String.fromFloat <| paymentForItemType WeaponType customer
+           , "customer.template.itemPreferences itemType"
+           , String.fromFloat <| customer.template.itemPreferences WeaponType
+           , "maxPriceFromWealth customer.wealthLevel"
+           , String.fromFloat <| maxPriceFromWealth customer.wealthLevel
+           , "(1 + 0.5 * toFloat customer.schmoozeCount)"
+           , String.fromFloat <| 1 + 0.5 * toFloat customer.schmoozeCount
+           ]
+        -}
         ++ "-\n"
         :: (case customer.inspectedState of
                 Inspected ->
-                    [ customer.introMessage ++ " " ++ customer.descriptionMessage
+                    [ customer.template.name
+                    , customer.introMessage ++ " " ++ customer.descriptionMessage
                     , wealthDescriptionFromWealth customer.wealthLevel
                     ]
 
@@ -420,9 +453,9 @@ customerDisplay customer =
            )
 
 
-percentageForDisplay : Customer -> Stock.ItemType -> String
-percentageForDisplay customer itemType =
-    String.fromInt (round (customer.template.itemPreferences itemType * maxPriceFromWealth customer.wealthLevel * (1 + 0.5 * toFloat customer.schmoozeCount) * 100)) ++ "%"
+percentageForDisplay : Stock.ItemType -> Customer -> String
+percentageForDisplay itemType customer =
+    String.fromInt (round (paymentForItemType itemType customer) * 100) ++ "%"
 
 
 defaultCustomer : Customer
@@ -477,14 +510,16 @@ type alias ItemPreferences =
 
 
 type alias CustomerTemplate =
-    { description : String
+    { name : String
+    , description : String
     , itemPreferences : ItemPreferences
     }
 
 
 templateKnight : CustomerTemplate
 templateKnight =
-    { description = "They are a knight! They'll pay normal price for food and double for weapons."
+    { name = "Knight"
+    , description = "They are a knight! They'll pay normal price for food and double for weapons."
     , itemPreferences =
         \itemType ->
             case itemType of
@@ -498,7 +533,8 @@ templateKnight =
 
 templateTraveller : CustomerTemplate
 templateTraveller =
-    { description = "They are a traveller! They'll pay half price for weapons and double for food."
+    { name = "Traveller"
+    , description = "They are a traveller! They'll pay half price for weapons and double for food."
     , itemPreferences =
         \itemType ->
             case itemType of
@@ -512,7 +548,8 @@ templateTraveller =
 
 templateWeird : CustomerTemplate
 templateWeird =
-    { description = "They are weird! You can't tell what they want."
+    { name = "Weird"
+    , description = "They are weird! You can't tell what they want."
     , itemPreferences =
         \itemType ->
             case itemType of

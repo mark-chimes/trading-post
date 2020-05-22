@@ -648,7 +648,14 @@ updateDictionaryWithList dict list =
             updateDictionaryWithList
                 (Dict.update
                     x
-                    (Maybe.map (\qty -> qty + 1))
+                    (\maybeQty ->
+                        case maybeQty of
+                            Just qty ->
+                                Just (qty + 1)
+
+                            Nothing ->
+                                Just 1
+                    )
                     dict
                 )
                 xs

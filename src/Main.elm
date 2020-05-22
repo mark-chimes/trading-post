@@ -96,7 +96,7 @@ type alias StockQties =
 initStockQty : StockQties
 initStockQty =
     Dict.fromList
-        [ ( Stock.swordItem.uniqueName, 20 )
+        [ ( Stock.swordItem.uniqueName, 2 )
         , ( Stock.axeItem.uniqueName, 20 )
         , ( Stock.trailMixItem.uniqueName, 20 )
         ]
@@ -382,11 +382,12 @@ addToBasket customer offerInfo model =
 
     else
         updateModelStatsTrackerWithOffer <|
-            updateBasketAndStock offerInfo <|
-                updateCustomerGold <|
-                    updateConversationWithActionMessage (offerAndPurchaseString customer offerInfo) <|
-                        incrementTimeWithMinOpen Clientele.constants.minTakenOnSuccess <|
-                            model
+            updateCurrentOfferInCaseItemGone offerInfo <|
+                updateBasketAndStock offerInfo <|
+                    updateCustomerGold <|
+                        updateConversationWithActionMessage (offerAndPurchaseString customer offerInfo) <|
+                            incrementTimeWithMinOpen Clientele.constants.minTakenOnSuccess <|
+                                model
 
 
 confirmSale : Clientele.Customer -> Model -> Model
@@ -400,6 +401,15 @@ confirmSale customer model =
 
 
 -- TODO Update basket and stock
+
+
+updateCurrentOfferInCaseItemGone : OfferInfo -> Model -> Model
+updateCurrentOfferInCaseItemGone offerInfo model =
+    if Maybe.withDefault 0 (Dict.get offerInfo.item.uniqueName model.stockQty) == 0 then
+        { model | offerInfo = { pcOffer = 0, maybeItem = Nothing } }
+
+    else
+        model
 
 
 updateBasketAndStock : OfferInfo -> Model -> Model

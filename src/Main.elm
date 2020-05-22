@@ -588,9 +588,13 @@ markCurrentCustomerAsInspected model =
 
 callNextCustomer : Clientele.Customer -> Model -> Model
 callNextCustomer customer model =
-    updateConversationWithActionMessage (Clientele.customerCallMessage customer) <|
-        incrementTimeWithMinOpen Clientele.constants.minTakenOnSpeakingTo <|
-            { model | customers = Clientele.callCustomer model.customers customer }
+    if (model.storeState == Open) && wouldStoreClose Clientele.constants.minTakenOnSpeakingTo model.time then
+        closeStore "Whilst you were changing your attention from one customer to another, the store closed, and they all left." model
+
+    else
+        updateConversationWithActionMessage (Clientele.customerCallMessage customer) <|
+            incrementTimeWithMinOpen Clientele.constants.minTakenOnSpeakingTo <|
+                { model | customers = Clientele.callCustomer model.customers customer }
 
 
 updateTimeFuckOff : Model -> Model

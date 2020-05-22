@@ -281,11 +281,19 @@ customerEntryButtons :
 customerEntryButtons command customers =
     List.map
         (\c ->
-            button
-                [ Attr.attribute "aria-label" (c.name ++ " speak to")
-                , command c
-                ]
-                [ text c.name ]
+            if List.length c.basket > 0 then
+                button
+                    [ Attr.attribute "aria-label" (c.name ++ " (with items in basket) speak to")
+                    , command c
+                    ]
+                    [ text <| c.name ++ " (*)" ]
+
+            else
+                button
+                    [ Attr.attribute "aria-label" (c.name ++ " speak to")
+                    , command c
+                    ]
+                    [ text c.name ]
         )
         customers.waitingCustomers
 

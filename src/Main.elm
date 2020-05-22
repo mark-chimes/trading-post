@@ -2,6 +2,7 @@ module Main exposing (Model, Msg(..), calculateTimeOfNextCustomer, dayOfYear, fa
 
 import Browser
 import Clientele
+import Dict exposing (Dict)
 import Html exposing (Html, br, button, div, h1, h2, h3, h4, hr, img, input, li, text, textarea, ul)
 import Html.Attributes as Attr exposing (placeholder, src, value)
 import Html.Events exposing (onClick, onInput)
@@ -20,7 +21,7 @@ type alias Flags =
 
 type alias Model =
     { time : Time
-    , offerInfo : OfferInfo
+    , offerInfo : PcOfferInfo
     , pcGold : Int
     , cleanTime : Int
     , customers : Clientele.ClienteleDetails
@@ -32,6 +33,7 @@ type alias Model =
     , timeOfNextCustomer : Time
     , storeState : StoreState
     , statsTracker : StatsTracker
+    , stockQty : StockQties
     }
 
 
@@ -57,7 +59,7 @@ init flags =
             Clientele.initFirstCustomer
         )
         { time = openHour * minutesInHour
-        , offerInfo = { pcOffer = 20, item = swordItem }
+        , offerInfo = { pcOffer = 20, maybeItem = Just Stock.swordItem }
         , pcGold = 0
         , cleanTime = 10
         , customers = Clientele.initCustomers
@@ -69,6 +71,7 @@ init flags =
         , timeOfNextCustomer = (openHour * 60) + timeBetweenCustomersMins
         , storeState = Open
         , statsTracker = initStatsTracker
+        , stockQty = initStockQty
         }
     , Cmd.none
     )
@@ -86,12 +89,25 @@ initStatsTracker =
     }
 
 
+type alias StockQties =
+    Dict String Int
+
+
+initStockQty : StockQties
+initStockQty =
+    Dict.fromList
+        [ ( Stock.swordItem.uniqueName, 20 )
+        , ( Stock.axeItem.uniqueName, 20 )
+        , ( Stock.trailMixItem.uniqueName, 20 )
+        ]
+
+
 type Msg
     = NoOp
     | PrepSubmitOffer
     | PcOffer String
     | SubmitAddToBasket
-    | SubmitConfirmOffer
+    | SubmitConfirmSale
     | ClearStory
     | PrepKickOutCustomer
     | KickOutCustomer
@@ -149,8 +165,8 @@ update msg model =
         SubmitAddToBasket ->
             ( submitAddToBasket <| model, Cmd.none )
 
-        SubmitConfirmOffer ->
-            ( submitConfirmOffer <| model, Cmd.none )
+        SubmitConfirmSale ->
+            ( submitConfirmSale <| model, Cmd.none )
 
         ClearStory ->
             ( { model | conversation = [] }, Cmd.none )
@@ -214,7 +230,7 @@ updateWaitTime newWaitString model =
     { model | waitTime = max 0 (Maybe.withDefault model.waitTime (String.toInt newWaitString)) }
 
 
-calculateUpdatedOffer : String -> OfferInfo -> OfferInfo
+calculateUpdatedOffer : String -> PcOfferInfo -> PcOfferInfo
 calculateUpdatedOffer newOfferString info =
     { info | pcOffer = max 0 (Maybe.withDefault info.pcOffer (String.toInt newOfferString)) }
 
@@ -224,11 +240,18 @@ updatePriceReset model =
     { model | offerInfo = resetPrice model.offerInfo }
 
 
-resetPrice : OfferInfo -> OfferInfo
+resetPrice : PcOfferInfo -> PcOfferInfo
 resetPrice offerInfo =
-    { offerInfo
-        | pcOffer = offerInfo.item.itemWorth
-    }
+    case offerInfo.maybeItem of
+        Just item ->
+            { offerInfo
+                | pcOffer = item.itemWorth
+            }
+
+        Nothing ->
+            { offerInfo
+                | pcOffer = 0
+            }
 
 
 prepSubmitOffer : Model -> Model
@@ -271,9 +294,9 @@ offerItem item model =
     { model | offerInfo = itemToOffer item model.offerInfo }
 
 
-itemToOffer : Item -> OfferInfo -> OfferInfo
+itemToOffer : Item -> PcOfferInfo -> PcOfferInfo
 itemToOffer item offer =
-    { offer | item = item }
+    { offer | maybeItem = Just item }
 
 
 
@@ -284,28 +307,37 @@ submitAddToBasket : Model -> Model
 submitAddToBasket model =
     case model.customers.currentCustomer of
         Just customer ->
-            case determineIfSale customer model of
-                Success ->
-                    addToBasket customer model
+            case model.offerInfo.maybeItem of
+                Just item ->
+                    let
+                        offerInfo =
+                            { pcOffer = model.offerInfo.pcOffer, item = item }
+                    in
+                    case determineIfSale customer offerInfo model of
+                        Success ->
+                            addToBasket customer offerInfo model
 
-                BadDeal ->
-                    failOnSaleBadDeal customer model.offerInfo model
+                        BadDeal ->
+                            failOnSaleBadDeal customer offerInfo model
 
-                NoMoney ->
-                    failOnSaleNoMoney customer model.offerInfo model
+                        NoMoney ->
+                            failOnSaleNoMoney customer offerInfo model
 
-                TooManyItems ->
-                    failOnSaleTooManyItems customer model.offerInfo model
+                        TooManyItems ->
+                            failOnSaleTooManyItems customer offerInfo model
+
+                Nothing ->
+                    updateConversationWithActionMessage "There is no item on offer." model
 
         Nothing ->
             updateConversationWithActionMessage "Please address a customer before submitting an offer." model
 
 
-submitConfirmOffer : Model -> Model
-submitConfirmOffer model =
+submitConfirmSale : Model -> Model
+submitConfirmSale model =
     case model.customers.currentCustomer of
         Just customer ->
-            confirmOffer customer model
+            confirmSale customer model
 
         Nothing ->
             updateConversationWithActionMessage "Please address a customer before confirming an offer." model
@@ -318,17 +350,17 @@ type CustomerSaleSuccess
     | NoMoney
 
 
-determineIfSale : Clientele.Customer -> Model -> CustomerSaleSuccess
-determineIfSale customer model =
+determineIfSale : Clientele.Customer -> OfferInfo -> Model -> CustomerSaleSuccess
+determineIfSale customer offerInfo model =
     let
         offer =
-            model.offerInfo.pcOffer
+            offerInfo.pcOffer
     in
     if model.offerInfo.pcOffer > customer.moneyInPurse then
         NoMoney
 
-    else if offer > Clientele.maxPrice model.offerInfo.item customer then
-        if customer.numItemsInBasket model.offerInfo.item.itemType == 0 then
+    else if offer > Clientele.maxPrice offerInfo.item customer then
+        if customer.numItemsInBasket offerInfo.item.itemType == 0 then
             BadDeal
 
         else
@@ -343,32 +375,58 @@ updateConversationWithActionMessage message model =
     { model | conversation = model.conversation ++ [ [ displayTime model.time, message, "" ] ] }
 
 
-addToBasket : Clientele.Customer -> Model -> Model
-addToBasket customer model =
+addToBasket : Clientele.Customer -> OfferInfo -> Model -> Model
+addToBasket customer offerInfo model =
     if (model.storeState == Open) && wouldStoreClose Clientele.constants.minTakenOnSuccess model.time then
         closeStore "The customer looked just about ready to buy the item! But unfortunately, what with the curfew and all, you have to tell them to come back tomorrow." model
 
     else
         updateModelStatsTrackerWithOffer <|
-            updateBasket <|
+            updateBasketAndStock offerInfo <|
                 updateCustomerGold <|
-                    updateConversationWithActionMessage (offerAndPurchaseString customer model.offerInfo) <|
+                    updateConversationWithActionMessage (offerAndPurchaseString customer offerInfo) <|
                         incrementTimeWithMinOpen Clientele.constants.minTakenOnSuccess <|
                             model
 
 
-confirmOffer : Clientele.Customer -> Model -> Model
-confirmOffer customer model =
+confirmSale : Clientele.Customer -> Model -> Model
+confirmSale customer model =
     updateModelStatsTrackerWithConfirmSale customer <|
-        exitCurrentCustomer <|
-            updateGold customer <|
+        exitCurrentCustomerSuccessfulSale <|
+            updateGoldWithSale customer <|
                 updateConversationWithActionMessage (confirmSaleString customer) <|
                     model
 
 
-updateBasket : Model -> Model
-updateBasket model =
-    { model | customers = Clientele.updateCurrentCustomerBasket model.offerInfo model.customers }
+
+-- TODO Update basket and stock
+
+
+updateBasketAndStock : OfferInfo -> Model -> Model
+updateBasketAndStock offerInfo model =
+    { model
+        | customers = Clientele.updateCurrentCustomerBasket offerInfo model.customers
+        , stockQty = decrementDict offerInfo.item.uniqueName model.stockQty
+    }
+
+
+decrementDict : comparable -> Dict comparable number -> Dict comparable number
+decrementDict x dict =
+    Dict.update
+        x
+        (\maybeQty ->
+            case maybeQty of
+                Just qty ->
+                    if qty == 1 then
+                        Nothing
+
+                    else
+                        Just (qty - 1)
+
+                Nothing ->
+                    Nothing
+        )
+        dict
 
 
 updateCustomerGold : Model -> Model
@@ -443,7 +501,7 @@ failOnSaleTooManyItems customer offer model =
 
 fuckOffCustomer : Model -> Model
 fuckOffCustomer model =
-    updateModelStatsTrackerWithFuckoff <| updateConversationWithActionMessage (Clientele.customerFuckOffMessage model.customers) <| exitCurrentCustomer <| updateTimeFuckOff <| model
+    updateModelStatsTrackerWithFuckoff <| updateConversationWithActionMessage (Clientele.customerFuckOffMessage model.customers) <| exitCurrentCustomerClearBasket <| updateTimeFuckOff <| model
 
 
 updateModelStatsTrackerWithFuckoff : Model -> Model
@@ -539,13 +597,51 @@ updateTimeFuckOff model =
                 model
 
 
-exitCurrentCustomer : Model -> Model
-exitCurrentCustomer model =
-    { model | customers = Clientele.exitCurrentCustomer model.customers }
+exitCurrentCustomerClearBasket : Model -> Model
+exitCurrentCustomerClearBasket model =
+    { model
+        | customers = Clientele.exitCurrentCustomer model.customers
+        , stockQty =
+            restockWith model.stockQty <|
+                case model.customers.currentCustomer of
+                    Just customer ->
+                        customer.basket
+
+                    Nothing ->
+                        []
+    }
 
 
-updateGold : Clientele.Customer -> Model -> Model
-updateGold customer model =
+exitCurrentCustomerSuccessfulSale : Model -> Model
+exitCurrentCustomerSuccessfulSale model =
+    { model
+        | customers = Clientele.exitCurrentCustomer model.customers
+    }
+
+
+restockWith : StockQties -> Clientele.BasketInfo -> StockQties
+restockWith stockQty basket =
+    updateDictionaryWithList stockQty <| List.map (\offer -> offer.item.uniqueName) basket
+
+
+updateDictionaryWithList : Dict comparable number -> List comparable -> Dict comparable number
+updateDictionaryWithList dict list =
+    case list of
+        [] ->
+            dict
+
+        x :: xs ->
+            updateDictionaryWithList
+                (Dict.update
+                    x
+                    (Maybe.map (\qty -> qty + 1))
+                    dict
+                )
+                xs
+
+
+updateGoldWithSale : Clientele.Customer -> Model -> Model
+updateGoldWithSale customer model =
     { model | pcGold = model.pcGold + totalSaleValueOfBasket customer }
 
 
@@ -628,6 +724,13 @@ closeStore closeMessage model =
             { mdl
                 | storeState = Closed
                 , customers = Clientele.exitAllCustomers model.customers
+                , stockQty =
+                    case mdl.customers.currentCustomer of
+                        Just customer ->
+                            restockWith mdl.stockQty customer.basket
+
+                        Nothing ->
+                            mdl.stockQty
             }
         )
         <|
@@ -866,7 +969,7 @@ confirmSaleString customer =
 offerString : OfferInfo -> String
 offerString info =
     "You offered the "
-        ++ info.item.itemName
+        ++ info.item.displayName
         ++ " for a price of "
         ++ String.fromInt info.pcOffer
         ++ " gp. (Item cost: "
@@ -878,11 +981,11 @@ purchaseString : Clientele.Customer -> OfferInfo -> String
 purchaseString customer offerInfo =
     customer.name
         ++ ": \"A "
-        ++ offerInfo.item.itemName
+        ++ offerInfo.item.displayName
         ++ " for "
         ++ String.fromInt offerInfo.pcOffer
         ++ " gold sounds like a good deal!\" \nThey add the "
-        ++ offerInfo.item.itemName
+        ++ offerInfo.item.displayName
         ++ " to their basket.\n"
         ++ "This took: "
         ++ String.fromInt Clientele.constants.minTakenOnSuccess
@@ -897,7 +1000,7 @@ rejectStringBadDeal customer offer =
         ++ ": \""
         ++ String.fromInt offer.pcOffer
         ++ " gold is too expensive for a "
-        ++ offer.item.itemName
+        ++ offer.item.displayName
         ++ "!\". \nThis exchange took "
         ++ String.fromInt Clientele.constants.minTakenOnFail
         ++ " minutes."
@@ -911,7 +1014,7 @@ rejectStringNoMoney customer offer =
         ++ ": \"I'm afraid I just don't have another "
         ++ String.fromInt offer.pcOffer
         ++ " gold for a "
-        ++ offer.item.itemName
+        ++ offer.item.displayName
         ++ ".\" \nThis exchange took "
         ++ String.fromInt Clientele.constants.minTakenOnFail
         ++ " minutes."
@@ -924,7 +1027,7 @@ rejectStringTooManyItems customer offer =
         ++ customer.name
         ++ ": \""
         ++ "I don't really need another "
-        ++ offer.item.itemName
+        ++ offer.item.displayName
         ++ ". You'd have to give me a really good deal!\"\nThis exchange took "
         ++ String.fromInt Clientele.constants.minTakenOnFail
         ++ " minutes."
@@ -1057,7 +1160,12 @@ view model =
                 "Customer max price: "
                     ++ (case model.customers.currentCustomer of
                             Just customer ->
-                                String.fromInt <| Clientele.maxPrice model.offerInfo.item customer
+                                case model.offerInfo.maybeItem of
+                                    Just item ->
+                                        String.fromInt <| Clientele.maxPrice item customer
+
+                                    Nothing ->
+                                        "No item"
 
                             Nothing ->
                                 "No Customer"
@@ -1210,9 +1318,18 @@ priceBox customer model =
                 ]
             , br [] []
             , div [] []
-            , basicButton [ onClick SubmitAddToBasket ]
-                [ text <| currentSituationString customer model.offerInfo
-                ]
+            , case model.offerInfo.maybeItem of
+                Just item ->
+                    let
+                        offerInfo =
+                            { pcOffer = model.offerInfo.pcOffer, item = item }
+                    in
+                    basicButton [ onClick SubmitAddToBasket ]
+                        [ text <| currentSituationString customer offerInfo
+                        ]
+
+                Nothing ->
+                    div [] []
             ]
         ]
 
@@ -1220,7 +1337,7 @@ priceBox customer model =
 basketBox : Clientele.Customer -> Html Msg
 basketBox customer =
     div [] <|
-        [ basicButton [ onClick SubmitConfirmOffer ] [ text <| "Confirm Sale of " ++ String.fromInt (List.length customer.basket) ++ " items and Say Goodbye" ] ]
+        [ basicButton [ onClick SubmitConfirmSale ] [ text <| "Confirm Sale of " ++ String.fromInt (List.length customer.basket) ++ " items and Say Goodbye" ] ]
             ++ (List.map
                     (\s -> div [] [ text s ])
                 <|
@@ -1232,7 +1349,7 @@ basketBox customer =
 
 itemDisplay : OfferInfo -> String
 itemDisplay offerInfo =
-    offerInfo.item.itemName
+    offerInfo.item.displayName
         ++ " ("
         ++ String.fromInt offerInfo.item.itemWorth
         ++ " gp) "
@@ -1294,7 +1411,7 @@ customerInfoPanelClosed =
 currentSituationString : Clientele.Customer -> OfferInfo -> String
 currentSituationString customer offerInfo =
     "Offer "
-        ++ offerInfo.item.itemName
+        ++ offerInfo.item.displayName
         ++ " (cost "
         ++ String.fromInt offerInfo.item.itemWorth
         ++ " gp) to "
@@ -1348,9 +1465,33 @@ modifyWaitButton timeDiff model =
 stockBlock : Model -> List (Html Msg)
 stockBlock model =
     [ h3 [] [ text "Stock" ]
-    , basicButton [ Attr.attribute "aria-label" "Sword offer", onClick <| OfferItem swordItem ] [ text "Sword" ]
-    , basicButton [ Attr.attribute "aria-label" "Bag of trail mix offer", onClick <| OfferItem trailMixItem ] [ text "Bag of trail mix" ]
+    , div [] (List.map stockItemButton <| Dict.toList model.stockQty)
     ]
+
+
+stockItemButton : ( String, Int ) -> Html Msg
+stockItemButton ( uniqueName, qty ) =
+    let
+        maybeItem =
+            Stock.itemForName uniqueName
+    in
+    case maybeItem of
+        Just item ->
+            if qty == 1 then
+                basicButton [ Attr.attribute "aria-label" (item.displayName ++ " offer"), onClick <| OfferItem item ]
+                    [ text item.displayName ]
+
+            else
+                basicButton [ Attr.attribute "aria-label" (item.displayName ++ " (quantity " ++ String.fromInt qty ++ ") offer"), onClick <| OfferItem item ]
+                    [ text <|
+                        item.displayName
+                            ++ " ("
+                            ++ String.fromInt qty
+                            ++ ")"
+                    ]
+
+        Nothing ->
+            basicButton [] [ text "ERROR" ]
 
 
 customersBlockOpen : Model -> List (Html Msg)

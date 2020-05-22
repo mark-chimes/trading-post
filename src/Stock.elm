@@ -2,14 +2,40 @@ module Stock exposing (..)
 
 
 type ItemType
-    = WeaponType
-    | FoodType
+    = ItemType String
+
+
+itemTypeEnum : List String
+itemTypeEnum =
+    [ "weapon", "food" ]
+
+
+weaponType : ItemType
+weaponType =
+    ItemType "weapon"
+
+
+foodType : ItemType
+foodType =
+    ItemType "food"
+
+
+toString : ItemType -> String
+toString (ItemType string) =
+    string
 
 
 type alias Item =
-    { itemName : String
+    { uniqueName : String
+    , displayName : String
     , itemWorth : Int
     , itemType : ItemType
+    }
+
+
+type alias PcOfferInfo =
+    { pcOffer : Int
+    , maybeItem : Maybe Item
     }
 
 
@@ -19,27 +45,43 @@ type alias OfferInfo =
     }
 
 
-itemTypeName : ItemType -> String
-itemTypeName itemType =
-    case itemType of
-        WeaponType ->
-            "weapon"
-
-        FoodType ->
-            "food"
-
-
 swordItem : Item
 swordItem =
-    { itemName = "sword"
+    { uniqueName = "sword"
+    , displayName = "sword"
     , itemWorth = 20
-    , itemType = WeaponType
+    , itemType = weaponType
+    }
+
+
+axeItem : Item
+axeItem =
+    { uniqueName = "axe"
+    , displayName = "axe"
+    , itemWorth = 15
+    , itemType = weaponType
     }
 
 
 trailMixItem : Item
 trailMixItem =
-    { itemName = "packet of trail mix"
+    { uniqueName = "trail mix"
+    , displayName = "packet of trail mix"
     , itemWorth = 5
-    , itemType = FoodType
+    , itemType = foodType
     }
+
+
+itemForName : String -> Maybe Item
+itemForName uniqueName =
+    if uniqueName == "sword" then
+        Just swordItem
+
+    else if uniqueName == "axe" then
+        Just axeItem
+
+    else if uniqueName == "trail mix" then
+        Just trailMixItem
+
+    else
+        Nothing

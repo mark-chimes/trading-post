@@ -417,9 +417,10 @@ customerDisplay customer =
                 Inspected ->
                     [ "Gold in purse: " ++ String.fromInt customer.moneyInPurse ++ "gp"
                     , " - Max prices - "
-                    , "Base: " ++ String.fromInt (round (maxPriceFromWealth customer.wealthLevel * (1 + 0.5 * toFloat customer.schmoozeCount) * 100)) ++ "%"
-                    , "Food: (" ++ String.fromInt (customer.numItemsInBasket Stock.FoodType) ++ ") " ++ percentageForDisplay Stock.FoodType customer
-                    , "Weapons: (" ++ String.fromInt (customer.numItemsInBasket Stock.WeaponType) ++ ") " ++ percentageForDisplay Stock.WeaponType customer
+
+                    -- , "Base: " ++ String.fromInt (round (maxPriceFromWealth customer.wealthLevel * (1 + 0.5 * toFloat customer.schmoozeCount) * 100)) ++ "%"
+                    , "Food: (" ++ String.fromInt (customer.numItemsInBasket Stock.foodType) ++ ") " ++ percentageForDisplay Stock.foodType customer
+                    , "Weapons: (" ++ String.fromInt (customer.numItemsInBasket Stock.weaponType) ++ ") " ++ percentageForDisplay Stock.weaponType customer
                     ]
 
                 Uninspected ->
@@ -455,7 +456,7 @@ customerDisplay customer =
 
 percentageForDisplay : Stock.ItemType -> Customer -> String
 percentageForDisplay itemType customer =
-    String.fromInt (round (paymentForItemType itemType customer) * 100) ++ "%"
+    String.fromInt (round (paymentForItemType itemType customer * 100)) ++ "%"
 
 
 defaultCustomer : Customer
@@ -522,12 +523,14 @@ templateKnight =
     , description = "They are a knight! They'll pay normal price for food and double for weapons."
     , itemPreferences =
         \itemType ->
-            case itemType of
-                WeaponType ->
-                    2.0
+            if itemType == weaponType then
+                2.0
 
-                FoodType ->
-                    1.0
+            else if itemType == foodType then
+                1.0
+
+            else
+                0.0
     }
 
 
@@ -537,12 +540,14 @@ templateTraveller =
     , description = "They are a traveller! They'll pay half price for weapons and double for food."
     , itemPreferences =
         \itemType ->
-            case itemType of
-                WeaponType ->
-                    0.5
+            if itemType == weaponType then
+                0.5
 
-                FoodType ->
-                    2.0
+            else if itemType == foodType then
+                2.0
+
+            else
+                0.0
     }
 
 
@@ -550,14 +555,7 @@ templateWeird : CustomerTemplate
 templateWeird =
     { name = "Weird"
     , description = "They are weird! You can't tell what they want."
-    , itemPreferences =
-        \itemType ->
-            case itemType of
-                WeaponType ->
-                    0.0
-
-                FoodType ->
-                    0.0
+    , itemPreferences = \_ -> 0.0
     }
 
 

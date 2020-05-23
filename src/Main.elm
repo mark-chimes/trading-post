@@ -120,6 +120,7 @@ type Msg
     | SchmoozeCustomer
     | CustomerEntry Clientele.Customer
     | ResetPrice
+    | OptimalPrice
     | UpdateWaitTime String
     | PrepWaitAwhile
     | WaitAwhile
@@ -206,6 +207,9 @@ update msg model =
         ResetPrice ->
             ( updatePriceReset model, Cmd.none )
 
+        OptimalPrice ->
+            ( updatePriceOptimal model, Cmd.none )
+
         UpdateWaitTime waitTimeStr ->
             ( updateWaitTime waitTimeStr model, Cmd.none )
 
@@ -249,6 +253,39 @@ resetPrice offerInfo =
             { offerInfo
                 | pcOffer = item.itemWorth
             }
+
+        Nothing ->
+            { offerInfo
+                | pcOffer = 0
+            }
+
+
+updatePriceOptimal : Model -> Model
+updatePriceOptimal model =
+    { model | offerInfo = optimalPrice model.customers.currentCustomer model.offerInfo }
+
+
+optimalPrice : Maybe Clientele.Customer -> PcOfferInfo -> PcOfferInfo
+optimalPrice currentCustomer offerInfo =
+    case offerInfo.maybeItem of
+        Just item ->
+            case currentCustomer of
+                Just customer ->
+                    case customer.inspectedState of
+                        Clientele.Inspected ->
+                            { offerInfo
+                                | pcOffer = Clientele.maxPrice item customer
+                            }
+
+                        Clientele.Uninspected ->
+                            { offerInfo
+                                | pcOffer = item.itemWorth
+                            }
+
+                Nothing ->
+                    { offerInfo
+                        | pcOffer = 0
+                    }
 
         Nothing ->
             { offerInfo
@@ -1265,7 +1302,13 @@ priceBox : Clientele.Customer -> Model -> Html Msg
 priceBox customer model =
     div []
         [ div []
-            [ basicButton [ Attr.attribute "aria-label" "Reset offer to cost price", onClick ResetPrice ] [ text "Cost" ]
+            [ case customer.inspectedState of
+                Clientele.Inspected ->
+                    basicButton [ Attr.attribute "aria-label" "Set offer to optimal price", onClick OptimalPrice ] [ text "Optimal" ]
+
+                Clientele.Uninspected ->
+                    div [] []
+            , basicButton [ Attr.attribute "aria-label" "Reset offer to cost price", onClick ResetPrice ] [ text "Cost" ]
             , modifyOfferButton -100 model
             , modifyOfferButton -10 model
             , input

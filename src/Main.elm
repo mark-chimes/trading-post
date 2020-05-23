@@ -96,9 +96,9 @@ type alias StockQties =
 initStockQty : StockQties
 initStockQty =
     Dict.fromList
-        [ ( Stock.swordItem.uniqueName, 2 )
-        , ( Stock.axeItem.uniqueName, 20 )
-        , ( Stock.trailMixItem.uniqueName, 20 )
+        [ ( Stock.swordItem.uniqueName, 10 )
+        , ( Stock.axeItem.uniqueName, 10 )
+        , ( Stock.trailMixItem.uniqueName, 10 )
         ]
 
 
@@ -741,23 +741,41 @@ incTimeAndOpenStore model =
 closeStore : String -> Model -> Model
 closeStore closeMessage model =
     (\mdl -> updateConversationWithActionMessage (statsModelMessage mdl) mdl) <|
-        (\mdl ->
-            { mdl
-                | storeState = Closed
-                , customers = Clientele.exitAllCustomers model.customers
-                , stockQty =
-                    case mdl.customers.currentCustomer of
-                        Just customer ->
-                            restockWith mdl.stockQty customer.basket
+        takeRent <|
+            repurchaseItems <|
+                (\mdl ->
+                    { mdl
+                        | storeState = Closed
+                        , customers = Clientele.exitAllCustomers model.customers
+                        , stockQty =
+                            case mdl.customers.currentCustomer of
+                                Just customer ->
+                                    restockWith mdl.stockQty customer.basket
 
-                        Nothing ->
-                            mdl.stockQty
-            }
-        )
-        <|
-            recordNeglectedCustomers <|
-                updateConversationWithActionMessage closeMessage <|
-                    incrementTimeToTimeWhilstOpen (calculateClosingTime model.time) model
+                                Nothing ->
+                                    mdl.stockQty
+                    }
+                )
+                <|
+                    recordNeglectedCustomers <|
+                        updateConversationWithActionMessage closeMessage <|
+                            incrementTimeToTimeWhilstOpen (calculateClosingTime model.time) model
+
+
+takeRent : Model -> Model
+takeRent model =
+    let
+        rent =
+            50
+    in
+    updateConversationWithActionMessage ("Rent of " ++ String.fromInt rent ++ " is due.") <|
+        { model | pcGold = model.pcGold - rent }
+
+
+repurchaseItems : Model -> Model
+repurchaseItems model =
+    updateConversationWithActionMessage "You restock on all your items." <|
+        { model | stockQty = initStockQty }
 
 
 recordNeglectedCustomers : Model -> Model

@@ -1090,21 +1090,6 @@ closeHour =
 ---- VIEW ----
 
 
-borderStyle : Html.Attribute msg
-borderStyle =
-    Attr.style "border" "2px solid black"
-
-
-halfThick : String
-halfThick =
-    "5px"
-
-
-fullThick : String
-fullThick =
-    "10px"
-
-
 halfBlock : List (Html msg) -> Html msg
 halfBlock theHtml =
     div
@@ -1113,14 +1098,6 @@ halfBlock theHtml =
         ]
         [ div
             [ Attr.class "half-block-inner"
-            , Attr.style "margin-top" halfThick
-            , Attr.style "margin-bottom" "0px"
-            , Attr.style "margin-left" halfThick
-            , Attr.style "margin-right" halfThick
-            , Attr.style "padding-top" "0px"
-            , Attr.style "padding-bottom" fullThick
-            , Attr.style "padding-left" "0px"
-            , Attr.style "padding-right" "0px"
             ]
             theHtml
         ]
@@ -1132,12 +1109,7 @@ topBlock theHtml =
         [ Attr.style "width" "100%"
         ]
         [ div
-            [ Attr.class "full-block-inner"
-            , Attr.style "margin-top" halfThick
-            , Attr.style "margin-bottom" halfThick
-            , Attr.style "margin-left" fullThick
-            , Attr.style "margin-right" fullThick
-            , Attr.style "padding-bottom" fullThick
+            [ Attr.class "top-block-inner"
             ]
             theHtml
         ]
@@ -1151,10 +1123,7 @@ blockOfBlocks theHtml =
         , Attr.style "display" "table"
         ]
         [ div
-            [ Attr.style "margin-top" halfThick
-            , Attr.style "margin-bottom" fullThick
-            , Attr.style "margin-left" halfThick
-            , Attr.style "margin-right" halfThick
+            [ Attr.class "block-of-blocks"
             ]
             theHtml
         ]
@@ -1169,11 +1138,6 @@ oneBlock theHtml =
         ]
         [ div
             [ Attr.class "full-block-inner"
-            , Attr.style "margin-top" fullThick
-            , Attr.style "margin-bottom" halfThick
-            , Attr.style "margin-left" fullThick
-            , Attr.style "margin-right" fullThick
-            , Attr.style "padding-bottom" fullThick
             ]
             theHtml
         ]
@@ -1325,53 +1289,52 @@ currentSituationBlockOpen model =
 priceBox : Clientele.Customer -> Model -> Html Msg
 priceBox customer model =
     div []
-        [ div [ Attr.style "margin-bottom" halfThick ]
-            [ div []
-                [ basicButton [ Attr.attribute "aria-label" "Reset offer to cost price", onClick ResetPrice ] [ text "Cost" ]
-                , modifyOfferButton -100 model
-                , modifyOfferButton -10 model
-                , input
-                    [ Attr.attribute "aria-label" "Price in gold"
-                    , Attr.style "margin" "2px"
-                    , Attr.type_ "number"
-                    , Attr.min "0"
-                    , Attr.max "50000"
-                    , value (String.fromInt model.offerInfo.pcOffer)
-                    , onInput PcOffer
-                    ]
-                    []
-                , modifyOfferButton 10 model
-                , modifyOfferButton 100 model
+        [ div []
+            [ basicButton [ Attr.attribute "aria-label" "Reset offer to cost price", onClick ResetPrice ] [ text "Cost" ]
+            , modifyOfferButton -100 model
+            , modifyOfferButton -10 model
+            , input
+                [ Attr.attribute "aria-label" "Price in gold"
+                , Attr.style "margin" "2px"
+                , Attr.type_ "number"
+                , Attr.min "0"
+                , Attr.max "50000"
+                , value (String.fromInt model.offerInfo.pcOffer)
+                , onInput PcOffer
                 ]
-            , br [] []
-            , div [] []
-            , case model.offerInfo.maybeItem of
-                Just item ->
-                    let
-                        offerInfo =
-                            { pcOffer = model.offerInfo.pcOffer, item = item }
-                    in
-                    basicButton [ onClick SubmitAddToBasket ]
-                        [ text <| currentSituationString customer offerInfo
-                        ]
-
-                Nothing ->
-                    div [] []
+                []
+            , modifyOfferButton 10 model
+            , modifyOfferButton 100 model
             ]
+        , br [] []
+        , div [] []
+        , case model.offerInfo.maybeItem of
+            Just item ->
+                let
+                    offerInfo =
+                        { pcOffer = model.offerInfo.pcOffer, item = item }
+                in
+                basicButton [ onClick SubmitAddToBasket ]
+                    [ text <| currentSituationString customer offerInfo
+                    ]
+
+            Nothing ->
+                div [] []
         ]
 
 
 basketBox : Clientele.Customer -> Html Msg
 basketBox customer =
-    div [] <|
-        [ basicButton [ onClick SubmitConfirmSale ] [ text <| "Confirm Sale of " ++ String.fromInt (List.length customer.basket) ++ " items and Say Goodbye" ] ]
-            ++ (List.map
-                    (\s -> div [] [ text s ])
-                <|
-                    [ "Items in basket:"
-                    ]
-                        ++ List.map itemDisplay customer.basket
-               )
+    div [ Attr.class "basket-box" ] <|
+        [ basicButton [ onClick SubmitConfirmSale ] [ text <| "Confirm Sale of " ++ String.fromInt (List.length customer.basket) ++ " items and Say Goodbye" ]
+        , div [] <|
+            List.map
+                (\s -> div [] [ text s ])
+            <|
+                [ "Items in basket:"
+                ]
+                    ++ List.map itemDisplay customer.basket
+        ]
 
 
 itemDisplay : OfferInfo -> String

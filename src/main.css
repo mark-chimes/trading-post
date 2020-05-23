@@ -9,6 +9,7 @@
   height: inherit;
 }
 
+
 :root {
   --element-border-color: #080c0f;
   --box-border-color: #10181e; 
@@ -36,6 +37,12 @@ a:active {
   color:white;
 }
 
+/*
+* {
+  box-sizing: border-box;
+}
+*/
+
 button {
   background-color: #0c1216		;
   border: 4px outset var(--element-border-color);
@@ -51,37 +58,24 @@ button:hover {
   color: white;
 }
 
-.top-block-inner { 
-  background-color: #10181e; /* Green */
+.full-block { 
+  background-color: #10181e;
   border: 5px ridge var(--box-border-color);
   margin-top: var(--half-thick);
   margin-bottom: var(--half-thick);
-  margin-left: var(--full-thick);
-  margin-right: var(--full-thick);
-  padding-bottom: var(--full-thick);
-}
-
-.full-block-inner { 
-  background-color: #10181e; /* Green */
-  border: 5px ridge var(--box-border-color);
-  margin-top: var(--full-thick);
-  margin-bottom: var(--half-thick);
-  margin-left: var(--full-thick);
-  margin-right: var(--full-thick);
-  padding-bottom: var(--full-thick);
-}
-
-.half-block-inner { 
-  background-color: #10181e; /* Green */
-  border: 5px ridge var(--box-border-color);
-  margin-top: var(--half-thick);
-  margin-bottom: 0px;
   margin-left: var(--half-thick);
   margin-right: var(--half-thick);
-  padding-top: 0px;
-  padding-bottom: var(--full-thick);
-  padding-left: 0px;
-  padding-right: 0px;
+  padding-bottom: var(--half-thick);
+}
+
+.half-block { 
+  background-color: #10181e;
+  border: 5px ridge var(--box-border-color);
+  min-height: 200px;
+  padding-left: var(--half-thick);
+  padding-right: var(--half-thick);
+    padding-top: var(--half-thick);
+  padding-bottom: var(--half-thick);
 }
 
 .block-of-blocks { 
@@ -89,6 +83,10 @@ button:hover {
   margin-bottom: var(--full-thick);
   margin-left: var(--half-thick);
   margin-right: var(--half-thick);
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-column-gap: var(--half-thick);
+  grid-row-gap: var(--half-thick);
 }
 
 .basket-box { 
@@ -99,6 +97,7 @@ button:hover {
   margin-left: var(--full-thick);
   margin-right: var(--full-thick);
 }
+
 
 h1 {
   font-size: 30px;

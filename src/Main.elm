@@ -1090,57 +1090,25 @@ closeHour =
 ---- VIEW ----
 
 
-halfBlock : List (Html msg) -> Html msg
-halfBlock theHtml =
+gridElement : List (Html msg) -> Html msg
+gridElement theHtml =
     div
-        [ Attr.style "float" "left"
-        , Attr.style "width" "50%"
+        [ Attr.class "half-block"
         ]
-        [ div
-            [ Attr.class "half-block-inner"
-            ]
-            theHtml
-        ]
+        theHtml
 
 
-topBlock : List (Html msg) -> Html msg
-topBlock theHtml =
-    div
-        [ Attr.style "width" "100%"
-        ]
-        [ div
-            [ Attr.class "top-block-inner"
-            ]
-            theHtml
-        ]
-
-
-blockOfBlocks : List (Html msg) -> Html msg
-blockOfBlocks theHtml =
-    div
-        [ Attr.style "width" "100%"
-        , Attr.style "clear" "both"
-        , Attr.style "display" "table"
-        ]
-        [ div
-            [ Attr.class "block-of-blocks"
-            ]
-            theHtml
-        ]
+grid : List (Html msg) -> Html msg
+grid theHtml =
+    div [ Attr.class "block-of-blocks" ] theHtml
 
 
 oneBlock : List (Html msg) -> Html msg
 oneBlock theHtml =
     div
-        [ Attr.style "width" "100%"
-        , Attr.style "clear" "both"
-        , Attr.style "display" "table"
+        [ Attr.class "full-block"
         ]
-        [ div
-            [ Attr.class "full-block-inner"
-            ]
-            theHtml
-        ]
+        theHtml
 
 
 
@@ -1162,7 +1130,7 @@ view model =
            , text ("minutesSinceZero: " ++ String.fromInt model.time)
         -}
         , div [] []
-        , topBlock <| storeInfo model
+        , oneBlock <| storeInfo model
         , uiBasedOnStoreState model.storeState model
         , oneBlock <| storyBlock model
         ]
@@ -1172,21 +1140,21 @@ uiBasedOnStoreState : StoreState -> Model -> Html Msg
 uiBasedOnStoreState storeState model =
     case storeState of
         Open ->
-            blockOfBlocks
-                [ halfBlock <| stockBlock model
-                , halfBlock <| actionsBlockOpen
-                , halfBlock <| currentSituationBlockOpen model
-                , halfBlock <| customersBlockOpen model
-                , halfBlock <| customerInfoPanelOpen model
+            grid
+                [ gridElement <| stockBlock model
+                , gridElement <| actionsBlockOpen
+                , gridElement <| customersBlockOpen model
+                , gridElement <| currentSituationBlockOpen model
+                , gridElement <| customerInfoPanelOpen model
                 ]
 
         Closed ->
-            blockOfBlocks
-                [ halfBlock <| stockBlock model
-                , halfBlock <| actionsBlockClosed
-                , halfBlock <| currentSituationBlockClosed model
-                , halfBlock <| customersBlockClosed
-                , halfBlock <| customerInfoPanelClosed
+            grid
+                [ gridElement <| stockBlock model
+                , gridElement <| actionsBlockClosed
+                , gridElement <| customersBlockClosed
+                , gridElement <| currentSituationBlockClosed model
+                , gridElement <| customerInfoPanelClosed
                 ]
 
 

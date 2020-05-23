@@ -9,16 +9,72 @@
   height: inherit;
 }
 
+:root {
+  --element-border-color:  #080c0f ; /* #10181e */
+  --box-border-color:  #10181e; /* #080c0f; */
+}
+
 body {
   font-family: 'Source Sans Pro', 'Trebuchet MS', 'Lucida Grande', 'Bitstream Vera Sans', 'Helvetica Neue', sans-serif;
   margin: 0;
   text-align: center;
-  color: #293c4b;
+  color: lightblue;
+  background: #293c4b;
+}
+
+a {
+  color: green;
+}
+
+a:hover
+{
+  color: lightgreen;
+}
+a:active { 
+  color:white;
+}
+
+button {
+  background-color: #0c1216		;
+  border: 4px outset var(--element-border-color);
+  color: lightblue;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #293c4b;
+  color: white;
+}
+
+.full-block-inner { 
+  background-color: #10181e; /* Green */
+  border: 5px ridge var(--box-border-color);
+}
+
+.half-block-inner { 
+  background-color: #10181e; /* Green */
+  border: 5px ridge var(--box-border-color);
 }
 
 h1 {
   font-size: 30px;
 }
+
+textarea {
+	color: lightblue;
+	background: #080c0f;
+	border: 2px solid var(--element-border-color);
+}
+
+input { 
+	color: lightblue;
+	background: #080c0f;
+	border: 2px solid var(--element-border-color);
+}
+
 
 img {
   margin: 20px 0;

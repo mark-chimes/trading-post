@@ -1,4 +1,4 @@
-module Main exposing (Model, Msg(..), calculateTimeOfNextCustomer, dayOfYear, failOnSaleNoMoney, hourOfDay, hoursInDay, incrementTimeWithMinOpen, init, main, purchaseString, totalSaleValueOfBasket, update, view)
+module Main exposing (Model, Msg(..), calculateTimeOfNextCustomer, dayOfYear, failOnSaleNoMoney, hourOfDay, hoursInDay, incrementTimeWithMinOpen, init, main, purchaseString, storyBlock, totalSaleValueOfBasket, update, view)
 
 import Browser
 import Clientele
@@ -1112,7 +1112,7 @@ halfBlock theHtml =
         , Attr.style "width" "50%"
         ]
         [ div
-            [ borderStyle
+            [ Attr.class "half-block-inner"
             , Attr.style "margin-top" halfThick
             , Attr.style "margin-bottom" "0px"
             , Attr.style "margin-left" halfThick
@@ -1132,7 +1132,8 @@ topBlock theHtml =
         [ Attr.style "width" "100%"
         ]
         [ div
-            [ borderStyle
+            [ Attr.class "full-block-inner"
+            , Attr.style "margin-top" halfThick
             , Attr.style "margin-bottom" halfThick
             , Attr.style "margin-left" fullThick
             , Attr.style "margin-right" fullThick
@@ -1167,7 +1168,7 @@ oneBlock theHtml =
         , Attr.style "display" "table"
         ]
         [ div
-            [ borderStyle
+            [ Attr.class "full-block-inner"
             , Attr.style "margin-top" fullThick
             , Attr.style "margin-bottom" halfThick
             , Attr.style "margin-left" fullThick
@@ -1186,30 +1187,17 @@ view : Model -> Html Msg
 view model =
     div []
         [ h1 [] [ text "Trading Post" ]
-        , text "https://mark-chimes.github.io/trading-post/"
-        , h2 []
-            [ text "Debug" ]
-        , text
-            ("Time of next customer " ++ displayTime model.timeOfNextCustomer)
-        , div [] []
-        , text ("minutesSinceZero: " ++ String.fromInt model.time)
-        , div [] []
-        , div []
-            [ text <|
-                "Customer max price: "
-                    ++ (case model.customers.currentCustomer of
-                            Just customer ->
-                                case model.offerInfo.maybeItem of
-                                    Just item ->
-                                        String.fromInt <| Clientele.maxPrice item customer
+        , Html.a [ Attr.href "https://github.com/mark-chimes/trading-post", Attr.target "_blank" ] [ text "https://github.com/mark-chimes/trading-post" ]
 
-                                    Nothing ->
-                                        "No item"
-
-                            Nothing ->
-                                "No Customer"
-                       )
-            ]
+        {-
+           , h2 []
+               [ text "Debug" ]
+           , text
+               ("Time of next customer " ++ displayTime model.timeOfNextCustomer)
+           , div [] []
+           , text ("minutesSinceZero: " ++ String.fromInt model.time)
+        -}
+        , div [] []
         , topBlock <| storeInfo model
         , uiBasedOnStoreState model.storeState model
         , oneBlock <| storyBlock model

@@ -8,10 +8,10 @@ Playability features:
  * Blind-accessible
  * Supported on reasonable browsers
  * Runs on mobile
+ * Dark-mode UI with grid layout
  
 Game Features:
- * Sell swords 
- * Sell trail mix (dunno why you'd want to, but you can!)
+ * Sell swords, axes, and trail mix
  * Choose a sales price
  * Schmooze a customer to sell for more
  * Up to 26 different customers
@@ -20,4 +20,9 @@ Game Features:
  * Kick out customers you don't like
  * Customers are described on entry
  * Inspect customers to figure out how much they're willing to pay
- * Now only work from 8am to 5pm 
+ * "Wait" button lets you sit and do nothing for awhile
+ * "Last Event" box so you know what just happened
+ * Work from 8am to 5pm 
+ * Pay rent each day
+ * Limited stock per day - so sell carefully
+

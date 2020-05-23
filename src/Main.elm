@@ -1168,9 +1168,9 @@ uiBasedOnStoreState storeState model =
 storeInfo : Model -> List (Html Msg)
 storeInfo model =
     [ h2 [] [ text "Store" ]
-    , div [] [ text ("Time: " ++ displayTime model.time) ]
-    , div [] [ text ("Day: " ++ (String.fromInt <| dayOfYear model.time)) ]
-    , div [] [ text ("Your gold: " ++ String.fromInt model.pcGold ++ " gp") ]
+    , div [ Attr.class "date" ] [ text ("Day " ++ (String.fromInt <| dayOfYear model.time)) ]
+    , div [ Attr.class "time" ] [ text (displayTime model.time) ]
+    , div [ Attr.class "gold" ] [ text (String.fromInt model.pcGold ++ " gold") ]
     ]
 
 

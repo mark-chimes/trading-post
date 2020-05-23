@@ -106,6 +106,20 @@ button:hover {
   margin-right: var(--full-thick);
 }
 
+.date {
+
+}
+
+.time { 
+  font-size: 24px;
+  padding-bottom: var(--full-thick);
+}
+
+.gold { 
+  font-size: 24px;
+  padding-bottom: var(--full-thick);
+}
+
 
 h1 {
   font-size: 40px;

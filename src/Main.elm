@@ -1098,14 +1098,14 @@ closeHour =
 gridElement : List (Html msg) -> Html msg
 gridElement theHtml =
     div
-        [ Attr.class "half-block"
+        [ Attr.class "grid-block"
         ]
         theHtml
 
 
 grid : List (Html msg) -> Html msg
 grid theHtml =
-    div [ Attr.class "block-of-blocks" ] theHtml
+    div [ Attr.class "grid-of-blocks" ] theHtml
 
 
 oneBlock : List (Html msg) -> Html msg
@@ -1518,7 +1518,7 @@ actionsBlockClosed =
 lastMessagePanel : Model -> List (Html Msg)
 lastMessagePanel model =
     [ h3 [] [ text "Last Event" ]
-    , Html.pre [ Attr.style "word-wrap" "break-word" ] [ text model.lastMessage ]
+    , Html.pre [] [ text model.lastMessage ]
     ]
 
 

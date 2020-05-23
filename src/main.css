@@ -68,7 +68,7 @@ button:hover {
   padding-bottom: var(--half-thick);
 }
 
-.half-block { 
+.grid-block { 
   background-color: #10181e;
   border: 5px ridge var(--box-border-color);
   min-height: 200px;
@@ -78,7 +78,9 @@ button:hover {
   padding-bottom: var(--half-thick);
 }
 
-.block-of-blocks { 
+
+
+.grid-of-blocks { 
   margin-top: var(--half-thick);
   margin-bottom: var(--full-thick);
   margin-left: var(--half-thick);
@@ -87,6 +89,12 @@ button:hover {
   grid-template-columns: repeat(2, 1fr);
   grid-column-gap: var(--half-thick);
   grid-row-gap: var(--half-thick);
+}
+
+@media only screen and (max-width: 600px) {
+  .grid-of-blocks {
+    grid-template-columns: repeat(1, 1fr);
+  }
 }
 
 .basket-box { 

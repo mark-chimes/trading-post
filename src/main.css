@@ -100,7 +100,28 @@ button:hover {
 
 
 h1 {
-  font-size: 30px;
+  font-size: 40px;
+}
+
+h2 {
+  font-size: 32px;
+}
+
+h3 {
+  font-size: 24px;
+}
+
+pre {
+  font-size: 20px;
+  color: lightblue;
+  background: #080c0f;
+  border: 2px solid var(--element-border-color);
+  overflow-x: auto;
+  white-space: pre-wrap;
+  white-space: -moz-pre-wrap;
+  white-space: -pre-wrap;
+  white-space: -o-pre-wrap;
+  word-wrap: break-word;
 }
 
 textarea {
@@ -110,6 +131,7 @@ textarea {
 }
 
 input { 
+	font-size: 20px;
 	color: lightblue;
 	background: #080c0f;
 	border: 2px solid var(--element-border-color);

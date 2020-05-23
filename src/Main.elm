@@ -27,6 +27,7 @@ type alias Model =
     , customers : Clientele.ClienteleDetails
     , isConvoReverse : Bool
     , conversation : List (List String)
+    , lastMessage : String
     , prepState : PrepState
     , windowWidth : Int
     , waitTime : Int
@@ -64,6 +65,7 @@ init flags =
         , cleanTime = 10
         , customers = Clientele.initCustomers
         , isConvoReverse = True
+        , lastMessage = ""
         , conversation = []
         , prepState = Sale
         , windowWidth = flags.windowWidth
@@ -372,7 +374,10 @@ determineIfSale customer offerInfo model =
 
 updateConversationWithActionMessage : String -> Model -> Model
 updateConversationWithActionMessage message model =
-    { model | conversation = model.conversation ++ [ [ displayTime model.time, message, "" ] ] }
+    { model
+        | conversation = model.conversation ++ [ [ displayTime model.time, message, "" ] ]
+        , lastMessage = message
+    }
 
 
 addToBasket : Clientele.Customer -> OfferInfo -> Model -> Model
@@ -1146,6 +1151,7 @@ uiBasedOnStoreState storeState model =
                 , gridElement <| customersBlockOpen model
                 , gridElement <| currentSituationBlockOpen model
                 , gridElement <| customerInfoPanelOpen model
+                , gridElement <| lastMessagePanel model
                 ]
 
         Closed ->
@@ -1155,6 +1161,7 @@ uiBasedOnStoreState storeState model =
                 , gridElement <| customersBlockClosed
                 , gridElement <| currentSituationBlockClosed model
                 , gridElement <| customerInfoPanelClosed
+                , gridElement <| lastMessagePanel model
                 ]
 
 
@@ -1505,6 +1512,13 @@ actionsBlockClosed =
     , div []
         [ basicButton [ onClick PrepOpenStore ] [ text "Open Store" ]
         ]
+    ]
+
+
+lastMessagePanel : Model -> List (Html Msg)
+lastMessagePanel model =
+    [ h3 [] [ text "Last Event" ]
+    , Html.pre [ Attr.style "word-wrap" "break-word" ] [ text model.lastMessage ]
     ]
 
 

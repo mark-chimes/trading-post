@@ -1107,7 +1107,7 @@ uiBasedOnStoreState storeState model =
     case storeState of
         Open ->
             grid
-                [ gridElement <| stockBlock model
+                [ gridElement <| stockAndOfferBlock model
                 , gridElement <| basketBlockOpen model
                 , gridElement <| customersBlockOpen model
                 , gridElement <| customerInfoPanelOpen model
@@ -1117,7 +1117,7 @@ uiBasedOnStoreState storeState model =
 
         Closed ->
             grid
-                [ gridElement <| stockBlock model
+                [ gridElement <| stockAndOfferBlock model
                 , gridElement <| basketBlockClosed
                 , gridElement <| customersBlockClosed
                 , gridElement <| currentSituationBlockClosed model
@@ -1334,11 +1334,11 @@ modifyWaitButton timeDiff model =
         ]
 
 
-stockBlock : Model -> List (Html Msg)
-stockBlock model =
-    [ h3 [] [ text "Stock" ]
+stockAndOfferBlock : Model -> List (Html Msg)
+stockAndOfferBlock model =
+    [ h3 [] [ text "Stock and Offer" ]
     , div [] (List.map stockItemButton <| Dict.toList model.stockQty)
-    , h3 [] [ text "Sale" ]
+    , br [] []
     , case model.customers.currentCustomer of
         Nothing ->
             div [] [ text nooneMessage ]

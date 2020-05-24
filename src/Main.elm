@@ -28,7 +28,6 @@ type alias Model =
     , isConvoReverse : Bool
     , conversation : List (List String)
     , lastMessage : String
-    , prepState : PrepState
     , windowWidth : Int
     , waitTime : Int
     , timeOfNextCustomer : Time
@@ -67,7 +66,6 @@ init flags =
         , isConvoReverse = True
         , lastMessage = ""
         , conversation = []
-        , prepState = Sale
         , windowWidth = flags.windowWidth
         , waitTime = 0
         , timeOfNextCustomer = (openHour * 60) + timeBetweenCustomersMins
@@ -106,27 +104,20 @@ initStockQty =
 
 type Msg
     = NoOp
-    | PrepSubmitOffer
     | PcOffer String
     | SubmitAddToBasket
     | SubmitConfirmSale
     | ClearStory
-    | PrepKickOutCustomer
     | KickOutCustomer
-    | PrepCleanStore
     | CleanStore
     | ReverseStory
-    | PrepSchmoozeCustomer
     | SchmoozeCustomer
     | CustomerEntry Clientele.Customer
     | ResetPrice
     | OptimalPrice
     | UpdateWaitTime String
-    | PrepWaitAwhile
     | WaitAwhile
-    | PrepInspectCustomer
     | InspectCustomer
-    | PrepOpenStore
     | OpenStore
     | OfferItem Item
 
@@ -134,16 +125,6 @@ type Msg
 type StoreState
     = Open
     | Closed
-
-
-type PrepState
-    = Clean
-    | Kick
-    | Schmooze
-    | Inspect
-    | Wait
-    | Sale
-    | PrepOpen
 
 
 
@@ -155,12 +136,6 @@ update msg model =
     case msg of
         NoOp ->
             ( model, Cmd.none )
-
-        PrepWaitAwhile ->
-            ( prepWaitAwhile model, Cmd.none )
-
-        PrepSubmitOffer ->
-            ( prepSubmitOffer model, Cmd.none )
 
         PcOffer newOffer ->
             ( updateOffer newOffer model, Cmd.none )
@@ -174,14 +149,8 @@ update msg model =
         ClearStory ->
             ( { model | conversation = [] }, Cmd.none )
 
-        PrepKickOutCustomer ->
-            ( prepFuckOffCustomer model, Cmd.none )
-
         KickOutCustomer ->
             ( fuckOffCustomer model, Cmd.none )
-
-        PrepCleanStore ->
-            ( prepCleanStore model, Cmd.none )
 
         CleanStore ->
             ( cleanStore model, Cmd.none )
@@ -189,14 +158,8 @@ update msg model =
         ReverseStory ->
             ( { model | isConvoReverse = not model.isConvoReverse }, Cmd.none )
 
-        PrepInspectCustomer ->
-            ( prepInspectCustomer model, Cmd.none )
-
         InspectCustomer ->
             ( inspectCustomer model, Cmd.none )
-
-        PrepSchmoozeCustomer ->
-            ( prepSchmoozeCustomer model, Cmd.none )
 
         SchmoozeCustomer ->
             ( schmoozeCustomer model, Cmd.none )
@@ -215,9 +178,6 @@ update msg model =
 
         WaitAwhile ->
             ( waitAwhile model, Cmd.none )
-
-        PrepOpenStore ->
-            ( prepOpenStore model, Cmd.none )
 
         OpenStore ->
             ( openStore model, Cmd.none )
@@ -291,41 +251,6 @@ optimalPrice currentCustomer offerInfo =
             { offerInfo
                 | pcOffer = 0
             }
-
-
-prepSubmitOffer : Model -> Model
-prepSubmitOffer model =
-    { model | prepState = Sale }
-
-
-prepWaitAwhile : Model -> Model
-prepWaitAwhile model =
-    { model | prepState = Wait }
-
-
-prepOpenStore : Model -> Model
-prepOpenStore model =
-    { model | prepState = PrepOpen }
-
-
-prepFuckOffCustomer : Model -> Model
-prepFuckOffCustomer model =
-    { model | prepState = Kick }
-
-
-prepSchmoozeCustomer : Model -> Model
-prepSchmoozeCustomer model =
-    { model | prepState = Schmooze }
-
-
-prepInspectCustomer : Model -> Model
-prepInspectCustomer model =
-    { model | prepState = Inspect }
-
-
-prepCleanStore : Model -> Model
-prepCleanStore model =
-    { model | prepState = Clean }
 
 
 offerItem : Item -> Model -> Model
@@ -774,7 +699,6 @@ incTimeAndOpenStore model =
         | storeState = Open
         , time = ((dayOfYear model.time + 1) * minutesInDay) + (openHour * minutesInHour)
         , timeOfNextCustomer = ((dayOfYear model.time + 1) * minutesInDay) + (openHour * 60) + timeBetweenCustomersMins
-        , prepState = Sale
         , customers = Clientele.callCustomerFromPool model.customers
         , statsTracker = initStatsTracker
     }
@@ -1184,17 +1108,17 @@ uiBasedOnStoreState storeState model =
         Open ->
             grid
                 [ gridElement <| stockBlock model
-                , gridElement <| actionsBlockOpen
+                , gridElement <| basketBlockOpen model
                 , gridElement <| customersBlockOpen model
-                , gridElement <| currentSituationBlockOpen model
                 , gridElement <| customerInfoPanelOpen model
+                , gridElement <| currentSituationBlockOpen model
                 , gridElement <| lastMessagePanel model
                 ]
 
         Closed ->
             grid
                 [ gridElement <| stockBlock model
-                , gridElement <| actionsBlockClosed
+                , gridElement <| basketBlockClosed
                 , gridElement <| customersBlockClosed
                 , gridElement <| currentSituationBlockClosed model
                 , gridElement <| customerInfoPanelClosed
@@ -1223,78 +1147,30 @@ storeClosedMessage =
 
 currentSituationBlockOpen : Model -> List (Html Msg)
 currentSituationBlockOpen model =
-    [ h3 [] [ text "Current Action" ]
-    , case model.prepState of
-        Clean ->
-            div []
-                [ basicButton [ onClick CleanStore ] [ text "Clean Store" ]
-                ]
-
-        Kick ->
-            case model.customers.currentCustomer of
-                Nothing ->
-                    div [] [ text nooneMessage ]
-
-                Just customer ->
-                    div []
-                        [ basicButton [ onClick KickOutCustomer ] [ text <| "Kick out " ++ customer.name ]
-                        ]
-
-        Schmooze ->
-            case model.customers.currentCustomer of
-                Nothing ->
-                    div [] [ text nooneMessage ]
-
-                Just customer ->
-                    div []
-                        [ basicButton [ onClick SchmoozeCustomer ] [ text <| "Schmooze " ++ customer.name ]
-                        ]
-
-        Inspect ->
-            case model.customers.currentCustomer of
-                Nothing ->
-                    div [] [ text nooneMessage ]
-
-                Just customer ->
-                    div []
-                        [ basicButton [ onClick InspectCustomer ] [ text <| "Inspect " ++ customer.name ]
-                        ]
-
-        Sale ->
-            case model.customers.currentCustomer of
-                Nothing ->
-                    div [] [ text nooneMessage ]
-
-                Just customer ->
-                    div [] [ priceBox customer model, br [] [], basketBox customer ]
-
-        Wait ->
-            div []
-                [ basicButton [ Attr.attribute "aria-label" "Reset waiting time to 0", onClick <| UpdateWaitTime <| String.fromInt 0 ] [ text "Reset" ]
-                , modifyWaitButton -60 model
-                , modifyWaitButton -10 model
-                , input
-                    [ Attr.attribute "aria-label" "Time to wait"
-                    , Attr.style "margin" "2px"
-                    , Attr.type_ "number"
-                    , Attr.min "0"
-                    , Attr.max "1440"
-                    , value (String.fromInt model.waitTime)
-                    , onInput UpdateWaitTime
-                    ]
-                    []
-                , modifyWaitButton 10 model
-                , modifyWaitButton 60 model
-                , div [] []
-                , basicButton
-                    [ onClick WaitAwhile ]
-                    [ text <| "Wait for " ++ String.fromInt model.waitTime ++ " minutes" ]
-                ]
-
-        PrepOpen ->
-            div []
-                [ text "The store must be closed for you to be able to open it."
-                ]
+    [ h3 [] [ text "Wait" ]
+    , div []
+        [ basicButton [ onClick CleanStore ] [ text "Clean Store" ]
+        , div [] []
+        , basicButton [ Attr.attribute "aria-label" "Reset waiting time to 0", onClick <| UpdateWaitTime <| String.fromInt 0 ] [ text "Reset" ]
+        , modifyWaitButton -60 model
+        , modifyWaitButton -10 model
+        , input
+            [ Attr.attribute "aria-label" "Time to wait"
+            , Attr.style "margin" "2px"
+            , Attr.type_ "number"
+            , Attr.min "0"
+            , Attr.max "1440"
+            , value (String.fromInt model.waitTime)
+            , onInput UpdateWaitTime
+            ]
+            []
+        , modifyWaitButton 10 model
+        , modifyWaitButton 60 model
+        , div [] []
+        , basicButton
+            [ onClick WaitAwhile ]
+            [ text <| "Wait for " ++ String.fromInt model.waitTime ++ " minutes" ]
+        ]
     ]
 
 
@@ -1366,31 +1242,9 @@ itemDisplay offerInfo =
 
 
 currentSituationBlockClosed : Model -> List (Html Msg)
-currentSituationBlockClosed model =
-    [ h3 [] [ text "Current Action" ]
-    , case model.prepState of
-        Clean ->
-            div [] [ text storeClosedMessage ]
-
-        Kick ->
-            div [] [ text storeClosedMessage ]
-
-        Schmooze ->
-            div [] [ text storeClosedMessage ]
-
-        Inspect ->
-            div [] [ text storeClosedMessage ]
-
-        Sale ->
-            div [] [ text storeClosedMessage ]
-
-        Wait ->
-            div [] [ text storeClosedMessage ]
-
-        PrepOpen ->
-            div []
-                [ basicButton [ onClick OpenStore ] [ text <| "Skip until tomorrow and open store at " ++ String.fromInt openHour ++ " o Clock." ]
-                ]
+currentSituationBlockClosed _ =
+    [ h3 [] [ text "Wait" ]
+    , basicButton [ onClick OpenStore ] [ text <| "Skip until tomorrow and open store at " ++ String.fromInt openHour ++ " o Clock." ]
     ]
 
 
@@ -1400,7 +1254,17 @@ customerInfoPanelOpen model =
     , div []
         [ case model.customers.currentCustomer of
             Just customer ->
-                div [] <| List.map (\s -> div [] [ text s ]) <| Clientele.customerDisplay customer
+                div [] <|
+                    [ basicButton [ onClick SchmoozeCustomer ] [ text <| "Schmooze " ++ customer.name ]
+                    , div [] <| List.map (\s -> div [] [ text s ]) <| Clientele.customerDisplay customer
+                    ]
+                        ++ (case customer.inspectedState of
+                                Clientele.Inspected ->
+                                    []
+
+                                Clientele.Uninspected ->
+                                    [ basicButton [ onClick InspectCustomer ] [ text <| "Inspect " ++ customer.name ] ]
+                           )
 
             Nothing ->
                 div [] [ text "No customer" ]
@@ -1474,6 +1338,13 @@ stockBlock : Model -> List (Html Msg)
 stockBlock model =
     [ h3 [] [ text "Stock" ]
     , div [] (List.map stockItemButton <| Dict.toList model.stockQty)
+    , h3 [] [ text "Sale" ]
+    , case model.customers.currentCustomer of
+        Nothing ->
+            div [] [ text nooneMessage ]
+
+        Just customer ->
+            div [] [ priceBox customer model ]
     ]
 
 
@@ -1512,18 +1383,16 @@ customersBlockOpen model =
         )
     , br [] []
     , div []
-        [ text
-            ("You are speaking to: "
-                ++ (case model.customers.currentCustomer of
-                        Just customer ->
-                            customer.name
+        (case model.customers.currentCustomer of
+            Just customer ->
+                [ text ("You are speaking to: " ++ customer.name ++ ".")
+                , div [] []
+                , basicButton [ onClick KickOutCustomer ] [ text <| "Kick out " ++ customer.name ]
+                ]
 
-                        Nothing ->
-                            "No-one"
-                   )
-                ++ "."
-            )
-        ]
+            Nothing ->
+                []
+        )
     ]
 
 
@@ -1535,26 +1404,22 @@ customersBlockClosed =
     ]
 
 
-actionsBlockOpen : List (Html Msg)
-actionsBlockOpen =
-    [ h3 [] [ text "Actions" ]
-    , div []
-        [ basicButton [ onClick PrepSubmitOffer ] [ text "Sale" ]
-        , basicButton [ onClick PrepSchmoozeCustomer ] [ text "Schmooze" ]
-        , basicButton [ onClick PrepInspectCustomer ] [ text "Inspect" ]
-        , basicButton [ onClick PrepKickOutCustomer ] [ text "Kick Out" ]
-        , basicButton [ onClick PrepCleanStore ] [ text "Clean" ]
-        , basicButton [ onClick PrepWaitAwhile ] [ text "Wait" ]
-        ]
+basketBlockOpen : Model -> List (Html Msg)
+basketBlockOpen model =
+    [ h3 [] [ text "Basket" ]
+    , case model.customers.currentCustomer of
+        Nothing ->
+            div [] [ text nooneMessage ]
+
+        Just customer ->
+            div [] [ basketBox customer ]
     ]
 
 
-actionsBlockClosed : List (Html Msg)
-actionsBlockClosed =
-    [ h3 [] [ text "Actions" ]
-    , div []
-        [ basicButton [ onClick PrepOpenStore ] [ text "Open Store" ]
-        ]
+basketBlockClosed : List (Html Msg)
+basketBlockClosed =
+    [ h3 [] [ text "Sale" ]
+    , text storeClosedMessage
     ]
 
 

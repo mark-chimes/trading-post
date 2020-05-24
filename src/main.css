@@ -9,10 +9,30 @@
   height: inherit;
 }
 
+/*
+  --color-dark-brown: #463f3a;
+  --color-light-brown: #8a817c;
+  --color-beige: #bcb8b1;
+  --color-white: #f4f3ee;
+*/
+
+/*
+  --color-dark-brown: #2a2623;
+  --color-light-brown: #8a817c;
+  --color-beige: #f3f3f1;
+  --color-white: #f4f3ee;
+*/
+
 
 :root {
-  --element-border-color: #080c0f;
-  --box-border-color: #10181e; 
+  --color-darker-brown: #292523;
+  --color-dark-brown: #453f3b;
+  --color-light-brown: #6e645e;
+  --color-beige: #b9b5ac;
+  --color-white: #f4f3ee;
+  --color-black: black;
+  --element-border-color: var(--color-darker-brown);
+  --box-border-color: var(--color-dark-brown); 
   --full-thick: 10px;
   --half-thick: 5px;
 }
@@ -21,12 +41,12 @@ body {
   font-family: 'Source Sans Pro', 'Trebuchet MS', 'Lucida Grande', 'Bitstream Vera Sans', 'Helvetica Neue', sans-serif;
   margin: 0;
   text-align: center;
-  color: lightblue;
-  background: #293c4b;
+  color: var(--color-white);
+  background: var(--color-light-brown);
 }
 
 a {
-  color: green;
+  color: black;
 }
 
 a:hover
@@ -43,10 +63,11 @@ a:active {
 }
 */
 
+
 button {
-  background-color: #0c1216		;
+  background-color: var(--color-beige)	;
   border: 4px outset var(--element-border-color);
-  color: lightblue;
+  color: var(--color-black);
   display: inline-block;
   font-size: 16px;
   margin: 4px 2px;
@@ -54,12 +75,18 @@ button {
 }
 
 button:hover {
-  background-color: #293c4b;
-  color: white;
+  background-color: var(--color-darker-brown);
+  border: 4px outset var(--color-light-brown);
+  color: var(--color-white);
 }
 
+.basket { 
+  color: var(--color-black);
+}
+
+
 .full-block { 
-  background-color: #10181e;
+  background-color: var(--color-dark-brown);
   border: 5px ridge var(--box-border-color);
   margin-top: var(--half-thick);
   margin-bottom: var(--half-thick);
@@ -69,7 +96,7 @@ button:hover {
 }
 
 .grid-block { 
-  background-color: #10181e;
+  background-color: var(--color-dark-brown);
   border: 5px ridge var(--box-border-color);
   min-height: 200px;
   padding-left: var(--half-thick);
@@ -99,7 +126,7 @@ button:hover {
 
 .basket-box { 
   border: 5px ridge var(--box-border-color);
-  background: #18242d;
+  background: var(--color-light-brown);
   padding-top: var(--full-thick);
   padding-bottom: var(--full-thick);
   margin-left: var(--full-thick);
@@ -120,9 +147,18 @@ button:hover {
   padding-bottom: var(--full-thick);
 }
 
+.heading-box { 
+  border: 40px ridge var(--color-dark-brown);
+  background: var(--color-darker-brown);
+  margin: 10px;
+  margin-bottom: 10px;
+}
 
 h1 {
   font-size: 40px;
+  color: var(--color-white);
+  -webkit-text-stroke-width: 0px;
+  -webkit-text-stroke-color: var(--color-black);
 }
 
 h2 {
@@ -135,8 +171,8 @@ h3 {
 
 pre {
   font-size: 20px;
-  color: lightblue;
-  background: #080c0f;
+  color: var(--color-white);
+  background: var(--color-darker-brown);
   border: 2px solid var(--element-border-color);
   overflow-x: auto;
   white-space: pre-wrap;
@@ -147,15 +183,15 @@ pre {
 }
 
 textarea {
-	color: lightblue;
-	background: #080c0f;
+	color: var(--color-white);
+	background: var(--color-darker-brown);
 	border: 2px solid var(--element-border-color);
 }
 
 input { 
 	font-size: 20px;
-	color: lightblue;
-	background: #080c0f;
+	color: var(--color-white);
+	background: var(--color-darker-brown);
 	border: 2px solid var(--element-border-color);
 }
 

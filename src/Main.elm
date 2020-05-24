@@ -1084,7 +1084,7 @@ oneBlock theHtml =
 view : Model -> Html Msg
 view model =
     div []
-        [ h1 [] [ text "Trading Post" ]
+        [ div [ Attr.class "heading-box" ] [ h1 [] [ text "Trading Post" ] ]
         , Html.a [ Attr.href "https://github.com/mark-chimes/trading-post", Attr.target "_blank" ] [ text "https://github.com/mark-chimes/trading-post" ]
 
         {-
@@ -1227,7 +1227,7 @@ basketBox customer =
             [ basicButton [ onClick SubmitConfirmSale ] [ text <| "Confirm Sale of " ++ String.fromInt (List.length customer.basket) ++ " items and Say Goodbye" ]
             , div [] <|
                 List.map
-                    (\s -> div [] [ text s ])
+                    (\s -> div [ Attr.class "basket" ] [ text s ])
                 <|
                     [ "Items in basket:"
                     ]

@@ -1220,15 +1220,19 @@ priceBox customer model =
 basketBox : Clientele.Customer -> Html Msg
 basketBox customer =
     div [ Attr.class "basket-box" ] <|
-        [ basicButton [ onClick SubmitConfirmSale ] [ text <| "Confirm Sale of " ++ String.fromInt (List.length customer.basket) ++ " items and Say Goodbye" ]
-        , div [] <|
-            List.map
-                (\s -> div [] [ text s ])
-            <|
-                [ "Items in basket:"
-                ]
-                    ++ List.map itemDisplay customer.basket
-        ]
+        if List.length customer.basket == 0 then
+            [ basicButton [ onClick KickOutCustomer ] [ text <| "Kick out " ++ customer.name ] ]
+
+        else
+            [ basicButton [ onClick SubmitConfirmSale ] [ text <| "Confirm Sale of " ++ String.fromInt (List.length customer.basket) ++ " items and Say Goodbye" ]
+            , div [] <|
+                List.map
+                    (\s -> div [] [ text s ])
+                <|
+                    [ "Items in basket:"
+                    ]
+                        ++ List.map itemDisplay customer.basket
+            ]
 
 
 itemDisplay : OfferInfo -> String

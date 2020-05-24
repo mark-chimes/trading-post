@@ -42,14 +42,17 @@
   --color-accentuate: #292523;
   /* Dark brown */
   --color-standard-back: #453f3b;
+  --image-standard-back: url("light-wood.jpg");
   /* Light brown */
   --color-far-back: #6e645e;
+  --image-far-back: url("lighter-wood.jpg"); 
   /* Beige */
   --color-button: #b9b5ac;
   /* Off-white */
   --color-text: #f4f3ee;
   /* Black */
   --color-button-text: black;
+  --image-text-boxes: url("black-paper.jpg");
   --element-border-color: var(--color-accentuate);
   --box-border-color: var(--color-standard-back); 
   --full-thick: 10px;
@@ -61,7 +64,7 @@ body {
   margin: 0;
   text-align: center;
   color: var(--color-text);
-  background: var(--color-far-back);
+  background-image: var(--image-far-back);
 }
 
 a {
@@ -105,7 +108,7 @@ button:hover {
 
 
 .full-block { 
-  background-color: var(--color-standard-back);
+  background-image: var(--image-standard-back);
   border: 5px ridge var(--box-border-color);
   margin-top: var(--half-thick);
   margin-bottom: var(--half-thick);
@@ -115,7 +118,7 @@ button:hover {
 }
 
 .grid-block { 
-  background-color: var(--color-standard-back);
+  background-image: var(--image-standard-back);
   border: 5px ridge var(--box-border-color);
   min-height: 200px;
   padding-left: var(--half-thick);
@@ -145,13 +148,14 @@ button:hover {
 
 .basket-box { 
   border: 5px ridge var(--box-border-color);
-  background: var(--color-far-back);
+  background-image: url("lightest-wood.jpg");
   padding-top: var(--full-thick);
   padding-bottom: var(--full-thick);
   margin-left: var(--full-thick);
   margin-right: var(--full-thick);
 }
 
+ 
 .date {
 
 }
@@ -168,7 +172,7 @@ button:hover {
 
 .heading-box { 
   border: 40px ridge var(--color-standard-back);
-  background: var(--color-accentuate);
+  background: var(--color-accentuate);  background-image: url("dark-wood.jpg");
   margin: 10px;
   margin-bottom: 10px;
 }
@@ -191,7 +195,7 @@ h3 {
 pre {
   font-size: 20px;
   color: var(--color-text);
-  background: var(--color-accentuate);
+  background-image: var(--image-text-boxes);
   border: 2px solid var(--element-border-color);
   overflow-x: auto;
   white-space: pre-wrap;
@@ -203,7 +207,7 @@ pre {
 
 textarea {
 	color: var(--color-text);
-	background: var(--color-accentuate);
+	background-image: var(--image-text-boxes);
 	border: 2px solid var(--element-border-color);
 }
 

@@ -347,7 +347,7 @@ createCustomer ci =
     , schmoozeCount = 0
     , introMessage = ci.introMessage
     , descriptionMessage = ci.descriptionMessage
-    , inspectedState = Uninspected
+    , inspectedState = Inspected
     , template = ci.template
     , numItemsInBasket = \_ -> 0
     }
@@ -356,6 +356,11 @@ createCustomer ci =
 calculateMoneyInPurse : WealthLevel -> Int
 calculateMoneyInPurse wealthLevel =
     round (maxPriceFromWealth wealthLevel * 200)
+
+
+optimalPrice : Item -> Customer -> Int
+optimalPrice item customer =
+    min customer.moneyInPurse <| maxPrice item customer
 
 
 maxPrice : Item -> Customer -> Int

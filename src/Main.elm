@@ -34,6 +34,7 @@ type alias Model =
     , storeState : StoreState
     , statsTracker : StatsTracker
     , stockQty : StockQties
+    , priceExpandedState : ExpansionState
     }
 
 
@@ -46,6 +47,11 @@ type alias StatsTracker =
     , customersKicked : Int
     , customersLeft : Int
     }
+
+
+type ExpansionState
+    = Expanded
+    | Unexpanded
 
 
 type alias Time =
@@ -72,6 +78,7 @@ init flags =
         , storeState = Open
         , statsTracker = initStatsTracker
         , stockQty = initStockQty
+        , priceExpandedState = Unexpanded
         }
     , Cmd.none
     )
@@ -114,12 +121,15 @@ type Msg
     | SchmoozeCustomer
     | CustomerEntry Clientele.Customer
     | ResetPrice
-    | OptimalPrice
+    | SetToOptimalPrice
     | UpdateWaitTime String
     | WaitAwhile
     | InspectCustomer
     | OpenStore
     | OfferItem Item
+    | OfferAtOptimalPrice
+    | OpenCustomPrice
+    | CloseCustomPrice
 
 
 type StoreState
@@ -170,7 +180,7 @@ update msg model =
         ResetPrice ->
             ( updatePriceReset model, Cmd.none )
 
-        OptimalPrice ->
+        SetToOptimalPrice ->
             ( updatePriceOptimal model, Cmd.none )
 
         UpdateWaitTime waitTimeStr ->
@@ -184,6 +194,15 @@ update msg model =
 
         OfferItem item ->
             ( offerItem item model, Cmd.none )
+
+        OfferAtOptimalPrice ->
+            ( offerItemAtOptimalPrice model, Cmd.none )
+
+        OpenCustomPrice ->
+            ( { model | priceExpandedState = Expanded }, Cmd.none )
+
+        CloseCustomPrice ->
+            ( { model | priceExpandedState = Unexpanded }, Cmd.none )
 
 
 updateOffer : String -> Model -> Model
@@ -234,7 +253,7 @@ optimalPrice currentCustomer offerInfo =
                     case customer.inspectedState of
                         Clientele.Inspected ->
                             { offerInfo
-                                | pcOffer = Clientele.maxPrice item customer
+                                | pcOffer = Clientele.optimalPrice item customer
                             }
 
                         Clientele.Uninspected ->
@@ -251,6 +270,21 @@ optimalPrice currentCustomer offerInfo =
             { offerInfo
                 | pcOffer = 0
             }
+
+
+offerItemAtOptimalPrice : Model -> Model
+offerItemAtOptimalPrice model =
+    case model.customers.currentCustomer of
+        Just customer ->
+            case model.offerInfo.maybeItem of
+                Just item ->
+                    addToBasket customer { pcOffer = Clientele.optimalPrice item customer, item = item } model
+
+                Nothing ->
+                    model
+
+        Nothing ->
+            model
 
 
 offerItem : Item -> Model -> Model
@@ -1174,47 +1208,85 @@ currentSituationBlockOpen model =
     ]
 
 
+
+-- offer > Clientele.maxPrice offerInfo.item customer
+
+
 priceBox : Clientele.Customer -> Model -> Html Msg
 priceBox customer model =
-    div []
-        [ div []
-            [ case customer.inspectedState of
-                Clientele.Inspected ->
-                    basicButton [ Attr.attribute "aria-label" "Set offer to optimal price", onClick OptimalPrice ] [ text "Optimal" ]
+    case model.priceExpandedState of
+        Unexpanded ->
+            div []
+                [ div []
+                    (case model.customers.currentCustomer of
+                        Just cst ->
+                            case model.offerInfo.maybeItem of
+                                Just item ->
+                                    [ basicButton [ onClick OfferAtOptimalPrice ]
+                                        [ text <|
+                                            "Offer "
+                                                ++ item.displayName
+                                                ++ " (cost "
+                                                ++ String.fromInt item.itemWorth
+                                                ++ " gp) to "
+                                                ++ " to "
+                                                ++ cst.name
+                                                ++ " at optimal price of "
+                                                ++ String.fromInt (Clientele.optimalPrice item cst)
+                                                ++ " gp."
+                                        ]
+                                    ]
 
-                Clientele.Uninspected ->
-                    div [] []
-            , basicButton [ Attr.attribute "aria-label" "Reset offer to cost price", onClick ResetPrice ] [ text "Cost" ]
-            , modifyOfferButton -100 model
-            , modifyOfferButton -10 model
-            , input
-                [ Attr.attribute "aria-label" "Price in gold"
-                , Attr.style "margin" "2px"
-                , Attr.type_ "number"
-                , Attr.min "0"
-                , Attr.max "50000"
-                , value (String.fromInt model.offerInfo.pcOffer)
-                , onInput PcOffer
+                                Nothing ->
+                                    []
+
+                        Nothing ->
+                            []
+                    )
+                , basicButton [ onClick OpenCustomPrice ] [ text "Open Custom Price" ]
                 ]
-                []
-            , modifyOfferButton 10 model
-            , modifyOfferButton 100 model
-            ]
-        , br [] []
-        , div [] []
-        , case model.offerInfo.maybeItem of
-            Just item ->
-                let
-                    offerInfo =
-                        { pcOffer = model.offerInfo.pcOffer, item = item }
-                in
-                basicButton [ onClick SubmitAddToBasket ]
-                    [ text <| currentSituationString customer offerInfo
-                    ]
 
-            Nothing ->
-                div [] []
-        ]
+        Expanded ->
+            div []
+                [ div []
+                    [ basicButton [ onClick CloseCustomPrice ] [ text "Close Custom Price" ]
+                    , case customer.inspectedState of
+                        Clientele.Inspected ->
+                            basicButton [ Attr.attribute "aria-label" "Set offer to optimal price", onClick SetToOptimalPrice ] [ text "Optimal" ]
+
+                        Clientele.Uninspected ->
+                            div [] []
+                    , basicButton [ Attr.attribute "aria-label" "Reset offer to cost price", onClick ResetPrice ] [ text "Cost" ]
+                    , modifyOfferButton -100 model
+                    , modifyOfferButton -10 model
+                    , input
+                        [ Attr.attribute "aria-label" "Price in gold"
+                        , Attr.style "margin" "2px"
+                        , Attr.type_ "number"
+                        , Attr.min "0"
+                        , Attr.max "50000"
+                        , value (String.fromInt model.offerInfo.pcOffer)
+                        , onInput PcOffer
+                        ]
+                        []
+                    , modifyOfferButton 10 model
+                    , modifyOfferButton 100 model
+                    ]
+                , br [] []
+                , div [] []
+                , case model.offerInfo.maybeItem of
+                    Just item ->
+                        let
+                            offerInfo =
+                                { pcOffer = model.offerInfo.pcOffer, item = item }
+                        in
+                        basicButton [ onClick SubmitAddToBasket ]
+                            [ text <| currentSituationString customer offerInfo
+                            ]
+
+                    Nothing ->
+                        div [] []
+                ]
 
 
 basketBox : Clientele.Customer -> Html Msg

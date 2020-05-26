@@ -392,6 +392,27 @@ maxPriceFromWealth wealthLevel =
             3.0
 
 
+mainInfo : Customer -> String
+mainInfo customer =
+    (case customer.wealthLevel of
+        Destitute ->
+            "Destitute "
+
+        Poor ->
+            "Poor "
+
+        Average ->
+            "Average "
+
+        WellOff ->
+            "Well-off "
+
+        Rich ->
+            "Rich "
+    )
+        ++ customer.template.name
+
+
 wealthMessageFromWealth : WealthLevel -> String
 wealthMessageFromWealth wealthLevel =
     wealthDescriptionFromWealth wealthLevel
@@ -422,6 +443,7 @@ wealthDescriptionFromWealth wealthLevel =
 customerDisplay : Customer -> List String
 customerDisplay customer =
     customer.name
+        -- :: mainInfo customer.wealthLevel customer.template
         :: ("Schmoozed: "
                 ++ String.fromInt customer.schmoozeCount
                 ++ " times."

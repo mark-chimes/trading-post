@@ -1326,11 +1326,12 @@ currentSituationBlockClosed _ =
 
 customerInfoPanelOpen : Model -> List (Html Msg)
 customerInfoPanelOpen model =
-    [ h3 [] [ text "Customer Info" ]
-    , div []
-        [ case model.customers.currentCustomer of
+    [ div []
+        (case model.customers.currentCustomer of
             Just customer ->
-                div [] <|
+                [ h3 [] [ text <| customer.name ]
+                , h4 [] [ text <| Clientele.mainInfo customer ]
+                , div [] <|
                     [ basicButton [ onClick SchmoozeCustomer ] [ text <| "Schmooze " ++ customer.name ]
                     , div [] <| List.map (\s -> div [] [ text s ]) <| Clientele.customerDisplay customer
                     ]
@@ -1341,10 +1342,13 @@ customerInfoPanelOpen model =
                                 Clientele.Uninspected ->
                                     [ basicButton [ onClick InspectCustomer ] [ text <| "Inspect " ++ customer.name ] ]
                            )
+                ]
 
             Nothing ->
-                div [] [ text "No customer" ]
-        ]
+                [ h3 [] [ text "Customer Info" ]
+                , div [] [ text "No customer" ]
+                ]
+        )
     ]
 
 

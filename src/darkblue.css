@@ -1,0 +1,208 @@
+/*
+  elm-hot creates an additional div wrapper around the app to make HMR possible.
+  This could break styling in development mode if you are using Elm UI.
+
+  More context in the issue:
+    https://github.com/halfzebra/create-elm-app/issues/320
+*/
+[data-elm-hot="true"] {
+  height: inherit;
+}
+
+/*
+  /* Darker brown 
+  --color-accentuate: #292523;
+  /* Dark brown
+  --color-standard-back: #453f3b;
+  /* Light brown
+  --color-far-back: #6e645e;
+  /* Beige
+  --color-button: #b9b5ac;
+  /* Off-white
+  --color-text: #f4f3ee;
+  /* Black
+  --color-button-text: black;
+*/
+
+:root {
+  /* Blue */
+  --color-accentuate: #293c4b;
+  /* Dark blue */
+  --color-standard-back: #10181e;
+  /* Light blue */
+  --color-far-back: #293c4b;
+  /* Dark blue */
+  --color-button: #0c1216;
+  /* Very light blue */
+  --color-text: lightblue;
+  /* White */
+  --color-button-text: white;
+  --element-border-color: var(--color-accentuate);
+  --box-border-color: var(--color-standard-back); 
+  --full-thick: 10px;
+  --half-thick: 5px;
+}
+
+body {
+  font-family: 'Source Sans Pro', 'Trebuchet MS', 'Lucida Grande', 'Bitstream Vera Sans', 'Helvetica Neue', sans-serif;
+  margin: 0;
+  text-align: center;
+  color: var(--color-text);
+  background: var(--color-far-back);
+}
+
+a {
+  color: black;
+}
+
+a:hover
+{
+  color: lightgreen;
+}
+a:active { 
+  color:white;
+}
+
+/*
+* {
+  box-sizing: border-box;
+}
+*/
+
+
+button {
+  background-color: var(--color-button)	;
+  border: 4px outset var(--element-border-color);
+  color: var(--color-button-text);
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: var(--color-accentuate);
+  border: 4px outset var(--color-far-back);
+  color: var(--color-text);
+}
+
+.basket { 
+  color: var(--color-button-text);
+}
+
+
+.full-block { 
+  background-color: var(--color-standard-back);
+  border: 5px ridge var(--box-border-color);
+  margin-top: var(--half-thick);
+  margin-bottom: var(--half-thick);
+  margin-left: var(--half-thick);
+  margin-right: var(--half-thick);
+  padding-bottom: var(--half-thick);
+}
+
+.grid-block { 
+  background-color: var(--color-standard-back);
+  border: 5px ridge var(--box-border-color);
+  min-height: 200px;
+  padding-left: var(--half-thick);
+  padding-right: var(--half-thick);
+    padding-top: var(--half-thick);
+  padding-bottom: var(--half-thick);
+}
+
+
+
+.grid-of-blocks { 
+  margin-top: var(--half-thick);
+  margin-bottom: var(--full-thick);
+  margin-left: var(--half-thick);
+  margin-right: var(--half-thick);
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-column-gap: var(--half-thick);
+  grid-row-gap: var(--half-thick);
+}
+
+@media only screen and (max-width: 600px) {
+  .grid-of-blocks {
+    grid-template-columns: repeat(1, 1fr);
+  }
+}
+
+.basket-box { 
+  border: 5px ridge var(--box-border-color);
+  background: var(--color-far-back);
+  padding-top: var(--full-thick);
+  padding-bottom: var(--full-thick);
+  margin-left: var(--full-thick);
+  margin-right: var(--full-thick);
+}
+
+.date {
+
+}
+
+.time { 
+  font-size: 24px;
+  padding-bottom: var(--full-thick);
+}
+
+.gold { 
+  font-size: 24px;
+  padding-bottom: var(--full-thick);
+}
+
+.heading-box { 
+  border: 40px ridge var(--color-standard-back);
+  background: var(--color-accentuate);
+  margin: 10px;
+  margin-bottom: 10px;
+}
+
+h1 {
+  font-size: 40px;
+  color: var(--color-text);
+  -webkit-text-stroke-width: 0px;
+  -webkit-text-stroke-color: var(--color-button-text);
+}
+
+h2 {
+  font-size: 32px;
+}
+
+h3 {
+  font-size: 24px;
+}
+
+pre {
+  font-size: 20px;
+  color: var(--color-text);
+  background: var(--color-accentuate);
+  border: 2px solid var(--element-border-color);
+  overflow-x: auto;
+  white-space: pre-wrap;
+  white-space: -moz-pre-wrap;
+  white-space: -pre-wrap;
+  white-space: -o-pre-wrap;
+  word-wrap: break-word;
+}
+
+textarea {
+	color: var(--color-text);
+	background: var(--color-accentuate);
+	border: 2px solid var(--element-border-color);
+}
+
+input { 
+	font-size: 20px;
+	color: var(--color-text);
+	background: var(--color-accentuate);
+	border: 2px solid var(--element-border-color);
+}
+
+
+img {
+  margin: 20px 0;
+  max-width: 200px;
+}

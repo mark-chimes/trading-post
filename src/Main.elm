@@ -199,10 +199,33 @@ update msg model =
             ( offerItemAtOptimalPrice model, Cmd.none )
 
         OpenCustomPrice ->
-            ( { model | priceExpandedState = Expanded }, Cmd.none )
+            ( openCustomPrice model, Cmd.none )
 
         CloseCustomPrice ->
             ( { model | priceExpandedState = Unexpanded }, Cmd.none )
+
+
+openCustomPrice : Model -> Model
+openCustomPrice model =
+    { model
+        | priceExpandedState = Expanded
+        , offerInfo = optimalOfferInfo model.customers.currentCustomer model.offerInfo
+    }
+
+
+optimalOfferInfo : Maybe Clientele.Customer -> PcOfferInfo -> PcOfferInfo
+optimalOfferInfo maybeCustomer offerInfo =
+    case maybeCustomer of
+        Just customer ->
+            case offerInfo.maybeItem of
+                Just item ->
+                    { offerInfo | pcOffer = Clientele.optimalPrice item customer }
+
+                Nothing ->
+                    offerInfo
+
+        Nothing ->
+            offerInfo
 
 
 updateOffer : String -> Model -> Model
@@ -278,7 +301,7 @@ offerItemAtOptimalPrice model =
         Just customer ->
             case model.offerInfo.maybeItem of
                 Just item ->
-                    addToBasket customer { pcOffer = Clientele.optimalPrice item customer, item = item } model
+                    submitAddToBasketWithCustomerAndItem customer { pcOffer = Clientele.optimalPrice item customer, item = item } model
 
                 Nothing ->
                     model
@@ -311,24 +334,36 @@ submitAddToBasket model =
                         offerInfo =
                             { pcOffer = model.offerInfo.pcOffer, item = item }
                     in
-                    case determineIfSale customer offerInfo model of
-                        Success ->
-                            addToBasket customer offerInfo model
-
-                        BadDeal ->
-                            failOnSaleBadDeal customer offerInfo model
-
-                        NoMoney ->
-                            failOnSaleNoMoney customer offerInfo model
-
-                        TooManyItems ->
-                            failOnSaleTooManyItems customer offerInfo model
+                    submitAddToBasketWithCustomerAndItem customer offerInfo model
 
                 Nothing ->
                     updateConversationWithActionMessage "There is no item on offer." model
 
         Nothing ->
             updateConversationWithActionMessage "Please address a customer before submitting an offer." model
+
+
+type CustomerSaleSuccess
+    = Success
+    | BadDeal
+    | TooManyItems
+    | NoMoney
+
+
+submitAddToBasketWithCustomerAndItem : Clientele.Customer -> OfferInfo -> Model -> Model
+submitAddToBasketWithCustomerAndItem customer offerInfo model =
+    case determineIfSale customer offerInfo model of
+        Success ->
+            addToBasket customer offerInfo model
+
+        BadDeal ->
+            failOnSaleBadDeal customer offerInfo model
+
+        NoMoney ->
+            failOnSaleNoMoney customer offerInfo model
+
+        TooManyItems ->
+            failOnSaleTooManyItems customer offerInfo model
 
 
 submitConfirmSale : Model -> Model
@@ -339,13 +374,6 @@ submitConfirmSale model =
 
         Nothing ->
             updateConversationWithActionMessage "Please address a customer before confirming an offer." model
-
-
-type CustomerSaleSuccess
-    = Success
-    | BadDeal
-    | TooManyItems
-    | NoMoney
 
 
 determineIfSale : Clientele.Customer -> OfferInfo -> Model -> CustomerSaleSuccess

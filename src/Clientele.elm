@@ -376,7 +376,7 @@ createCustomer ci =
 
 calculateMoneyInPurse : WealthLevel -> Int
 calculateMoneyInPurse wealthLevel =
-    round (priceCapFromWealth wealthLevel * 50)
+    round (priceCapFromWealth wealthLevel * 20)
 
 
 optimalPrice : Item -> Customer -> Int
@@ -391,7 +391,10 @@ maxPrice item customer =
 
 paymentForItemType : ItemType -> Customer -> Float
 paymentForItemType itemType customer =
-    customer.template.itemPreferences itemType * priceMultiplierFromWealth customer.wealthLevel * (1 + 0.5 * toFloat customer.schmoozeCount) * (1.0 / (1.0 + (toFloat <| customer.numItemsInBasket itemType)))
+    customer.template.itemPreferences itemType
+        * priceMultiplierFromWealth customer.wealthLevel
+        * (1 + 0.5 * toFloat customer.schmoozeCount)
+        * (1.0 / (1.0 + (toFloat <| customer.numItemsInBasket itemType)))
 
 
 priceCapForItemType : ItemType -> Customer -> Float
@@ -416,10 +419,6 @@ priceMultiplierFromWealth wealthLevel =
 
         Rich ->
             2.0
-
-
-
--- TDO
 
 
 priceCapFromWealth : WealthLevel -> Float

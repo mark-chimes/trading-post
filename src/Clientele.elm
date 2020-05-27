@@ -121,21 +121,42 @@ updateCustomerGold offer maybeCustomer =
 
 schmoozeCustomerMessage : Customer -> String
 schmoozeCustomerMessage customer =
-    if customer.schmoozeCount < constants.maxSchmoozes then
+    if customer.schmoozeCount >= constants.maxSchmoozes then
+        "Before you give "
+            ++ customer.name
+            ++ " another compliment, they snap that "
+            ++ String.fromInt constants.maxSchmoozes
+            ++ " compliments is enough already and that you should get to the point. This takes "
+            ++ String.fromInt constants.minTakenOnSchmooze
+            ++ " minutes."
+
+    else if customer.schmoozeCount == 0 then
         "You tell "
             ++ customer.name
             ++ " that they have lovely hair. They are impressed and are willing to pay more for the item. This takes "
             ++ String.fromInt constants.minTakenOnSchmooze
             ++ " minutes."
 
-    else
-        "You tell "
+    else if customer.schmoozeCount == 1 then
+        "You admire "
             ++ customer.name
-            ++ " that they have lovely hair. They snap at you that you've said that "
-            ++ String.fromInt constants.maxSchmoozes
-            ++ " times already. They seem annoyed. This takes "
+            ++ "'s clothing. They blush and are willing to pay more for the item. This takes "
             ++ String.fromInt constants.minTakenOnSchmooze
             ++ " minutes."
+
+    else if customer.schmoozeCount == 2 then
+        "You tell "
+            ++ customer.name
+            ++ " that their voice is like a song carried on the wind. The flutter their eyelashes and are willing to pay more for the item. This takes "
+            ++ String.fromInt constants.minTakenOnSchmooze
+            ++ " minutes."
+
+    else
+        "You give "
+            ++ customer.name
+            ++ " a generic compliment, taking "
+            ++ String.fromInt constants.minTakenOnSchmooze
+            ++ " minutes to do so."
 
 
 inspectCustomerMessage : Customer -> String
@@ -355,7 +376,7 @@ createCustomer ci =
 
 calculateMoneyInPurse : WealthLevel -> Int
 calculateMoneyInPurse wealthLevel =
-    round (maxPriceFromWealth wealthLevel * 200)
+    round (priceCapFromWealth wealthLevel * 50)
 
 
 optimalPrice : Item -> Customer -> Int
@@ -365,16 +386,21 @@ optimalPrice item customer =
 
 maxPrice : Item -> Customer -> Int
 maxPrice item customer =
-    round (toFloat item.itemWorth * paymentForItemType item.itemType customer)
+    round <| min (priceCapForItemType item.itemType customer) (toFloat item.itemWorth * paymentForItemType item.itemType customer)
 
 
 paymentForItemType : ItemType -> Customer -> Float
 paymentForItemType itemType customer =
-    customer.template.itemPreferences itemType * maxPriceFromWealth customer.wealthLevel * (1 + 0.5 * toFloat customer.schmoozeCount) * (1.0 / (1.0 + (toFloat <| customer.numItemsInBasket itemType)))
+    customer.template.itemPreferences itemType * priceMultiplierFromWealth customer.wealthLevel * (1 + 0.5 * toFloat customer.schmoozeCount) * (1.0 / (1.0 + (toFloat <| customer.numItemsInBasket itemType)))
 
 
-maxPriceFromWealth : WealthLevel -> Float
-maxPriceFromWealth wealthLevel =
+priceCapForItemType : ItemType -> Customer -> Float
+priceCapForItemType itemType customer =
+    toFloat <| customer.template.basePriceByItemType itemType
+
+
+priceMultiplierFromWealth : WealthLevel -> Float
+priceMultiplierFromWealth wealthLevel =
     case wealthLevel of
         Destitute ->
             0.8
@@ -383,13 +409,36 @@ maxPriceFromWealth wealthLevel =
             1.0
 
         Average ->
-            1.5
+            1.2
 
         WellOff ->
-            2.0
+            1.5
 
         Rich ->
-            3.0
+            2.0
+
+
+
+-- TDO
+
+
+priceCapFromWealth : WealthLevel -> Float
+priceCapFromWealth wealthLevel =
+    case wealthLevel of
+        Destitute ->
+            1
+
+        Poor ->
+            2
+
+        Average ->
+            4
+
+        WellOff ->
+            8
+
+        Rich ->
+            16
 
 
 mainInfo : Customer -> String
@@ -417,7 +466,7 @@ wealthMessageFromWealth : WealthLevel -> String
 wealthMessageFromWealth wealthLevel =
     wealthDescriptionFromWealth wealthLevel
         ++ "They'd probably pay about "
-        ++ String.fromInt (round (100 * maxPriceFromWealth wealthLevel))
+        ++ String.fromInt (round (100 * priceMultiplierFromWealth wealthLevel))
         ++ "% of the item's value without being schmoozed."
 
 
@@ -456,6 +505,8 @@ customerDisplay customer =
                     -- , "Base: " ++ String.fromInt (round (maxPriceFromWealth customer.wealthLevel * (1 + 0.5 * toFloat customer.schmoozeCount) * 100)) ++ "%"
                     , "Food: (" ++ String.fromInt (customer.numItemsInBasket Stock.foodType) ++ ") " ++ percentageForDisplay Stock.foodType customer
                     , "Weapons: (" ++ String.fromInt (customer.numItemsInBasket Stock.weaponType) ++ ") " ++ percentageForDisplay Stock.weaponType customer
+                    , "Cap for food: " ++ String.fromFloat (priceCapForItemType Stock.foodType customer) ++ " gp"
+                    , "Cap for Weapons: " ++ String.fromFloat (priceCapForItemType Stock.weaponType customer) ++ " gp"
                     ]
 
                 Uninspected ->
@@ -545,10 +596,15 @@ type alias ItemPreferences =
     ItemType -> Float
 
 
+type alias BasePriceByItemType =
+    ItemType -> Int
+
+
 type alias CustomerTemplate =
     { name : String
     , description : String
     , itemPreferences : ItemPreferences
+    , basePriceByItemType : BasePriceByItemType
     }
 
 
@@ -566,6 +622,16 @@ templateKnight =
 
             else
                 0.0
+    , basePriceByItemType =
+        \itemType ->
+            if itemType == weaponType then
+                40
+
+            else if itemType == foodType then
+                10
+
+            else
+                0
     }
 
 
@@ -583,6 +649,16 @@ templateTraveller =
 
             else
                 0.0
+    , basePriceByItemType =
+        \itemType ->
+            if itemType == weaponType then
+                20
+
+            else if itemType == foodType then
+                40
+
+            else
+                0
     }
 
 
@@ -591,6 +667,7 @@ templateWeird =
     { name = "Weird"
     , description = "They are weird! You can't tell what they want."
     , itemPreferences = \_ -> 0.0
+    , basePriceByItemType = \_ -> 0
     }
 
 

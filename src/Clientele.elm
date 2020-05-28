@@ -376,7 +376,7 @@ createCustomer ci =
 
 calculateMoneyInPurse : WealthLevel -> Int
 calculateMoneyInPurse wealthLevel =
-    round (priceCapFromWealth wealthLevel * 20)
+    priceCapFromWealth wealthLevel * 20
 
 
 optimalPrice : Item -> Customer -> Int
@@ -399,7 +399,7 @@ paymentForItemType itemType customer =
 
 priceCapForItemType : ItemType -> Customer -> Float
 priceCapForItemType itemType customer =
-    toFloat <| customer.template.basePriceByItemType itemType
+    toFloat <| (priceCapFromWealth customer.wealthLevel * customer.template.basePriceByItemType itemType)
 
 
 priceMultiplierFromWealth : WealthLevel -> Float
@@ -421,7 +421,7 @@ priceMultiplierFromWealth wealthLevel =
             2.0
 
 
-priceCapFromWealth : WealthLevel -> Float
+priceCapFromWealth : WealthLevel -> Int
 priceCapFromWealth wealthLevel =
     case wealthLevel of
         Destitute ->
@@ -624,10 +624,10 @@ templateKnight =
     , basePriceByItemType =
         \itemType ->
             if itemType == weaponType then
-                40
+                5
 
             else if itemType == foodType then
-                10
+                1
 
             else
                 0
@@ -651,10 +651,10 @@ templateTraveller =
     , basePriceByItemType =
         \itemType ->
             if itemType == weaponType then
-                20
+                2
 
             else if itemType == foodType then
-                40
+                4
 
             else
                 0

@@ -101,9 +101,12 @@ type alias StockQties =
 initStockQty : StockQties
 initStockQty =
     Dict.fromList
-        [ ( Stock.swordItem.uniqueName, 10 )
-        , ( Stock.axeItem.uniqueName, 10 )
-        , ( Stock.trailMixItem.uniqueName, 10 )
+        [ ( Stock.swordItem.uniqueName, 2 )
+        , ( Stock.axeItem.uniqueName, 5 )
+        , ( Stock.daggerItem.uniqueName, 10 )
+        , ( Stock.fancyChocolateItem.uniqueName, 2 )
+        , ( Stock.trailMixItem.uniqueName, 5 )
+        , ( Stock.cabbageItem.uniqueName, 10 )
         ]
 
 
@@ -1142,7 +1145,6 @@ currentSituationBlockOpen model =
 
 
 -- offer > Clientele.maxPrice offerInfo.item customer
--- TODO Rename --
 
 
 priceBox : Clientele.Customer -> ( Item, Int ) -> Html Msg
@@ -1279,26 +1281,29 @@ stockAndOfferBlock model =
             div [] [ text nooneMessage ]
 
         Just customer ->
-            div [] <|
-                (List.map (priceBox customer) <|
-                    List.filterMap
-                        (\( maybeItem, qty ) ->
-                            case maybeItem of
-                                Just item ->
-                                    Just ( item, qty )
-
-                                Nothing ->
-                                    Nothing
-                        )
-                    <|
-                        List.map
-                            (\( itemName, qty ) ->
-                                ( Stock.itemForName itemName, qty )
-                            )
-                        <|
-                            Dict.toList model.stockQty
-                )
+            div [] <| priceBox2 customer model
     ]
+
+
+priceBox2 : Customer -> Model -> List (Html Msg)
+priceBox2 customer model =
+    List.map (priceBox customer) <|
+        List.filterMap
+            (\( maybeItem, qty ) ->
+                case maybeItem of
+                    Just item ->
+                        Just ( item, qty )
+
+                    Nothing ->
+                        Nothing
+            )
+        <|
+            List.map
+                (\( itemName, qty ) ->
+                    ( Stock.itemForName itemName, qty )
+                )
+            <|
+                Dict.toList model.stockQty
 
 
 

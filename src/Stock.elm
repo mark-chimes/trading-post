@@ -63,10 +63,37 @@ axeItem =
     }
 
 
+daggerItem : Item
+daggerItem =
+    { uniqueName = "dagger"
+    , displayName = "dagger"
+    , itemWorth = 10
+    , itemType = weaponType
+    }
+
+
+fancyChocolateItem : Item
+fancyChocolateItem =
+    { uniqueName = "fancy chocolate"
+    , displayName = "fancy bar of chocolate"
+    , itemWorth = 10
+    , itemType = foodType
+    }
+
+
 trailMixItem : Item
 trailMixItem =
     { uniqueName = "trail mix"
     , displayName = "packet of trail mix"
+    , itemWorth = 10
+    , itemType = foodType
+    }
+
+
+cabbageItem : Item
+cabbageItem =
+    { uniqueName = "cabbage"
+    , displayName = "head of cabbage"
     , itemWorth = 5
     , itemType = foodType
     }
@@ -80,8 +107,17 @@ itemForName uniqueName =
     else if uniqueName == "axe" then
         Just axeItem
 
+    else if uniqueName == "dagger" then
+        Just daggerItem
+
+    else if uniqueName == "fancy chocolate" then
+        Just fancyChocolateItem
+
     else if uniqueName == "trail mix" then
         Just trailMixItem
+
+    else if uniqueName == "cabbage" then
+        Just cabbageItem
 
     else
         Nothing

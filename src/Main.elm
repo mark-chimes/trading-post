@@ -1336,12 +1336,57 @@ priceBox2 customer model =
 
 customersBlockOpen : Model -> List (Html Msg)
 customersBlockOpen model =
-    [ h3 [] [ text "Customers" ]
-    , div []
-        (Clientele.customerEntryButtons
-            (\c -> onClick (CustomerEntry c))
-            model.customers
-        )
+    {-
+       Destitute ->
+           "Destitute "
+
+       Poor ->
+           "Poor "
+
+       Average ->
+           "Average "
+
+       WellOff ->
+           "Well-off "
+
+       Rich ->
+           "Rich "
+    -}
+    [ h3 []
+        [ text "Customers" ]
+    , div
+        []
+        [ div [] <|
+            text "Rich"
+                :: Clientele.customerEntryButtons
+                    (\c -> onClick (CustomerEntry c))
+                    Clientele.Rich
+                    model.customers
+        , div [] <|
+            text "Well-Off"
+                :: Clientele.customerEntryButtons
+                    (\c -> onClick (CustomerEntry c))
+                    Clientele.WellOff
+                    model.customers
+        , div [] <|
+            text "Average"
+                :: Clientele.customerEntryButtons
+                    (\c -> onClick (CustomerEntry c))
+                    Clientele.Average
+                    model.customers
+        , div [] <|
+            text "Poor"
+                :: Clientele.customerEntryButtons
+                    (\c -> onClick (CustomerEntry c))
+                    Clientele.Poor
+                    model.customers
+        , div [] <|
+            text "Destitute"
+                :: Clientele.customerEntryButtons
+                    (\c -> onClick (CustomerEntry c))
+                    Clientele.Destitute
+                    model.customers
+        ]
     , br [] []
     , div []
         (case model.customers.currentCustomer of

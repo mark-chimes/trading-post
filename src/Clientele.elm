@@ -297,9 +297,10 @@ markCurrentCustomerAsInspected clientele =
 
 customerEntryButtons :
     (Customer -> Attribute msg)
+    -> WealthLevel
     -> ClienteleDetails
     -> List (Html msg)
-customerEntryButtons command customers =
+customerEntryButtons command wealthLevel customers =
     List.map
         (\c ->
             if List.length c.basket > 0 then
@@ -316,7 +317,9 @@ customerEntryButtons command customers =
                     ]
                     [ text c.name ]
         )
-        customers.waitingCustomers
+    <|
+        List.filter (\c -> c.wealthLevel == wealthLevel)
+            customers.waitingCustomers
 
 
 

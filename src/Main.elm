@@ -807,7 +807,7 @@ takeRent model =
         rent =
             50
     in
-    updateConversationWithActionMessage ("Rent of " ++ String.fromInt rent ++ " is due.") <|
+    updateConversationWithActionMessage ("Rent of " ++ String.fromInt rent ++ " gp is due.") <|
         { model | pcGold = model.pcGold - rent }
 
 
@@ -843,6 +843,8 @@ neglectedCustomers numCust statsTracker =
 statsModelMessage : Model -> String
 statsModelMessage model =
     statsTrackMessage model.statsTracker
+        ++ " You ended the day with a total of "
+        ++ String.fromInt model.pcGold ++ " gp"
 
 
 statsTrackMessage : StatsTracker -> String

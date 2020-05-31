@@ -159,6 +159,8 @@ button:hover:not([disabled]) {
   padding-bottom: var(--full-thick);
   margin-left: var(--full-thick);
   margin-right: var(--full-thick);
+  background-size: cover;
+  background-repeat: no-repeat;
 }
 
  

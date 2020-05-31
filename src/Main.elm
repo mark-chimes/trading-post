@@ -27,6 +27,7 @@ type alias Model =
     , isConvoReverse : Bool
     , conversation : List (List String)
     , lastMessage : String
+    , hintMessage : String
     , windowWidth : Int
     , waitTime : Int
     , timeOfNextCustomer : Time
@@ -69,6 +70,7 @@ init flags =
         , customers = Clientele.initCustomers
         , isConvoReverse = True
         , lastMessage = ""
+        , hintMessage = "Click the question-mark next to the item if you need a hint."
         , conversation = []
         , windowWidth = flags.windowWidth
         , waitTime = 0
@@ -124,7 +126,7 @@ type Msg
     | InspectCustomer
     | OpenStore
     | OfferAtOptimalPrice Clientele.Customer Int Item
-    | QuestionSale Customer Item Int
+    | GetHintForItem Customer Item
 
 
 type StoreState
@@ -178,8 +180,8 @@ update msg model =
         OfferAtOptimalPrice customer offer item ->
             ( offerItemAtPrice customer offer item model, Cmd.none )
 
-        QuestionSale customer item qty ->
-            ( questionSale customer item qty model, Cmd.none )
+        GetHintForItem customer item ->
+            ( getHintForItem customer item model, Cmd.none )
 
 
 optimalOfferInfo : Maybe Clientele.Customer -> PcOfferInfo -> PcOfferInfo
@@ -275,17 +277,25 @@ type CustomerSaleSuccess
     | NoMoney
 
 
-questionSale : Customer -> Item -> Int -> Model -> Model
-questionSale customer item qty model =
-    updateConversationWithActionMessage (questionSaleString customer item qty) model
+getHintForItem : Customer -> Item -> Model -> Model
+getHintForItem customer item model =
+    updateHintWithMessage ("Hint for " ++ item.displayName ++ ": " ++ questionSaleString customer item) model
+
+
+updateHintWithMessage : String -> Model -> Model
+updateHintWithMessage message model =
+    updateConversationWithActionMessage message <|
+        { model
+            | hintMessage = message
+        }
 
 
 
 -- TODO Update question strings
 
 
-questionSaleString : Customer -> Item -> Int -> String
-questionSaleString customer item qty =
+questionSaleString : Customer -> Item -> String
+questionSaleString customer item =
     let
         purse =
             customer.moneyInPurse
@@ -1224,6 +1234,7 @@ priceBox customer ( item, quantity ) =
                 ++ " - "
                 ++ String.fromInt item.itemWorth
                 ++ " gp "
+        , basicButton [ Attr.attribute "aria-label" "Hint", onClick <| GetHintForItem customer item ] [ text "?" ]
         , basicButton [ onClick <| OfferAtOptimalPrice customer price item ]
             [ text <|
                 "Offer "
@@ -1234,7 +1245,6 @@ priceBox customer ( item, quantity ) =
                     ++ String.fromInt price
                     ++ " gp."
             ]
-        , basicButton [ onClick <| QuestionSale customer item quantity ] [ text "?" ]
         ]
 
 
@@ -1281,7 +1291,7 @@ customerInfoPanelOpen model =
                 [ h3 [] [ text <| customer.name ]
                 , h4 [] [ text <| Clientele.mainInfo customer ]
                 , div [] <|
-                    [ basicButton [ onClick SchmoozeCustomer ] [ text <| schmoozeText customer ]
+                    [ basicButton [ onClick SchmoozeCustomer ] [ text <| schmoozeButtonText customer ]
                     , div [] <| List.map (\s -> div [] [ text s ]) <| Clientele.customerDisplay customer
                     ]
                         ++ (case customer.inspectedState of
@@ -1301,8 +1311,8 @@ customerInfoPanelOpen model =
     ]
 
 
-schmoozeText : Customer -> String
-schmoozeText customer =
+schmoozeButtonText : Customer -> String
+schmoozeButtonText customer =
     "Schmooze ("
         ++ String.fromInt customer.schmoozeCount
         ++ (if customer.schmoozeCount == Clientele.constants.maxSchmoozes then
@@ -1357,29 +1367,48 @@ stockAndOfferBlock model =
             div [] [ text nooneMessage ]
 
         Just customer ->
-            div [] <| priceBox2 customer model
+            div [] <| priceBoxes customer model
+    , h4 [] [ text "Hints" ]
+    , Html.pre [] [ text model.hintMessage ]
     ]
 
 
-priceBox2 : Customer -> Model -> List (Html Msg)
-priceBox2 customer model =
-    List.map (priceBox customer) <|
-        List.filterMap
-            (\( maybeItem, qty ) ->
-                case maybeItem of
-                    Just item ->
-                        Just ( item, qty )
+priceBoxes : Customer -> Model -> List (Html Msg)
+priceBoxes customer model =
+    List.concatMap (\itemType -> priceBoxByType customer itemType model) Stock.itemTypesEnum
 
-                    Nothing ->
-                        Nothing
-            )
-        <|
-            List.map
-                (\( itemName, qty ) ->
-                    ( Stock.itemForName itemName, qty )
-                )
-            <|
-                Dict.toList model.stockQty
+
+priceBoxByType : Customer -> Stock.ItemType -> Model -> List (Html Msg)
+priceBoxByType customer itemType model =
+    h4 [] [ text <| Stock.toString itemType ]
+        :: itemListHtmlByType
+            customer
+            itemType
+            model
+
+
+itemListHtmlByType : Customer -> Stock.ItemType -> Model -> List (Html Msg)
+itemListHtmlByType customer itemType model =
+    List.map (priceBox customer) <|
+        List.reverse <|
+            List.sortBy (\( item, _ ) -> item.itemWorth) <|
+                List.filter (\( item, _ ) -> item.itemType == itemType) <|
+                    List.filterMap
+                        (\( maybeItem, qty ) ->
+                            case maybeItem of
+                                Just item ->
+                                    Just ( item, qty )
+
+                                Nothing ->
+                                    Nothing
+                        )
+                    <|
+                        List.map
+                            (\( itemName, qty ) ->
+                                ( Stock.itemForName itemName, qty )
+                            )
+                        <|
+                            Dict.toList model.stockQty
 
 
 

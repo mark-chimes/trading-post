@@ -94,7 +94,7 @@ cabbageItem : Item
 cabbageItem =
     { uniqueName = "cabbage"
     , displayName = "head of cabbage"
-    , itemWorth = 5
+    , itemWorth = 4
     , itemType = foodType
     }
 

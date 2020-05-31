@@ -402,7 +402,7 @@ paymentForItemType itemType customer =
 
 priceCapForItemType : ItemType -> Customer -> Float
 priceCapForItemType itemType customer =
-    toFloat <| (priceCapFromWealth customer.wealthLevel * customer.template.basePriceByItemType itemType)
+    (1.0 + 0.1 * toFloat customer.schmoozeCount) * toFloat (priceCapFromWealth customer.wealthLevel * customer.template.basePriceByItemType itemType)
 
 
 priceMultiplierFromWealth : WealthLevel -> Float
@@ -507,8 +507,8 @@ customerDisplay customer =
                     -- , "Base: " ++ String.fromInt (round (maxPriceFromWealth customer.wealthLevel * (1 + 0.5 * toFloat customer.schmoozeCount) * 100)) ++ "%"
                     , "Food: (" ++ String.fromInt (customer.numItemsInBasket Stock.foodType) ++ ") " ++ percentageForDisplay Stock.foodType customer
                     , "Weapons: (" ++ String.fromInt (customer.numItemsInBasket Stock.weaponType) ++ ") " ++ percentageForDisplay Stock.weaponType customer
-                    , "Cap for food: " ++ String.fromFloat (priceCapForItemType Stock.foodType customer) ++ " gp"
-                    , "Cap for Weapons: " ++ String.fromFloat (priceCapForItemType Stock.weaponType customer) ++ " gp"
+                    , "Cap for food: " ++ String.fromInt (round (priceCapForItemType Stock.foodType customer)) ++ " gp"
+                    , "Cap for Weapons: " ++ String.fromInt (round (priceCapForItemType Stock.weaponType customer)) ++ " gp"
                     ]
 
                 Uninspected ->

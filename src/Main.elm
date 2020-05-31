@@ -124,6 +124,7 @@ type Msg
     | InspectCustomer
     | OpenStore
     | OfferAtOptimalPrice Clientele.Customer Int Item
+    | QuestionSale Customer Item Int
 
 
 type StoreState
@@ -176,6 +177,9 @@ update msg model =
 
         OfferAtOptimalPrice customer offer item ->
             ( offerItemAtPrice customer offer item model, Cmd.none )
+
+        QuestionSale customer item qty ->
+            ( questionSale customer item qty model, Cmd.none )
 
 
 optimalOfferInfo : Maybe Clientele.Customer -> PcOfferInfo -> PcOfferInfo
@@ -269,6 +273,63 @@ type CustomerSaleSuccess
     | BadDeal
     | TooManyItems
     | NoMoney
+
+
+questionSale : Customer -> Item -> Int -> Model -> Model
+questionSale customer item qty model =
+    updateConversationWithActionMessage (questionSaleString customer item qty) model
+
+
+
+-- TODO Update question strings
+
+
+questionSaleString : Customer -> Item -> Int -> String
+questionSaleString customer item qty =
+    let
+        purse =
+            customer.moneyInPurse
+
+        cap =
+            Clientele.priceCapForItemType item.itemType customer
+
+        schmoozes =
+            customer.schmoozeCount
+
+        willingPay =
+            toFloat item.itemWorth * Clientele.paymentForItemType item.itemType customer
+
+        maxPrice =
+            round <| min cap willingPay
+    in
+    if purse < maxPrice then
+        "Not enough money in purse"
+
+    else if cap < willingPay then
+        "They won't pay more than "
+            ++ String.fromInt (round cap)
+            ++ " gp for one "
+            ++ Stock.toString item.itemType
+            ++ " item. "
+            ++ (if schmoozes < Clientele.constants.maxSchmoozes then
+                    "You could try schmoozing them again, but if you have a cheaper item of the same type, you'd probably make more profit selling that. "
+
+                else
+                    "If you have a cheaper item of the same type, you'd probably make more profit selling that. "
+               )
+
+    else if schmoozes < Clientele.constants.maxSchmoozes then
+        "Try schmoozing them again! "
+
+    else if round willingPay < item.itemWorth then
+        "They probably aren't willing to buy more "
+            ++ Stock.toString item.itemType
+            ++ " items at a reasonable price. "
+            ++ "Cut your losses and sel and item of a different type or conclude the sale. "
+
+    else
+        " You can sell this item for a profit to the customer, and they simply aren't interested in buying it for more. "
+            ++ " Either offer the item to them, or switch to a richer customer. "
 
 
 submitAddToBasketWithCustomerAndItem : Clientele.Customer -> OfferInfo -> Model -> Model
@@ -1173,6 +1234,7 @@ priceBox customer ( item, quantity ) =
                     ++ String.fromInt price
                     ++ " gp."
             ]
+        , basicButton [ onClick <| QuestionSale customer item quantity ] [ text "?" ]
         ]
 
 
@@ -1219,7 +1281,7 @@ customerInfoPanelOpen model =
                 [ h3 [] [ text <| customer.name ]
                 , h4 [] [ text <| Clientele.mainInfo customer ]
                 , div [] <|
-                    [ basicButton [ onClick SchmoozeCustomer ] [ text <| "Schmooze " ++ customer.name ]
+                    [ basicButton [ onClick SchmoozeCustomer ] [ text <| schmoozeText customer ]
                     , div [] <| List.map (\s -> div [] [ text s ]) <| Clientele.customerDisplay customer
                     ]
                         ++ (case customer.inspectedState of
@@ -1237,6 +1299,20 @@ customerInfoPanelOpen model =
                 ]
         )
     ]
+
+
+schmoozeText : Customer -> String
+schmoozeText customer =
+    "Schmooze ("
+        ++ String.fromInt customer.schmoozeCount
+        ++ (if customer.schmoozeCount == Clientele.constants.maxSchmoozes then
+                " MAX"
+
+            else
+                ""
+           )
+        ++ ") "
+        ++ customer.name
 
 
 customerInfoPanelClosed : List (Html Msg)

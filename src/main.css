@@ -96,7 +96,13 @@ button {
   cursor: pointer;
 }
 
-button:hover {
+button:disabled{
+  background-color: var(--color-standard-back);
+  border: 4px outset var(--color-far-back);
+  color: var(--color-text);
+}
+
+button:hover:not([disabled]) {
   background-color: var(--color-accentuate);
   border: 4px outset var(--color-far-back);
   color: var(--color-text);

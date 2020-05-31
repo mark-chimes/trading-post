@@ -157,7 +157,7 @@ update msg model =
             ( cleanStore model, Cmd.none )
 
         ReverseStory ->
-            ( { model | isConvoReverse = not model.isConvoReverse }, Cmd.none )
+            ( reverseStory model, Cmd.none )
 
         InspectCustomer ->
             ( inspectCustomer model, Cmd.none )
@@ -182,6 +182,24 @@ update msg model =
 
         GetHintForItem customer item ->
             ( getHintForItem customer item model, Cmd.none )
+
+
+reverseStory : Model -> Model
+reverseStory model =
+    (\mdl ->
+        updateConversationWithActionMessage
+            ("Story display is now "
+                ++ (if mdl.isConvoReverse then
+                        "reversed."
+
+                    else
+                        "forwards."
+                   )
+            )
+            mdl
+    )
+    <|
+        { model | isConvoReverse = not model.isConvoReverse }
 
 
 optimalOfferInfo : Maybe Clientele.Customer -> PcOfferInfo -> PcOfferInfo
@@ -1291,7 +1309,7 @@ customerInfoPanelOpen model =
                 [ h3 [] [ text <| customer.name ]
                 , h4 [] [ text <| Clientele.mainInfo customer ]
                 , div [] <|
-                    [ basicButton [ onClick SchmoozeCustomer ] [ text <| schmoozeButtonText customer ]
+                    [ schmoozeButton customer
                     , div [] <| List.map (\s -> div [] [ text s ]) <| Clientele.customerDisplay customer
                     ]
                         ++ (case customer.inspectedState of
@@ -1309,6 +1327,15 @@ customerInfoPanelOpen model =
                 ]
         )
     ]
+
+
+schmoozeButton : Customer -> Html Msg
+schmoozeButton customer =
+    if customer.schmoozeCount >= Clientele.constants.maxSchmoozes then
+        basicButton [ Attr.disabled True ] [ text <| schmoozeButtonText customer ]
+
+    else
+        basicButton [ onClick SchmoozeCustomer ] [ text <| schmoozeButtonText customer ]
 
 
 schmoozeButtonText : Customer -> String
@@ -1544,14 +1571,16 @@ lastMessagePanel model =
 storyBlock : Model -> List (Html Msg)
 storyBlock model =
     [ h3 [] [ text "The story thus far: " ]
-    , button [ onClick ClearStory ] [ text "Clear Story" ]
-    , button [ onClick ReverseStory ]
+
+    -- , button [ onClick ClearStory ] [ text "Clear Story" ]
+    , div []
         [ text <|
             if model.isConvoReverse then
-                "Story reversed"
+                "Story reversed "
 
             else
-                "Story forwards"
+                "Story forwards "
+        , button [ onClick ReverseStory ] [ text <| "Reverse" ]
         ]
     , div []
         []

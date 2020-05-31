@@ -1389,34 +1389,43 @@ stockAndOfferBlock model =
 
     -- , div [] (List.map stockItemButton <| Dict.toList model.stockQty)
     , br [] []
-    , case model.customers.currentCustomer of
-        Nothing ->
-            div [] [ text nooneMessage ]
-
-        Just customer ->
-            div [] <| priceBoxes customer model
-    , h4 [] [ text "Hints" ]
-    , Html.pre [] [ text model.hintMessage ]
+    , div [] <| priceBoxes model.customers.currentCustomer model
     ]
 
 
-priceBoxes : Customer -> Model -> List (Html Msg)
-priceBoxes customer model =
-    List.concatMap (\itemType -> priceBoxByType customer itemType model) Stock.itemTypesEnum
+priceBoxes : Maybe Customer -> Model -> List (Html Msg)
+priceBoxes maybeCust model =
+    List.concatMap (\itemType -> priceBoxByType maybeCust itemType model) Stock.itemTypesEnum
+        ++ (case maybeCust of
+                Just _ ->
+                    [ h4 [] [ text "Hints" ]
+                    , Html.pre [] [ text model.hintMessage ]
+                    ]
+
+                Nothing ->
+                    []
+           )
 
 
-priceBoxByType : Customer -> Stock.ItemType -> Model -> List (Html Msg)
-priceBoxByType customer itemType model =
+priceBoxByType : Maybe Customer -> Stock.ItemType -> Model -> List (Html Msg)
+priceBoxByType maybeCust itemType model =
     h4 [] [ text <| Stock.toString itemType ]
         :: itemListHtmlByType
-            customer
+            maybeCust
             itemType
             model
 
 
-itemListHtmlByType : Customer -> Stock.ItemType -> Model -> List (Html Msg)
-itemListHtmlByType customer itemType model =
-    List.map (priceBox customer) <|
+itemListHtmlByType : Maybe Customer -> Stock.ItemType -> Model -> List (Html Msg)
+itemListHtmlByType maybeCust itemType model =
+    (case maybeCust of
+        Nothing ->
+            List.map priceBoxNoone
+
+        Just customer ->
+            List.map (priceBoxCustomer customer)
+    )
+    <|
         List.reverse <|
             List.sortBy (\( item, _ ) -> item.itemWorth) <|
                 List.filter (\( item, _ ) -> item.itemType == itemType) <|
@@ -1438,8 +1447,21 @@ itemListHtmlByType customer itemType model =
                             Dict.toList model.stockQty
 
 
-priceBox : Clientele.Customer -> ( Item, Int ) -> Html Msg
-priceBox customer ( item, quantity ) =
+priceBoxNoone : ( Item, Int ) -> Html Msg
+priceBoxNoone ( item, quantity ) =
+    div []
+        [ text <|
+            item.displayName
+                ++ " x"
+                ++ String.fromInt quantity
+                ++ " (cost "
+                ++ String.fromInt item.itemWorth
+                ++ " gp)"
+        ]
+
+
+priceBoxCustomer : Clientele.Customer -> ( Item, Int ) -> Html Msg
+priceBoxCustomer customer ( item, quantity ) =
     let
         price =
             Clientele.optimalPrice item customer

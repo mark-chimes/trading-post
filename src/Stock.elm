@@ -86,7 +86,7 @@ fancyChocolateItem : Item
 fancyChocolateItem =
     { uniqueName = "fancy chocolate"
     , displayName = "fancy bar of chocolate"
-    , itemWorth = 10
+    , itemWorth = 20
     , itemType = foodType
     }
 

@@ -315,6 +315,9 @@ updateHintWithMessage message model =
 questionSaleString : Customer -> Item -> String
 questionSaleString customer item =
     let
+        name =
+            customer.name
+
         purse =
             customer.moneyInPurse
 
@@ -331,12 +334,19 @@ questionSaleString customer item =
             round <| min cap willingPay
     in
     if purse < maxPrice then
-        "Not enough money in purse"
+        name ++ " only has " ++ String.fromInt purse ++ " gp left in their purse."
 
-    else if cap < willingPay then
-        "They won't pay more than "
+    else if cap <= willingPay then
+        (if maxPrice > item.itemWorth then
+            "Selling the " ++ item.displayName ++ " would make you " ++ String.fromInt (maxPrice - item.itemWorth) ++ " gp profit. "
+
+         else
+            "This is not profitable. "
+        )
+            ++ name
+            ++ " won't pay more than "
             ++ String.fromInt (round cap)
-            ++ " gp for one "
+            ++ " gp for a single "
             ++ Stock.toString item.itemType
             ++ " item. "
             ++ (if schmoozes < Clientele.constants.maxSchmoozes then
@@ -347,17 +357,22 @@ questionSaleString customer item =
                )
 
     else if schmoozes < Clientele.constants.maxSchmoozes then
-        "Try schmoozing them again! "
+        "Try schmoozing " ++ name ++ " again! "
 
-    else if round willingPay < item.itemWorth then
-        "They probably aren't willing to buy more "
+    else if round willingPay <= item.itemWorth then
+        name
+            ++ " isn't willing to buy more "
             ++ Stock.toString item.itemType
-            ++ " items at a reasonable price. "
-            ++ "Cut your losses and sel and item of a different type or conclude the sale. "
+            ++ " items at a profitable price. "
+            ++ "Cut your losses and sell an item of a different type or conclude the sale. "
 
     else
-        " You can sell this item for a profit to the customer, and they simply aren't interested in buying it for more. "
-            ++ " Either offer the item to them, or switch to a richer customer. "
+        "You can sell this item to "
+            ++ name
+            ++ " for a profit. They simply aren't interested in buying it for more than "
+            ++ String.fromInt maxPrice
+            ++ "gp. "
+            ++ "Either offer the item to them, or switch to a richer customer. "
 
 
 submitAddToBasketWithCustomerAndItem : Clientele.Customer -> OfferInfo -> Model -> Model
@@ -432,8 +447,8 @@ confirmSale : Clientele.Customer -> Model -> Model
 confirmSale customer model =
     updateModelStatsTrackerWithConfirmSale customer <|
         exitCurrentCustomerSuccessfulSale <|
-            updateGoldWithSale customer <|
-                updateConversationWithActionMessage (confirmSaleString customer) <|
+            (\mdl -> updateConversationWithActionMessage (confirmSaleString customer mdl.pcGold) mdl) <|
+                updateGoldWithSale customer <|
                     model
 
 
@@ -1012,8 +1027,8 @@ offerAndPurchaseString customer offerInfo =
     offerString offerInfo ++ "\n" ++ purchaseString customer offerInfo
 
 
-confirmSaleString : Clientele.Customer -> String
-confirmSaleString customer =
+confirmSaleString : Clientele.Customer -> Int -> String
+confirmSaleString customer pcGold =
     "You sell "
         ++ String.fromInt (List.length customer.basket)
         ++ " item(s) to "
@@ -1022,11 +1037,26 @@ confirmSaleString customer =
         ++ String.fromInt (totalSaleValueOfBasket customer)
         ++ " gp. Cost price was "
         ++ String.fromInt (totalCostPriceOfBasket customer)
-        ++ " gp, netting you a profit of "
-        ++ String.fromInt (totalSaleValueOfBasket customer - totalCostPriceOfBasket customer)
-        ++ " gp.\n"
+        ++ " gp. "
+        ++ (let
+                profit =
+                    totalSaleValueOfBasket customer - totalCostPriceOfBasket customer
+            in
+            if profit > 0 then
+                "This nets you a profit of " ++ String.fromInt profit ++ "gp. "
+
+            else if profit == 0 then
+                "No profit. "
+
+            else
+                "This LOST you " ++ String.fromInt -profit ++ " gp."
+           )
+        ++ "\n"
         ++ customer.name
         ++ ": \"Goodbye, and thanks for everything!\"\n"
+        ++ "You now have a total of "
+        ++ String.fromInt pcGold
+        ++ " gold."
 
 
 offerString : OfferInfo -> String
@@ -1167,8 +1197,8 @@ uiBasedOnStoreState storeState model =
             grid
                 [ gridElement <| stockAndOfferBlock model
                 , gridElement <| basketBlockOpen model
-                , gridElement <| customersBlockOpen model
                 , gridElement <| customerInfoPanelOpen model
+                , gridElement <| customersBlockOpen model
                 , gridElement <| currentSituationBlockOpen model
                 , gridElement <| lastMessagePanel model
                 ]
@@ -1177,9 +1207,9 @@ uiBasedOnStoreState storeState model =
             grid
                 [ gridElement <| stockAndOfferBlock model
                 , gridElement <| basketBlockClosed
+                , gridElement <| customerInfoPanelClosed
                 , gridElement <| customersBlockClosed
                 , gridElement <| currentSituationBlockClosed model
-                , gridElement <| customerInfoPanelClosed
                 , gridElement <| lastMessagePanel model
                 ]
 
@@ -1234,36 +1264,6 @@ currentSituationBlockOpen model =
 
 
 -- offer > Clientele.maxPrice offerInfo.item customer
-
-
-priceBox : Clientele.Customer -> ( Item, Int ) -> Html Msg
-priceBox customer ( item, quantity ) =
-    let
-        price =
-            Clientele.optimalPrice item customer
-    in
-    div []
-        [ text <|
-            item.displayName
-                ++ " ("
-                ++ String.fromInt quantity
-                ++ "), "
-                ++ String.fromInt price
-                ++ " - "
-                ++ String.fromInt item.itemWorth
-                ++ " gp "
-        , basicButton [ Attr.attribute "aria-label" "Hint", onClick <| GetHintForItem customer item ] [ text "?" ]
-        , basicButton [ onClick <| OfferAtOptimalPrice customer price item ]
-            [ text <|
-                "Offer "
-                    ++ item.displayName
-                    ++ " to "
-                    ++ customer.name
-                    ++ " for "
-                    ++ String.fromInt price
-                    ++ " gp."
-            ]
-        ]
 
 
 basketBox : Clientele.Customer -> Html Msg
@@ -1438,52 +1438,35 @@ itemListHtmlByType customer itemType model =
                             Dict.toList model.stockQty
 
 
-
-{-
-   stockItemButton : ( String, Int ) -> Html Msg
-   stockItemButton ( uniqueName, qty ) =
-       let
-           maybeItem =
-               Stock.itemForName uniqueName
-       in
-       case maybeItem of
-           Just item ->
-               if qty == 1 then
-                   basicButton [ Attr.attribute "aria-label" (item.displayName ++ " offer"), onClick <| OfferItem item ]
-                       [ text item.displayName ]
-
-               else
-                   basicButton [ Attr.attribute "aria-label" (item.displayName ++ " (quantity " ++ String.fromInt qty ++ ") offer"), onClick <| OfferItem item ]
-                       [ text <|
-                           item.displayName
-                               ++ " ("
-                               ++ String.fromInt qty
-                               ++ ")"
-                       ]
-
-           Nothing ->
-               basicButton [] [ text "ERROR" ]
--}
+priceBox : Clientele.Customer -> ( Item, Int ) -> Html Msg
+priceBox customer ( item, quantity ) =
+    let
+        price =
+            Clientele.optimalPrice item customer
+    in
+    div []
+        [ text <|
+            item.displayName
+                ++ " x"
+                ++ String.fromInt quantity
+                ++ " "
+        , basicButton [ Attr.attribute "aria-label" "Hint", onClick <| GetHintForItem customer item ] [ text "?" ]
+        , basicButton [ onClick <| OfferAtOptimalPrice customer price item ]
+            [ text <|
+                " Offer "
+                    ++ item.displayName
+                    ++ " for "
+                    ++ String.fromInt price
+                    ++ " gp"
+                    ++ " (cost "
+                    ++ String.fromInt item.itemWorth
+                    ++ " gp)"
+            ]
+        ]
 
 
 customersBlockOpen : Model -> List (Html Msg)
 customersBlockOpen model =
-    {-
-       Destitute ->
-           "Destitute "
-
-       Poor ->
-           "Poor "
-
-       Average ->
-           "Average "
-
-       WellOff ->
-           "Well-off "
-
-       Rich ->
-           "Rich "
-    -}
     [ h3 []
         [ text "Customers" ]
     , div

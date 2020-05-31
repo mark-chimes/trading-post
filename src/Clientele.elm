@@ -715,7 +715,7 @@ initCustomerPoolInit =
       , wealthLevel = WellOff
       , introMessage = "A middle-aged woman with surprisingly pointy ears."
       , descriptionMessage = "On closer inspection, the ears appear to be a form of costume jewellery."
-      , template = templateKnight
+      , template = templateTraveller
       }
     , { name = "Jerome Jackinthebox"
       , wealthLevel = Poor

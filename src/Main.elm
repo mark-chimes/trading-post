@@ -1447,18 +1447,14 @@ stockAndOfferBlock model =
     , br [] []
     , div [] <| priceBoxes model.customers.currentCustomer model
     , div [] <|
-        --      case model.storeState of
-        --          Closed ->
-        h4 [] [ text "Purchase" ]
-            :: List.map purchaseItemButton Stock.itemsList
+        case model.storeState of
+            Closed ->
+                h4 [] [ text "Purchase" ]
+                    :: List.map purchaseItemButton Stock.itemsList
 
-    --          Open ->
-    --              []
+            Open ->
+                []
     ]
-
-
-
--- TODO uncomment above.
 
 
 purchaseItemButton : Item -> Html Msg

@@ -36,3 +36,4 @@ Try it out for yourself at: https://mark-chimes.github.io/trading-post/
  * Clean the store for fun
  * Pay rent each day
  * End-of-day summary so you know how well you did
+ * Purchase items after store close to sell the next day

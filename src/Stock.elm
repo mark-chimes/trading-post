@@ -108,6 +108,9 @@ cabbageItem =
     , itemType = foodType
     }
 
+itemsList : List Item
+itemsList = [swordItem, axeItem, daggerItem, fancyChocolateItem, trailMixItem, cabbageItem]
+
 
 itemForName : String -> Maybe Item
 itemForName uniqueName =

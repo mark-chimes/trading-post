@@ -127,6 +127,7 @@ type Msg
     | OpenStore
     | OfferAtOptimalPrice Clientele.Customer Int Item
     | GetHintForItem Customer Item
+    | PurchaseItem Item
 
 
 type StoreState
@@ -182,6 +183,43 @@ update msg model =
 
         GetHintForItem customer item ->
             ( getHintForItem customer item model, Cmd.none )
+
+        PurchaseItem item ->
+            ( purchaseItem item model, Cmd.none )
+
+
+purchaseItem : Item -> Model -> Model
+purchaseItem item model =
+    if model.pcGold < item.itemWorth then
+        updateConversationWithActionMessage
+            ("Can't afford to buy "
+                ++ item.displayName
+                ++ ". It costs "
+                ++ String.fromInt item.itemWorth
+                ++ " gp, but you only have "
+                ++ String.fromInt model.pcGold
+                ++ " gp. "
+            )
+            model
+
+    else
+        (\mdl ->
+            updateConversationWithActionMessage
+                ("Purchased "
+                    ++ item.displayName
+                    ++ " for "
+                    ++ String.fromInt item.itemWorth
+                    ++ " gp. "
+                    ++ " You now have "
+                    ++ String.fromInt (Maybe.withDefault -1 (Dict.get item.uniqueName mdl.stockQty))
+                    ++ " of this item and a total of "
+                    ++ String.fromInt model.pcGold
+                    ++ " gp. "
+                )
+                mdl
+        )
+        <|
+            { model | stockQty = incrementDict item.uniqueName model.stockQty, pcGold = model.pcGold - item.itemWorth }
 
 
 reverseStory : Model -> Model
@@ -458,6 +496,21 @@ updateBasketAndStock offerInfo model =
         | customers = Clientele.updateCurrentCustomerBasket offerInfo model.customers
         , stockQty = decrementDict offerInfo.item.uniqueName model.stockQty
     }
+
+
+incrementDict : comparable -> Dict comparable number -> Dict comparable number
+incrementDict x dict =
+    Dict.update
+        x
+        (\maybeQty ->
+            case maybeQty of
+                Just qty ->
+                    Just (qty + 1)
+
+                Nothing ->
+                    Just 1
+        )
+        dict
 
 
 decrementDict : comparable -> Dict comparable number -> Dict comparable number
@@ -844,7 +897,8 @@ statsModelMessage : Model -> String
 statsModelMessage model =
     statsTrackMessage model.statsTracker
         ++ " You ended the day with a total of "
-        ++ String.fromInt model.pcGold ++ " gp"
+        ++ String.fromInt model.pcGold
+        ++ " gp"
 
 
 statsTrackMessage : StatsTracker -> String
@@ -1392,7 +1446,30 @@ stockAndOfferBlock model =
     -- , div [] (List.map stockItemButton <| Dict.toList model.stockQty)
     , br [] []
     , div [] <| priceBoxes model.customers.currentCustomer model
+    , div [] <|
+        --      case model.storeState of
+        --          Closed ->
+        h4 [] [ text "Purchase" ]
+            :: List.map purchaseItemButton Stock.itemsList
+
+    --          Open ->
+    --              []
     ]
+
+
+
+-- TODO uncomment above.
+
+
+purchaseItemButton : Item -> Html Msg
+purchaseItemButton item =
+    basicButton [ onClick <| PurchaseItem item ]
+        [ text <|
+            item.displayName
+                ++ " for "
+                ++ String.fromInt item.itemWorth
+                ++ " gp"
+        ]
 
 
 priceBoxes : Maybe Customer -> Model -> List (Html Msg)

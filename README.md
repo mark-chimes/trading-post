@@ -3,6 +3,7 @@
 Still in very early development. Not really a game yet.
 
 Try it out for yourself at: https://mark-chimes.github.io/trading-post/
+(If the background doesn't load, try refreshing).
 
 ## UI and Accessibility: 
  * Blind-accessible (with screen-reader)

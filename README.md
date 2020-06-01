@@ -21,8 +21,8 @@ Try it out for yourself at: https://mark-chimes.github.io/trading-post/
  * Kick out customers you don't like
  * Customers are described on entry
  * Different types of customers have preferences for different types of item
- * There are female customers, but if the player is male then this game fails the Bechdel test.
-
+ * Game passes the Bechdel test, provided the player is female
+ 
 ## Sales
  * Sell swords, axes, trail mix, and more!
  * Limited stock per day - so sell carefully

@@ -18,16 +18,17 @@ Try it out for yourself at: https://mark-chimes.github.io/trading-post/
  * Up to 26 different customers
  * Pick the customer to whom you want to speak
  * Sorted by affluence for your convenience
- * Schmooze a customer to sell for more
  * Kick out customers you don't like
  * Customers are described on entry
  * Different types of customers have preferences for different types of item
+ * There are female customers, but if the player is male then this game fails the Bechdel test.
 
 ## Sales
  * Sell swords, axes, trail mix, and more!
  * Limited stock per day - so sell carefully
  * Automatic sales price based on what customer is willing to pay
  * Hint boxes tell you how to get a customer to pay more
+ * Schmooze a customer to sell for more
 
 ## Store and Time
  * "Wait" button lets you sit and do nothing for awhile

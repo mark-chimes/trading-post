@@ -42,17 +42,17 @@
   --color-accentuate: #292523;
   /* Dark brown */
   --color-standard-back: #453f3b;
-  --image-standard-back: url("light-wood.jpg");
+  --image-standard-back: url("resources/light-wood.jpg");
   /* Light brown */
   --color-far-back: #6e645e;
-  --image-far-back: url("lighter-wood.jpg"); 
+  --image-far-back: url("resources/lighter-wood.jpg"); 
   /* Beige */
   --color-button: #b9b5ac;
   /* Off-white */
   --color-text: #f4f3ee;
   /* Black */
   --color-button-text: black;
-  --image-text-boxes: url("black-paper.jpg");
+  --image-text-boxes: url("resources/black-paper.jpg");
   --element-border-color: var(--color-accentuate);
   --box-border-color: var(--color-standard-back); 
   --full-thick: 10px;
@@ -154,7 +154,7 @@ button:hover:not([disabled]) {
 
 .basket-box { 
   border: 5px ridge var(--box-border-color);
-  background-image: url("lightest-wood.jpg");
+  background-image: url("resources/lightest-wood.jpg");
   padding-top: var(--full-thick);
   padding-bottom: var(--full-thick);
   margin-left: var(--full-thick);
@@ -180,7 +180,7 @@ button:hover:not([disabled]) {
 
 .heading-box { 
   border: 40px ridge var(--color-standard-back);
-  background: var(--color-accentuate);  background-image: url("dark-wood.jpg");
+  background: var(--color-accentuate);  background-image: url("resources/dark-wood.jpg");
   margin: 10px;
   margin-bottom: 10px;
 }

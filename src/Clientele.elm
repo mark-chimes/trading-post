@@ -1,10 +1,9 @@
 module Clientele exposing (..)
 
-import Dict exposing (Dict)
 import Html exposing (Attribute, Html, button, text)
 import Html.Attributes as Attr
-import Item
-import ItemType
+import Item exposing (Item)
+import ItemType exposing (ItemType)
 
 
 
@@ -100,7 +99,7 @@ updateCustomerBasket offerInfo customer =
     { customer | basket = customer.basket ++ [ offerInfo ], numItemsInBasket = incrementCustomerNumItemsInBasket offerInfo.item.itemType customer.numItemsInBasket }
 
 
-incrementCustomerNumItemsInBasket : ItemType.ItemType -> (ItemType.ItemType -> Int) -> (ItemType.ItemType -> Int)
+incrementCustomerNumItemsInBasket : ItemType -> (ItemType.ItemType -> Int) -> (ItemType.ItemType -> Int)
 incrementCustomerNumItemsInBasket incrementedItem numItemsInBasket =
     \itemType ->
         if itemType == incrementedItem then
@@ -345,7 +344,7 @@ type alias Customer =
     , descriptionMessage : String
     , inspectedState : InspectedState
     , template : CustomerTemplate
-    , numItemsInBasket : ItemType.ItemType -> Int
+    , numItemsInBasket : ItemType -> Int
     }
 
 
@@ -383,17 +382,17 @@ calculateMoneyInPurse wealthLevel =
     priceCapFromWealth wealthLevel * 20
 
 
-optimalPrice : Item.Item -> Customer -> Int
+optimalPrice : Item -> Customer -> Int
 optimalPrice item customer =
     min customer.moneyInPurse <| maxPrice item customer
 
 
-maxPrice : Item.Item -> Customer -> Int
+maxPrice : Item -> Customer -> Int
 maxPrice item customer =
     round <| min (priceCapForItemType item.itemType customer) (toFloat item.itemWorth * paymentForItemType item.itemType customer)
 
 
-paymentForItemType : ItemType.ItemType -> Customer -> Float
+paymentForItemType : ItemType -> Customer -> Float
 paymentForItemType itemType customer =
     customer.template.itemPreferences itemType
         * priceMultiplierFromWealth customer.wealthLevel
@@ -401,7 +400,7 @@ paymentForItemType itemType customer =
         * (1.0 / (1.0 + (toFloat <| customer.numItemsInBasket itemType)))
 
 
-priceCapForItemType : ItemType.ItemType -> Customer -> Float
+priceCapForItemType : ItemType -> Customer -> Float
 priceCapForItemType itemType customer =
     (1.0 + 0.1 * toFloat customer.schmoozeCount) * toFloat (priceCapFromWealth customer.wealthLevel * customer.template.basePriceByItemType itemType)
 
@@ -543,7 +542,7 @@ customerDisplay customer =
            )
 
 
-percentageForDisplay : ItemType.ItemType -> Customer -> String
+percentageForDisplay : ItemType -> Customer -> String
 percentageForDisplay itemType customer =
     String.fromInt (round (paymentForItemType itemType customer * 100)) ++ "%"
 
@@ -596,11 +595,11 @@ initCustomerPool =
 
 
 type alias ItemPreferences =
-    ItemType.ItemType -> Float
+    ItemType -> Float
 
 
 type alias BasePriceByItemType =
-    ItemType.ItemType -> Int
+    ItemType -> Int
 
 
 type alias CustomerTemplate =

@@ -6,8 +6,8 @@ import Dict exposing (Dict)
 import Html exposing (Html, br, button, div, h1, h2, h3, h4, hr, img, input, li, text, textarea, ul)
 import Html.Attributes as Attr exposing (placeholder, src, value)
 import Html.Events exposing (onClick, onInput)
-import Item
-import ItemType
+import Item exposing (Item)
+import ItemType exposing (ItemType)
 import String
 
 
@@ -182,7 +182,7 @@ update msg model =
             ( purchaseItem item model, Cmd.none )
 
 
-purchaseItem : Item.Item -> Model -> Model
+purchaseItem : Item -> Model -> Model
 purchaseItem item model =
     if model.pcGold < item.itemWorth then
         updateConversationWithActionMessage
@@ -267,7 +267,7 @@ optimalPrice currentCustomer offerInfo =
             }
 
 
-offerItemAtPrice : Clientele.Customer -> Int -> Item.Item -> Model -> Model
+offerItemAtPrice : Clientele.Customer -> Int -> Item -> Model -> Model
 offerItemAtPrice customer offer item model =
     submitAddToBasketWithCustomerAndItem customer { pcOffer = offer, item = item } model
 
@@ -279,7 +279,7 @@ type CustomerSaleSuccess
     | NoMoney
 
 
-getHintForItem : Customer -> Item.Item -> Model -> Model
+getHintForItem : Customer -> Item -> Model -> Model
 getHintForItem customer item model =
     updateHintWithMessage ("Hint for " ++ item.displayName ++ ": " ++ questionSaleString customer item) model
 
@@ -292,7 +292,7 @@ updateHintWithMessage message model =
         }
 
 
-questionSaleString : Customer -> Item.Item -> String
+questionSaleString : Customer -> Item -> String
 questionSaleString customer item =
     let
         name =
@@ -1399,7 +1399,7 @@ stockAndOfferBlock model =
     ]
 
 
-purchaseItemButton : Item.Item -> Html Msg
+purchaseItemButton : Item -> Html Msg
 purchaseItemButton item =
     basicButton [ onClick <| PurchaseItem item ]
         [ text <|
@@ -1424,7 +1424,7 @@ priceBoxes maybeCust model =
            )
 
 
-priceBoxByType : Maybe Customer -> ItemType.ItemType -> Model -> List (Html Msg)
+priceBoxByType : Maybe Customer -> ItemType -> Model -> List (Html Msg)
 priceBoxByType maybeCust itemType model =
     h4 [] [ text <| ItemType.toString itemType ]
         :: itemListHtmlByType
@@ -1433,7 +1433,7 @@ priceBoxByType maybeCust itemType model =
             model
 
 
-itemListHtmlByType : Maybe Customer -> ItemType.ItemType -> Model -> List (Html Msg)
+itemListHtmlByType : Maybe Customer -> ItemType -> Model -> List (Html Msg)
 itemListHtmlByType maybeCust itemType model =
     (case maybeCust of
         Nothing ->

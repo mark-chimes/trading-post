@@ -6,7 +6,8 @@ import Dict exposing (Dict)
 import Html exposing (Html, br, button, div, h1, h2, h3, h4, hr, img, input, li, text, textarea, ul)
 import Html.Attributes as Attr exposing (placeholder, src, value)
 import Html.Events exposing (onClick, onInput)
-import Stock exposing (..)
+import Item
+import ItemType
 import String
 
 
@@ -96,12 +97,12 @@ type alias StockQties =
 initStockQty : StockQties
 initStockQty =
     Dict.fromList
-        [ ( Stock.swordItem.uniqueName, 2 )
-        , ( Stock.axeItem.uniqueName, 5 )
-        , ( Stock.daggerItem.uniqueName, 10 )
-        , ( Stock.fancyChocolateItem.uniqueName, 2 )
-        , ( Stock.trailMixItem.uniqueName, 5 )
-        , ( Stock.cabbageItem.uniqueName, 10 )
+        [ ( Item.sword.uniqueName, 2 )
+        , ( Item.axe.uniqueName, 5 )
+        , ( Item.dagger.uniqueName, 10 )
+        , ( Item.fancyChocolate.uniqueName, 2 )
+        , ( Item.trailMix.uniqueName, 5 )
+        , ( Item.cabbage.uniqueName, 10 )
         ]
 
 
@@ -118,9 +119,9 @@ type Msg
     | WaitAwhile
     | InspectCustomer
     | OpenStore
-    | OfferAtOptimalPrice Clientele.Customer Int Item
-    | GetHintForItem Customer Item
-    | PurchaseItem Item
+    | OfferAtOptimalPrice Clientele.Customer Int Item.Item
+    | GetHintForItem Customer Item.Item
+    | PurchaseItem Item.Item
 
 
 type StoreState
@@ -181,7 +182,7 @@ update msg model =
             ( purchaseItem item model, Cmd.none )
 
 
-purchaseItem : Item -> Model -> Model
+purchaseItem : Item.Item -> Model -> Model
 purchaseItem item model =
     if model.pcGold < item.itemWorth then
         updateConversationWithActionMessage
@@ -238,7 +239,7 @@ updateWaitTime newWaitString model =
     { model | waitTime = max 0 (Maybe.withDefault model.waitTime (String.toInt newWaitString)) }
 
 
-optimalPrice : Maybe Clientele.Customer -> PcOfferInfo -> PcOfferInfo
+optimalPrice : Maybe Clientele.Customer -> Item.PcOfferInfo -> Item.PcOfferInfo
 optimalPrice currentCustomer offerInfo =
     case offerInfo.maybeItem of
         Just item ->
@@ -266,7 +267,7 @@ optimalPrice currentCustomer offerInfo =
             }
 
 
-offerItemAtPrice : Clientele.Customer -> Int -> Item -> Model -> Model
+offerItemAtPrice : Clientele.Customer -> Int -> Item.Item -> Model -> Model
 offerItemAtPrice customer offer item model =
     submitAddToBasketWithCustomerAndItem customer { pcOffer = offer, item = item } model
 
@@ -278,7 +279,7 @@ type CustomerSaleSuccess
     | NoMoney
 
 
-getHintForItem : Customer -> Item -> Model -> Model
+getHintForItem : Customer -> Item.Item -> Model -> Model
 getHintForItem customer item model =
     updateHintWithMessage ("Hint for " ++ item.displayName ++ ": " ++ questionSaleString customer item) model
 
@@ -291,7 +292,7 @@ updateHintWithMessage message model =
         }
 
 
-questionSaleString : Customer -> Item -> String
+questionSaleString : Customer -> Item.Item -> String
 questionSaleString customer item =
     let
         name =
@@ -326,7 +327,7 @@ questionSaleString customer item =
             ++ " won't pay more than "
             ++ String.fromInt (round cap)
             ++ " gp for a single "
-            ++ Stock.toString item.itemType
+            ++ ItemType.toString item.itemType
             ++ " item. "
             ++ (if schmoozes < Clientele.constants.maxSchmoozes then
                     "You could try schmoozing them again, but if you have a cheaper item of the same type, you'd probably make more profit selling that. "
@@ -341,7 +342,7 @@ questionSaleString customer item =
     else if round willingPay <= item.itemWorth then
         name
             ++ " isn't willing to buy more "
-            ++ Stock.toString item.itemType
+            ++ ItemType.toString item.itemType
             ++ " items at a profitable price. "
             ++ "Cut your losses and sell an item of a different type or conclude the sale. "
 
@@ -354,7 +355,7 @@ questionSaleString customer item =
             ++ "Either offer the item to them, or switch to a richer customer. "
 
 
-submitAddToBasketWithCustomerAndItem : Clientele.Customer -> OfferInfo -> Model -> Model
+submitAddToBasketWithCustomerAndItem : Clientele.Customer -> Item.OfferInfo -> Model -> Model
 submitAddToBasketWithCustomerAndItem customer offerInfo model =
     case determineIfSale customer offerInfo of
         Success ->
@@ -380,7 +381,7 @@ submitConfirmSale model =
             updateConversationWithActionMessage "Please address a customer before confirming an offer." model
 
 
-determineIfSale : Clientele.Customer -> OfferInfo -> CustomerSaleSuccess
+determineIfSale : Clientele.Customer -> Item.OfferInfo -> CustomerSaleSuccess
 determineIfSale customer offerInfo =
     let
         offer =
@@ -408,7 +409,7 @@ updateConversationWithActionMessage message model =
     }
 
 
-addToBasket : Clientele.Customer -> OfferInfo -> Model -> Model
+addToBasket : Clientele.Customer -> Item.OfferInfo -> Model -> Model
 addToBasket customer offerInfo model =
     if (model.storeState == Open) && wouldStoreClose Clientele.constants.minTakenOnSuccess model.time then
         closeStore "The customer looked just about ready to buy the item! But unfortunately, what with the curfew and all, you have to tell them to come back tomorrow." model
@@ -431,7 +432,7 @@ confirmSale customer model =
                     model
 
 
-updateBasketAndStock : OfferInfo -> Model -> Model
+updateBasketAndStock : Item.OfferInfo -> Model -> Model
 updateBasketAndStock offerInfo model =
     { model
         | customers = Clientele.updateCurrentCustomerBasket offerInfo model.customers
@@ -507,7 +508,7 @@ updateStatsTrackerWithOffer statsTracker =
 -- TODO extract common code of the lower functions up by one function
 
 
-failOnSaleNoMoney : Clientele.Customer -> OfferInfo -> Model -> Model
+failOnSaleNoMoney : Clientele.Customer -> Item.OfferInfo -> Model -> Model
 failOnSaleNoMoney customer offer model =
     if wouldStoreClose Clientele.constants.minTakenOnFail model.time then
         closeStore "Unfortunately, before the client can reject your offer, the store closes, and you are forced to shoo them out." model
@@ -519,7 +520,7 @@ failOnSaleNoMoney customer offer model =
                     model
 
 
-failOnSaleBadDeal : Clientele.Customer -> OfferInfo -> Model -> Model
+failOnSaleBadDeal : Clientele.Customer -> Item.OfferInfo -> Model -> Model
 failOnSaleBadDeal customer offer model =
     if wouldStoreClose Clientele.constants.minTakenOnFail model.time then
         closeStore "Unfortunately, before the client can reject your offer, the store closes, and you are forced to shoo them out." model
@@ -531,7 +532,7 @@ failOnSaleBadDeal customer offer model =
                     model
 
 
-failOnSaleTooManyItems : Clientele.Customer -> OfferInfo -> Model -> Model
+failOnSaleTooManyItems : Clientele.Customer -> Item.OfferInfo -> Model -> Model
 failOnSaleTooManyItems customer offer model =
     if wouldStoreClose Clientele.constants.minTakenOnFail model.time then
         closeStore "Unfortunately, before the client can reject your offer, the store closes, and you are forced to shoo them out." model
@@ -1019,7 +1020,7 @@ cleanStoreMessage cleaningTimeMin =
     "You clean the store for " ++ String.fromInt cleaningTimeMin ++ " minutes."
 
 
-offerAndPurchaseString : Clientele.Customer -> OfferInfo -> String
+offerAndPurchaseString : Clientele.Customer -> Item.OfferInfo -> String
 offerAndPurchaseString customer offerInfo =
     offerString offerInfo ++ "\n" ++ purchaseString customer offerInfo
 
@@ -1056,7 +1057,7 @@ confirmSaleString customer pcGold =
         ++ " gold."
 
 
-offerString : OfferInfo -> String
+offerString : Item.OfferInfo -> String
 offerString info =
     "You offered the "
         ++ info.item.displayName
@@ -1067,7 +1068,7 @@ offerString info =
         ++ " gp)."
 
 
-purchaseString : Clientele.Customer -> OfferInfo -> String
+purchaseString : Clientele.Customer -> Item.OfferInfo -> String
 purchaseString customer offerInfo =
     customer.name
         ++ ": \"A "
@@ -1082,7 +1083,7 @@ purchaseString customer offerInfo =
         ++ " minutes."
 
 
-rejectStringBadDeal : Clientele.Customer -> OfferInfo -> String
+rejectStringBadDeal : Clientele.Customer -> Item.OfferInfo -> String
 rejectStringBadDeal customer offer =
     offerString offer
         ++ "\n"
@@ -1096,7 +1097,7 @@ rejectStringBadDeal customer offer =
         ++ " minutes."
 
 
-rejectStringNoMoney : Clientele.Customer -> OfferInfo -> String
+rejectStringNoMoney : Clientele.Customer -> Item.OfferInfo -> String
 rejectStringNoMoney customer offer =
     offerString offer
         ++ "\n"
@@ -1110,7 +1111,7 @@ rejectStringNoMoney customer offer =
         ++ " minutes."
 
 
-rejectStringTooManyItems : Clientele.Customer -> OfferInfo -> String
+rejectStringTooManyItems : Clientele.Customer -> Item.OfferInfo -> String
 rejectStringTooManyItems customer offer =
     offerString offer
         ++ "\n"
@@ -1281,7 +1282,7 @@ basketBox customer =
             ]
 
 
-itemDisplay : OfferInfo -> String
+itemDisplay : Item.OfferInfo -> String
 itemDisplay offerInfo =
     offerInfo.item.displayName
         ++ " ("
@@ -1391,14 +1392,14 @@ stockAndOfferBlock model =
         case model.storeState of
             Closed ->
                 h4 [] [ text "Purchase" ]
-                    :: List.map purchaseItemButton Stock.itemsList
+                    :: List.map purchaseItemButton Item.itemsList
 
             Open ->
                 []
     ]
 
 
-purchaseItemButton : Item -> Html Msg
+purchaseItemButton : Item.Item -> Html Msg
 purchaseItemButton item =
     basicButton [ onClick <| PurchaseItem item ]
         [ text <|
@@ -1411,7 +1412,7 @@ purchaseItemButton item =
 
 priceBoxes : Maybe Customer -> Model -> List (Html Msg)
 priceBoxes maybeCust model =
-    List.concatMap (\itemType -> priceBoxByType maybeCust itemType model) Stock.itemTypesEnum
+    List.concatMap (\itemType -> priceBoxByType maybeCust itemType model) ItemType.itemTypesEnum
         ++ (case maybeCust of
                 Just _ ->
                     [ h4 [] [ text "Hints" ]
@@ -1423,16 +1424,16 @@ priceBoxes maybeCust model =
            )
 
 
-priceBoxByType : Maybe Customer -> Stock.ItemType -> Model -> List (Html Msg)
+priceBoxByType : Maybe Customer -> ItemType.ItemType -> Model -> List (Html Msg)
 priceBoxByType maybeCust itemType model =
-    h4 [] [ text <| Stock.toString itemType ]
+    h4 [] [ text <| ItemType.toString itemType ]
         :: itemListHtmlByType
             maybeCust
             itemType
             model
 
 
-itemListHtmlByType : Maybe Customer -> Stock.ItemType -> Model -> List (Html Msg)
+itemListHtmlByType : Maybe Customer -> ItemType.ItemType -> Model -> List (Html Msg)
 itemListHtmlByType maybeCust itemType model =
     (case maybeCust of
         Nothing ->
@@ -1457,13 +1458,13 @@ itemListHtmlByType maybeCust itemType model =
                     <|
                         List.map
                             (\( itemName, qty ) ->
-                                ( Stock.itemForName itemName, qty )
+                                ( Item.itemForName itemName, qty )
                             )
                         <|
                             Dict.toList model.stockQty
 
 
-priceBoxNoone : ( Item, Int ) -> Html Msg
+priceBoxNoone : ( Item.Item, Int ) -> Html Msg
 priceBoxNoone ( item, quantity ) =
     div []
         [ text <|
@@ -1476,7 +1477,7 @@ priceBoxNoone ( item, quantity ) =
         ]
 
 
-priceBoxCustomer : Clientele.Customer -> ( Item, Int ) -> Html Msg
+priceBoxCustomer : Clientele.Customer -> ( Item.Item, Int ) -> Html Msg
 priceBoxCustomer customer ( item, quantity ) =
     let
         price =

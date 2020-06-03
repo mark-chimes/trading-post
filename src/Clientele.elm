@@ -3,7 +3,8 @@ module Clientele exposing (..)
 import Dict exposing (Dict)
 import Html exposing (Attribute, Html, button, text)
 import Html.Attributes as Attr
-import Stock exposing (..)
+import Item
+import ItemType
 
 
 
@@ -12,7 +13,7 @@ import Stock exposing (..)
 
 
 type alias BasketInfo =
-    List OfferInfo
+    List Item.OfferInfo
 
 
 type alias ClienteleDetails =
@@ -86,7 +87,7 @@ constants =
 ---- UPDATE ----
 
 
-updateCurrentCustomerBasket : OfferInfo -> ClienteleDetails -> ClienteleDetails
+updateCurrentCustomerBasket : Item.OfferInfo -> ClienteleDetails -> ClienteleDetails
 updateCurrentCustomerBasket offerInfo clientele =
     { clientele
         | currentCustomer =
@@ -94,12 +95,12 @@ updateCurrentCustomerBasket offerInfo clientele =
     }
 
 
-updateCustomerBasket : OfferInfo -> Customer -> Customer
+updateCustomerBasket : Item.OfferInfo -> Customer -> Customer
 updateCustomerBasket offerInfo customer =
     { customer | basket = customer.basket ++ [ offerInfo ], numItemsInBasket = incrementCustomerNumItemsInBasket offerInfo.item.itemType customer.numItemsInBasket }
 
 
-incrementCustomerNumItemsInBasket : ItemType -> (ItemType -> Int) -> (ItemType -> Int)
+incrementCustomerNumItemsInBasket : ItemType.ItemType -> (ItemType.ItemType -> Int) -> (ItemType.ItemType -> Int)
 incrementCustomerNumItemsInBasket incrementedItem numItemsInBasket =
     \itemType ->
         if itemType == incrementedItem then
@@ -344,7 +345,7 @@ type alias Customer =
     , descriptionMessage : String
     , inspectedState : InspectedState
     , template : CustomerTemplate
-    , numItemsInBasket : ItemType -> Int
+    , numItemsInBasket : ItemType.ItemType -> Int
     }
 
 
@@ -382,17 +383,17 @@ calculateMoneyInPurse wealthLevel =
     priceCapFromWealth wealthLevel * 20
 
 
-optimalPrice : Item -> Customer -> Int
+optimalPrice : Item.Item -> Customer -> Int
 optimalPrice item customer =
     min customer.moneyInPurse <| maxPrice item customer
 
 
-maxPrice : Item -> Customer -> Int
+maxPrice : Item.Item -> Customer -> Int
 maxPrice item customer =
     round <| min (priceCapForItemType item.itemType customer) (toFloat item.itemWorth * paymentForItemType item.itemType customer)
 
 
-paymentForItemType : ItemType -> Customer -> Float
+paymentForItemType : ItemType.ItemType -> Customer -> Float
 paymentForItemType itemType customer =
     customer.template.itemPreferences itemType
         * priceMultiplierFromWealth customer.wealthLevel
@@ -400,7 +401,7 @@ paymentForItemType itemType customer =
         * (1.0 / (1.0 + (toFloat <| customer.numItemsInBasket itemType)))
 
 
-priceCapForItemType : ItemType -> Customer -> Float
+priceCapForItemType : ItemType.ItemType -> Customer -> Float
 priceCapForItemType itemType customer =
     (1.0 + 0.1 * toFloat customer.schmoozeCount) * toFloat (priceCapFromWealth customer.wealthLevel * customer.template.basePriceByItemType itemType)
 
@@ -505,10 +506,10 @@ customerDisplay customer =
                     , " - Max prices - "
 
                     -- , "Base: " ++ String.fromInt (round (maxPriceFromWealth customer.wealthLevel * (1 + 0.5 * toFloat customer.schmoozeCount) * 100)) ++ "%"
-                    , "Food: (" ++ String.fromInt (customer.numItemsInBasket Stock.foodType) ++ ") " ++ percentageForDisplay Stock.foodType customer
-                    , "Weapons: (" ++ String.fromInt (customer.numItemsInBasket Stock.weaponType) ++ ") " ++ percentageForDisplay Stock.weaponType customer
-                    , "Cap for food: " ++ String.fromInt (round (priceCapForItemType Stock.foodType customer)) ++ " gp"
-                    , "Cap for Weapons: " ++ String.fromInt (round (priceCapForItemType Stock.weaponType customer)) ++ " gp"
+                    , "Food: (" ++ String.fromInt (customer.numItemsInBasket ItemType.food) ++ ") " ++ percentageForDisplay ItemType.food customer
+                    , "Weapons: (" ++ String.fromInt (customer.numItemsInBasket ItemType.weapon) ++ ") " ++ percentageForDisplay ItemType.weapon customer
+                    , "Cap for food: " ++ String.fromInt (round (priceCapForItemType ItemType.food customer)) ++ " gp"
+                    , "Cap for Weapons: " ++ String.fromInt (round (priceCapForItemType ItemType.weapon customer)) ++ " gp"
                     ]
 
                 Uninspected ->
@@ -542,7 +543,7 @@ customerDisplay customer =
            )
 
 
-percentageForDisplay : Stock.ItemType -> Customer -> String
+percentageForDisplay : ItemType.ItemType -> Customer -> String
 percentageForDisplay itemType customer =
     String.fromInt (round (paymentForItemType itemType customer * 100)) ++ "%"
 
@@ -595,11 +596,11 @@ initCustomerPool =
 
 
 type alias ItemPreferences =
-    ItemType -> Float
+    ItemType.ItemType -> Float
 
 
 type alias BasePriceByItemType =
-    ItemType -> Int
+    ItemType.ItemType -> Int
 
 
 type alias CustomerTemplate =
@@ -616,20 +617,20 @@ templateKnight =
     , description = "They are a knight! They'll pay normal price for food and double for weapons."
     , itemPreferences =
         \itemType ->
-            if itemType == weaponType then
+            if itemType == ItemType.weapon then
                 2.0
 
-            else if itemType == foodType then
+            else if itemType == ItemType.food then
                 1.0
 
             else
                 0.0
     , basePriceByItemType =
         \itemType ->
-            if itemType == weaponType then
+            if itemType == ItemType.weapon then
                 5
 
-            else if itemType == foodType then
+            else if itemType == ItemType.food then
                 1
 
             else
@@ -643,20 +644,20 @@ templateTraveller =
     , description = "They are a traveller! They'll pay half price for weapons and double for food."
     , itemPreferences =
         \itemType ->
-            if itemType == weaponType then
+            if itemType == ItemType.weapon then
                 0.5
 
-            else if itemType == foodType then
+            else if itemType == ItemType.food then
                 2.0
 
             else
                 0.0
     , basePriceByItemType =
         \itemType ->
-            if itemType == weaponType then
+            if itemType == ItemType.weapon then
                 2
 
-            else if itemType == foodType then
+            else if itemType == ItemType.food then
                 4
 
             else

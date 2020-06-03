@@ -34,7 +34,6 @@ type alias Model =
     , storeState : StoreState
     , statsTracker : StatsTracker
     , stockQty : StockQties
-    , priceExpandedState : ExpansionState
     }
 
 
@@ -47,11 +46,6 @@ type alias StatsTracker =
     , customersKicked : Int
     , customersLeft : Int
     }
-
-
-type ExpansionState
-    = Expanded
-    | Unexpanded
 
 
 type alias Time =
@@ -78,7 +72,6 @@ init flags =
         , storeState = Open
         , statsTracker = initStatsTracker
         , stockQty = initStockQty
-        , priceExpandedState = Unexpanded
         }
     , Cmd.none
     )
@@ -240,29 +233,9 @@ reverseStory model =
         { model | isConvoReverse = not model.isConvoReverse }
 
 
-optimalOfferInfo : Maybe Clientele.Customer -> PcOfferInfo -> PcOfferInfo
-optimalOfferInfo maybeCustomer offerInfo =
-    case maybeCustomer of
-        Just customer ->
-            case offerInfo.maybeItem of
-                Just item ->
-                    { offerInfo | pcOffer = Clientele.optimalPrice item customer }
-
-                Nothing ->
-                    offerInfo
-
-        Nothing ->
-            offerInfo
-
-
 updateWaitTime : String -> Model -> Model
 updateWaitTime newWaitString model =
     { model | waitTime = max 0 (Maybe.withDefault model.waitTime (String.toInt newWaitString)) }
-
-
-calculateUpdatedOffer : String -> PcOfferInfo -> PcOfferInfo
-calculateUpdatedOffer newOfferString info =
-    { info | pcOffer = max 0 (Maybe.withDefault info.pcOffer (String.toInt newOfferString)) }
 
 
 optimalPrice : Maybe Clientele.Customer -> PcOfferInfo -> PcOfferInfo
@@ -298,34 +271,6 @@ offerItemAtPrice customer offer item model =
     submitAddToBasketWithCustomerAndItem customer { pcOffer = offer, item = item } model
 
 
-itemToOffer : Item -> PcOfferInfo -> PcOfferInfo
-itemToOffer item offer =
-    { offer | maybeItem = Just item }
-
-
-
--- TODO modify the next function (including its types) to be more functional
-
-
-submitAddToBasket : PcOfferInfo -> Model -> Model
-submitAddToBasket pcOfferInfo model =
-    case model.customers.currentCustomer of
-        Just customer ->
-            case pcOfferInfo.maybeItem of
-                Just item ->
-                    let
-                        offerInfo =
-                            { pcOffer = pcOfferInfo.pcOffer, item = item }
-                    in
-                    submitAddToBasketWithCustomerAndItem customer offerInfo model
-
-                Nothing ->
-                    updateConversationWithActionMessage "There is no item on offer." model
-
-        Nothing ->
-            updateConversationWithActionMessage "Please address a customer before submitting an offer." model
-
-
 type CustomerSaleSuccess
     = Success
     | BadDeal
@@ -344,10 +289,6 @@ updateHintWithMessage message model =
         { model
             | hintMessage = message
         }
-
-
-
--- TODO Update question strings
 
 
 questionSaleString : Customer -> Item -> String
@@ -415,7 +356,7 @@ questionSaleString customer item =
 
 submitAddToBasketWithCustomerAndItem : Clientele.Customer -> OfferInfo -> Model -> Model
 submitAddToBasketWithCustomerAndItem customer offerInfo model =
-    case determineIfSale customer offerInfo model of
+    case determineIfSale customer offerInfo of
         Success ->
             addToBasket customer offerInfo model
 
@@ -439,8 +380,8 @@ submitConfirmSale model =
             updateConversationWithActionMessage "Please address a customer before confirming an offer." model
 
 
-determineIfSale : Clientele.Customer -> OfferInfo -> Model -> CustomerSaleSuccess
-determineIfSale customer offerInfo model =
+determineIfSale : Clientele.Customer -> OfferInfo -> CustomerSaleSuccess
+determineIfSale customer offerInfo =
     let
         offer =
             offerInfo.pcOffer

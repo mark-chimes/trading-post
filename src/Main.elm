@@ -1380,26 +1380,65 @@ customerConversationBlock model =
     h3 [] [ text "Conversation" ]
         :: (case model.customers.currentCustomer of
                 Just customer ->
-                    [ div
-                        [ Attr.class "grid-of-convo" ]
+                    [ div [ Attr.class "grid-of-convo-headings" ]
                         [ h4 [] [ text "You" ]
                         , h4 [] [ text "Them" ]
-                        , div
-                            [ Attr.class "convo-left" ]
-                            [ text "A fine gentlesword for a fine gentleperson! " ]
-                        , div [ Attr.class "convoEmpty" ] []
-                        , div [ Attr.class "convoEmpty" ] []
-                        , div [ Attr.class "convo-right " ] [ text "Oh my goodness! That IS a fine sword! How much gold is such a fine gentlesword going to put me back? " ]
-                        , div [ Attr.class "convo-left" ] [ text "Why, for you, my fine person, it is absolutely free! One hundred percent money back guaranteed!" ]
-                        , div [ Attr.class "convoEmpty" ] []
-                        , div [ Attr.class "convoEmpty" ] []
-                        , div [ Attr.class "convo-right " ] [ text "Why, thank you!" ]
                         ]
+                    , div
+                        [ Attr.class "grid-of-convo" ]
+                      <|
+                        convertMessageListToGrid
+                            exampleMessageList
                     ]
 
                 Nothing ->
                     [ div [] [ text "No customer in store" ] ]
            )
+
+
+convertMessageListToGrid : List ( String, String ) -> List (Html Msg)
+convertMessageListToGrid listOfPairs =
+    List.concatMap
+        (\( x, y ) ->
+            [ div [ Attr.class "convo-left" ] [ text x ]
+            , div [ Attr.class "convoEmpty" ] []
+            , div [ Attr.class "convoEmpty" ] []
+            , div [ Attr.class "convo-right " ] [ text y ]
+            ]
+        )
+        listOfPairs
+
+
+exampleMessageList : List ( String, String )
+exampleMessageList =
+    [ ( "A fine gentlesword for a fine gentleperson!"
+      , "Oh my goodness! That IS a fine sword! How much gold is such a fine gentlesword going to put me back?"
+      )
+    , ( "Why, for you, my fine person, it is absolutely free! One hundred percent money back guaranteed!"
+      , "Why, thank you!"
+      )
+    , ( "No, please, the pleasure is all mine! It is not every day that I get to serve a customer as fine and gentle as yourself, after all!"
+      , "Oh my goodness, flattery will get you nowhere, you know!"
+      )
+    , ( "Ah, well, it has gotten me as far as I am, you should know, though no further, so I suppose you have a point! A cunning wit as well as beautiful good looks, I see!"
+      , "You make me blush!"
+      )
+    , ( "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. "
+            ++ "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. "
+            ++ "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. "
+            ++ "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. "
+      , "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam,  "
+            ++ "eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo."
+      )
+    , ( " Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt."
+      , "Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, "
+            ++ "consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. "
+      )
+    , ( "", "" )
+    , ( "Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur?"
+      , "Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?"
+      )
+    ]
 
 
 stockAndOfferBlock : Model -> List (Html Msg)

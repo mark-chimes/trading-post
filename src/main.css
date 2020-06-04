@@ -112,11 +112,19 @@ button:hover:not([disabled]) {
   color: var(--color-button-text);
 }
 
+.grid-of-convo-headings {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+}
+
 .grid-of-convo {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  margin: var(--half-thick);
+  margin: var(--full-thick);
   border: 5px ridge var(--box-border-color);
+  overflow-y: scroll;
+  height: 200px;
+  background-image: var(--image-text-boxes);
 }
 
 .convo-left { 

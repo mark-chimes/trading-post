@@ -776,24 +776,23 @@ closeStore : String -> Model -> Model
 closeStore closeMessage model =
     (\mdl -> updateConversationWithActionMessage (statsModelMessage mdl) mdl) <|
         takeRent <|
-            repurchaseItems <|
-                (\mdl ->
-                    { mdl
-                        | storeState = Closed
-                        , customers = Clientele.exitAllCustomers model.customers
-                        , stockQty =
-                            case mdl.customers.currentCustomer of
-                                Just customer ->
-                                    restockWith mdl.stockQty customer.basket
+            (\mdl ->
+                { mdl
+                    | storeState = Closed
+                    , customers = Clientele.exitAllCustomers model.customers
+                    , stockQty =
+                        case mdl.customers.currentCustomer of
+                            Just customer ->
+                                restockWith mdl.stockQty customer.basket
 
-                                Nothing ->
-                                    mdl.stockQty
-                    }
-                )
-                <|
-                    recordNeglectedCustomers <|
-                        updateConversationWithActionMessage closeMessage <|
-                            incrementTimeToTimeWhilstOpen (calculateClosingTime model.time) model
+                            Nothing ->
+                                mdl.stockQty
+                }
+            )
+            <|
+                recordNeglectedCustomers <|
+                    updateConversationWithActionMessage closeMessage <|
+                        incrementTimeToTimeWhilstOpen (calculateClosingTime model.time) model
 
 
 takeRent : Model -> Model
@@ -804,12 +803,6 @@ takeRent model =
     in
     updateConversationWithActionMessage ("Rent of " ++ String.fromInt rent ++ " gp is due.") <|
         { model | pcGold = model.pcGold - rent }
-
-
-repurchaseItems : Model -> Model
-repurchaseItems model =
-    updateConversationWithActionMessage "You restock on all your items." <|
-        { model | stockQty = initStockQty }
 
 
 recordNeglectedCustomers : Model -> Model
@@ -1183,6 +1176,7 @@ view model =
         -}
         , div [] []
         , oneBlock <| storeInfo model
+        , oneBlock <| customerConversationBlock model
         , uiBasedOnStoreState model.storeState model
         , oneBlock <| storyBlock model
         ]
@@ -1381,12 +1375,19 @@ modifyWaitButton timeDiff model =
         ]
 
 
+customerConversationBlock : Model -> List (Html Msg)
+customerConversationBlock model =
+    case model.customers.currentCustomer of
+        Just customer ->
+            [ div [] [ text "Just customer" ] ]
+
+        Nothing ->
+            [ div [] [ text "Nothing" ] ]
+
+
 stockAndOfferBlock : Model -> List (Html Msg)
 stockAndOfferBlock model =
     [ h3 [] [ text "Stock and Offer" ]
-
-    -- , div [] (List.map stockItemButton <| Dict.toList model.stockQty)
-    , br [] []
     , div [] <| priceBoxes model.customers.currentCustomer model
     , div [] <|
         case model.storeState of

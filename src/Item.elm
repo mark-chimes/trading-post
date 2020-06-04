@@ -53,7 +53,7 @@ dagger =
 
 fancyChocolate : Item
 fancyChocolate =
-    { uniqueName = "fancy chocolate"
+    { uniqueName = "fancyChocolate"
     , displayName = "fancy bar of chocolate"
     , itemWorth = 20
     , itemType = ItemType.food
@@ -62,7 +62,7 @@ fancyChocolate =
 
 trailMix : Item
 trailMix =
-    { uniqueName = "trail mix"
+    { uniqueName = "trailMix"
     , displayName = "packet of trail mix"
     , itemWorth = 10
     , itemType = ItemType.food

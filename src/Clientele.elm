@@ -493,53 +493,10 @@ wealthDescriptionFromWealth wealthLevel =
 
 customerDisplay : Customer -> List String
 customerDisplay customer =
-    customer.name
-        -- :: mainInfo customer.wealthLevel customer.template
-        :: ("Schmoozed: "
-                ++ String.fromInt customer.schmoozeCount
-                ++ " times."
-           )
-        :: (case customer.inspectedState of
-                Inspected ->
-                    [ "Gold in purse: " ++ String.fromInt customer.moneyInPurse ++ "gp"
-                    , " - Max prices - "
-
-                    -- , "Base: " ++ String.fromInt (round (maxPriceFromWealth customer.wealthLevel * (1 + 0.5 * toFloat customer.schmoozeCount) * 100)) ++ "%"
-                    , "Food: (" ++ String.fromInt (customer.numItemsInBasket ItemType.food) ++ ") " ++ percentageForDisplay ItemType.food customer
-                    , "Weapons: (" ++ String.fromInt (customer.numItemsInBasket ItemType.weapon) ++ ") " ++ percentageForDisplay ItemType.weapon customer
-                    , "Cap for food: " ++ String.fromInt (round (priceCapForItemType ItemType.food customer)) ++ " gp"
-                    , "Cap for Weapons: " ++ String.fromInt (round (priceCapForItemType ItemType.weapon customer)) ++ " gp"
-                    ]
-
-                Uninspected ->
-                    [ "" ]
-           )
-        {- ++ [ "DEBUG"
-           , "SwordItem: "
-           , String.fromInt <| maxPrice swordItem customer
-           , "item.itemWorth: "
-           , String.fromInt <| swordItem.itemWorth
-           , "paymentForItemType item.itemType customer: "
-           , String.fromFloat <| paymentForItemType WeaponType customer
-           , "customer.template.itemPreferences itemType"
-           , String.fromFloat <| customer.template.itemPreferences WeaponType
-           , "maxPriceFromWealth customer.wealthLevel"
-           , String.fromFloat <| maxPriceFromWealth customer.wealthLevel
-           , "(1 + 0.5 * toFloat customer.schmoozeCount)"
-           , String.fromFloat <| 1 + 0.5 * toFloat customer.schmoozeCount
-           ]
-        -}
-        ++ "-\n"
-        :: (case customer.inspectedState of
-                Inspected ->
-                    [ customer.template.name
-                    , customer.introMessage ++ " " ++ customer.descriptionMessage
-                    , wealthDescriptionFromWealth customer.wealthLevel
-                    ]
-
-                Uninspected ->
-                    [ customer.introMessage ]
-           )
+    [ "Gold in purse: " ++ String.fromInt customer.moneyInPurse ++ "gp"
+    , customer.introMessage ++ " " ++ customer.descriptionMessage
+    , wealthDescriptionFromWealth customer.wealthLevel
+    ]
 
 
 percentageForDisplay : ItemType -> Customer -> String

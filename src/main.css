@@ -112,6 +112,22 @@ button:hover:not([disabled]) {
   color: var(--color-button-text);
 }
 
+.grid-of-convo {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  margin: var(--half-thick);
+  border: 5px ridge var(--box-border-color);
+}
+
+.convo-left { 
+  margin-left: var(--half-thick);
+  text-align: left;
+}
+
+.convo-right {
+  margin-right: var(--half-thick);
+  text-align: left;
+}
 
 .full-block { 
   background-image: var(--image-standard-back);
@@ -129,11 +145,9 @@ button:hover:not([disabled]) {
   min-height: 200px;
   padding-left: var(--half-thick);
   padding-right: var(--half-thick);
-    padding-top: var(--half-thick);
+  padding-top: var(--half-thick);
   padding-bottom: var(--half-thick);
 }
-
-
 
 .grid-of-blocks { 
   margin-top: var(--half-thick);

@@ -1377,12 +1377,29 @@ modifyWaitButton timeDiff model =
 
 customerConversationBlock : Model -> List (Html Msg)
 customerConversationBlock model =
-    case model.customers.currentCustomer of
-        Just customer ->
-            [ div [] [ text "Just customer" ] ]
+    h3 [] [ text "Conversation" ]
+        :: (case model.customers.currentCustomer of
+                Just customer ->
+                    [ div
+                        [ Attr.class "grid-of-convo" ]
+                        [ h4 [] [ text "You" ]
+                        , h4 [] [ text "Them" ]
+                        , div
+                            [ Attr.class "convo-left" ]
+                            [ text "A fine gentlesword for a fine gentleperson! " ]
+                        , div [ Attr.class "convoEmpty" ] []
+                        , div [ Attr.class "convoEmpty" ] []
+                        , div [ Attr.class "convo-right " ] [ text "Oh my goodness! That IS a fine sword! How much gold is such a fine gentlesword going to put me back? " ]
+                        , div [ Attr.class "convo-left" ] [ text "Why, for you, my fine person, it is absolutely free! One hundred percent money back guaranteed!" ]
+                        , div [ Attr.class "convoEmpty" ] []
+                        , div [ Attr.class "convoEmpty" ] []
+                        , div [ Attr.class "convo-right " ] [ text "Why, thank you!" ]
+                        ]
+                    ]
 
-        Nothing ->
-            [ div [] [ text "Nothing" ] ]
+                Nothing ->
+                    [ div [] [ text "No customer in store" ] ]
+           )
 
 
 stockAndOfferBlock : Model -> List (Html Msg)

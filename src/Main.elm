@@ -1,4 +1,4 @@
-module Main exposing (Model, Msg(..), calculateTimeOfNextCustomer, dayOfYear, failOnSaleNoMoney, hourOfDay, hoursInDay, incrementTimeWithMinOpen, init, main, purchaseString, storyBlock, totalSaleValueOfBasket, update, view)
+module Main exposing (Model, Msg(..), calculateTimeOfNextCustomer, dayOfYear, failOnSaleNoMoney, hourOfDay, hoursInDay, incrementTimeWithMinOpen, init, main, purchaseItem, purchaseString, storyBlock, totalSaleValueOfBasket, update, view)
 
 import Browser
 import Clientele exposing (Customer)
@@ -21,7 +21,8 @@ type alias Flags =
 
 
 type alias Model =
-    { time : Time
+    { gameState : GameState
+    , time : Time
     , pcGold : Int
     , cleanTime : Int
     , customers : Clientele.ClienteleDetails
@@ -36,6 +37,11 @@ type alias Model =
     , statsTracker : StatsTracker
     , stockQty : StockQties
     }
+
+
+type GameState
+    = Intro
+    | Started
 
 
 type alias StatsTracker =
@@ -59,7 +65,8 @@ init flags =
         (Clientele.customerCallMessage
             Clientele.initFirstCustomer
         )
-        { time = openHour * minutesInHour
+        { gameState = Intro
+        , time = openHour * minutesInHour
         , pcGold = 0
         , cleanTime = 10
         , customers = Clientele.initCustomers
@@ -108,6 +115,7 @@ initStockQty =
 
 type Msg
     = NoOp
+    | StartGame
     | SubmitConfirmSale
     | ClearStory
     | KickOutCustomer
@@ -138,6 +146,9 @@ update msg model =
     case msg of
         NoOp ->
             ( model, Cmd.none )
+
+        StartGame ->
+            ( startGame model, Cmd.none )
 
         SubmitConfirmSale ->
             ( submitConfirmSale <| model, Cmd.none )
@@ -180,6 +191,11 @@ update msg model =
 
         PurchaseItem item ->
             ( purchaseItem item model, Cmd.none )
+
+
+startGame : Model -> Model
+startGame model =
+    { model | gameState = Started }
 
 
 purchaseItem : Item -> Model -> Model
@@ -1162,24 +1178,34 @@ oneBlock theHtml =
 
 view : Model -> Html Msg
 view model =
-    div []
-        [ div [ Attr.class "heading-box" ] [ h1 [] [ text "Trading Post" ] ]
-        , Html.a [ Attr.href "https://github.com/mark-chimes/trading-post", Attr.target "_blank" ] [ text "https://github.com/mark-chimes/trading-post" ]
+    div [] <|
+        case model.gameState of
+            Intro ->
+                startGameView model
 
-        {-
-           , h2 []
-               [ text "Debug" ]
-           , text
-               ("Time of next customer " ++ displayTime model.timeOfNextCustomer)
-           , div [] []
-           , text ("minutesSinceZero: " ++ String.fromInt model.time)
-        -}
-        , div [] []
-        , oneBlock <| storeInfo model
-        , oneBlock <| customerConversationBlock model
-        , uiBasedOnStoreState model.storeState model
-        , oneBlock <| storyBlock model
+            Started ->
+                activeGameView model
+
+
+startGameView : Model -> List (Html Msg)
+startGameView model =
+    [ div [ Attr.class "heading-box" ] [ h1 [] [ text "Trading Post" ] ]
+    , Html.a [ Attr.href "https://github.com/mark-chimes/trading-post", Attr.target "_blank" ] [ text "https://github.com/mark-chimes/trading-post" ]
+    , oneBlock <|
+        [ div [] [ text "Welcome to Trading Post!" ]
+        , basicButton [ onClick StartGame ] [ text "Start Game" ]
         ]
+    ]
+
+
+activeGameView : Model -> List (Html Msg)
+activeGameView model =
+    [ div [ Attr.class "heading-box" ] [ h1 [] [ text "Trading Post" ] ]
+    , oneBlock <| storeInfo model
+    , oneBlock <| customerConversationBlock model
+    , uiBasedOnStoreState model.storeState model
+    , oneBlock <| storyBlock model
+    ]
 
 
 uiBasedOnStoreState : StoreState -> Model -> Html Msg

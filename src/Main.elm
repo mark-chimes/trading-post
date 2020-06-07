@@ -83,7 +83,7 @@ initModel : String -> String -> Int -> Model
 initModel playerName storeName windowWidth =
     updateConversationWithActionMessage
         (Clientele.customerCallMessage <|
-            Clientele.initFirstCustomer playerName
+            Clientele.initFirstCustomer playerName storeName
         )
         { playerName = playerName
         , storeName = storeName
@@ -91,7 +91,7 @@ initModel playerName storeName windowWidth =
         , time = openHour * minutesInHour
         , pcGold = 0
         , cleanTime = 10
-        , customers = Clientele.initCustomers playerName
+        , customers = Clientele.initCustomers playerName storeName
         , isConvoReverse = True
         , lastMessage = ""
         , hintMessage = "Click the question-mark next to the item if you need a hint."
@@ -726,7 +726,7 @@ updateTimeFuckOff model =
 exitCurrentCustomerClearBasket : Model -> Model
 exitCurrentCustomerClearBasket model =
     { model
-        | customers = Clientele.exitCurrentCustomer model.playerName model.customers
+        | customers = Clientele.exitCurrentCustomer model.playerName model.storeName model.customers
         , stockQty =
             restockWith model.stockQty <|
                 case model.customers.currentCustomer of
@@ -741,7 +741,7 @@ exitCurrentCustomerClearBasket model =
 exitCurrentCustomerSuccessfulSale : Model -> Model
 exitCurrentCustomerSuccessfulSale model =
     { model
-        | customers = Clientele.exitCurrentCustomer model.playerName model.customers
+        | customers = Clientele.exitCurrentCustomer model.playerName model.storeName model.customers
     }
 
 
@@ -822,7 +822,7 @@ openStore : Model -> Model
 openStore model =
     updateConversationWithActionMessage
         (Clientele.customerCallMessage <|
-            Clientele.initFirstCustomer model.playerName
+            Clientele.initFirstCustomer model.playerName model.storeName
         )
     <|
         (\mdl ->
@@ -856,7 +856,7 @@ closeStore closeMessage model =
             (\mdl ->
                 { mdl
                     | storeState = Closed
-                    , customers = Clientele.exitAllCustomers model.playerName model.customers
+                    , customers = Clientele.exitAllCustomers model.playerName model.storeName model.customers
                     , stockQty =
                         case mdl.customers.currentCustomer of
                             Just customer ->

@@ -48,7 +48,17 @@ resetCustomer customer =
         | moneyInPurse = calculateMoneyInPurse customer.wealthLevel
         , schmoozeCount = 0
         , basket = []
+        , conversation = resetConversation customer.name
     }
+
+
+resetConversation : String -> List ( String, String )
+resetConversation name =
+    [ ( "Hello, and welcome to the Trading Post! What's your name?", "My name is " ++ name ++ ", what's yours?" )
+    , ( "Why, good to meet you " ++ name ++ ", I am Bailoe Celhai. Welcome to the Trading Post! And what brings you here today? "
+      , "Thank you! I'd like to buy some items. What have you got for me?"
+      )
+    ]
 
 
 initCustomers : ClienteleDetails
@@ -403,7 +413,7 @@ createCustomer ci =
     , inspectedState = Inspected
     , template = ci.template
     , numItemsInBasket = \_ -> 0
-    , conversation = []
+    , conversation = resetConversation ci.name
     }
 
 

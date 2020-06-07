@@ -16,7 +16,8 @@ type alias BasketInfo =
 
 
 type alias ClienteleDetails =
-    { maxCustomers : Int
+    { playerName : String
+    , maxCustomers : Int
     , waitingCustomers : List Customer
     , customerPool : CustomerPool
     , currentCustomer : Maybe Customer
@@ -24,11 +25,11 @@ type alias ClienteleDetails =
     }
 
 
-generateNextCustomer : CustomerPool -> ( Customer, CustomerPool )
-generateNextCustomer customerPool =
+generateNextCustomer : String -> CustomerPool -> ( Customer, CustomerPool )
+generateNextCustomer playerName customerPool =
     case customerPool of
         [] ->
-            ( defaultCustomer, [] )
+            ( defaultCustomer playerName, [] )
 
         x :: [] ->
             ( x, [] )
@@ -37,36 +38,37 @@ generateNextCustomer customerPool =
             ( x, xs )
 
 
-addCustomerToPool : CustomerPool -> Customer -> CustomerPool
-addCustomerToPool customerPool customer =
-    customerPool ++ [ resetCustomer customer ]
+addCustomerToPool : String -> CustomerPool -> Customer -> CustomerPool
+addCustomerToPool playerName customerPool customer =
+    customerPool ++ [ resetCustomer playerName customer ]
 
 
-resetCustomer : Customer -> Customer
-resetCustomer customer =
+resetCustomer : String -> Customer -> Customer
+resetCustomer playerName customer =
     { customer
         | moneyInPurse = calculateMoneyInPurse customer.wealthLevel
         , schmoozeCount = 0
         , basket = []
-        , conversation = resetConversation customer.name
+        , conversation = resetConversation playerName customer.name
     }
 
 
-resetConversation : String -> List ( String, String )
-resetConversation name =
+resetConversation : String -> String -> List ( String, String )
+resetConversation playerName name =
     [ ( "Hello, and welcome to the Trading Post! What's your name?", "My name is " ++ name ++ ", what's yours?" )
-    , ( "Why, good to meet you " ++ name ++ ", I am Biloe Celhai. Welcome to the Trading Post! And what brings you here today? "
+    , ( "Why, good to meet you " ++ name ++ ", I am " ++ playerName ++ ". Welcome to the Trading Post! And what brings you here today? "
       , "Thank you! I'd like to buy some items. What have you got for me?"
       )
     ]
 
 
-initCustomers : ClienteleDetails
-initCustomers =
+initCustomers : String -> ClienteleDetails
+initCustomers playerName =
     { maxCustomers = 6
-    , waitingCustomers = initWaitingCustomers
-    , customerPool = initCustomerPool
-    , currentCustomer = Just initFirstCustomer
+    , playerName = playerName
+    , waitingCustomers = initWaitingCustomers playerName
+    , customerPool = initCustomerPool playerName
+    , currentCustomer = Just <| initFirstCustomer playerName
     , kickTime = 2
     }
 
@@ -199,21 +201,21 @@ schmoozeCurrentCustomer clientele =
     { clientele | currentCustomer = Maybe.map schmoozeCustomer clientele.currentCustomer }
 
 
-exitCurrentCustomer : ClienteleDetails -> ClienteleDetails
-exitCurrentCustomer clientele =
+exitCurrentCustomer : String -> ClienteleDetails -> ClienteleDetails
+exitCurrentCustomer playerName clientele =
     case clientele.currentCustomer of
         Just exitingCustomer ->
             { clientele
                 | currentCustomer = Nothing
-                , customerPool = addCustomerToPool clientele.customerPool exitingCustomer
+                , customerPool = addCustomerToPool playerName clientele.customerPool exitingCustomer
             }
 
         Nothing ->
             clientele
 
 
-exitAllCustomers : ClienteleDetails -> ClienteleDetails
-exitAllCustomers clientele =
+exitAllCustomers : String -> ClienteleDetails -> ClienteleDetails
+exitAllCustomers playerName clientele =
     (\clt ->
         { clt
             | waitingCustomers = []
@@ -221,7 +223,7 @@ exitAllCustomers clientele =
         }
     )
     <|
-        exitCurrentCustomer clientele
+        exitCurrentCustomer playerName clientele
 
 
 schmoozeCustomer : Customer -> Customer
@@ -278,7 +280,7 @@ callCustomerFromPool : ClienteleDetails -> ClienteleDetails
 callCustomerFromPool clientele =
     let
         ( newCustomer, newCustomerPool ) =
-            generateNextCustomer clientele.customerPool
+            generateNextCustomer clientele.playerName clientele.customerPool
     in
     { clientele
         | currentCustomer = Just newCustomer
@@ -310,7 +312,7 @@ newWaitingCustomer : ClienteleDetails -> ClienteleDetails
 newWaitingCustomer clientele =
     let
         ( newCustomer, newCustomerPool ) =
-            generateNextCustomer clientele.customerPool
+            generateNextCustomer clientele.playerName clientele.customerPool
     in
     { clientele
         | waitingCustomers = clientele.waitingCustomers ++ [ newCustomer ]
@@ -403,8 +405,8 @@ type alias CustomerInit =
     }
 
 
-createCustomer : CustomerInit -> Customer
-createCustomer ci =
+createCustomer : String -> CustomerInit -> Customer
+createCustomer playerName ci =
     { name = ci.name
     , wealthLevel = ci.wealthLevel
     , moneyInPurse = calculateMoneyInPurse ci.wealthLevel
@@ -415,7 +417,7 @@ createCustomer ci =
     , inspectedState = Inspected
     , template = ci.template
     , numItemsInBasket = \_ -> 0
-    , conversation = resetConversation ci.name
+    , conversation = resetConversation playerName ci.name
     }
 
 
@@ -546,9 +548,9 @@ percentageForDisplay itemType customer =
     String.fromInt (round (paymentForItemType itemType customer * 100)) ++ "%"
 
 
-defaultCustomer : Customer
-defaultCustomer =
-    createCustomer
+defaultCustomer : String -> Customer
+defaultCustomer playerName =
+    createCustomer playerName
         { name = "WRONG"
         , wealthLevel = Destitute
         , introMessage = "You sense a bizarre otherworldly presence."
@@ -557,9 +559,9 @@ defaultCustomer =
         }
 
 
-initFirstCustomer : Customer
-initFirstCustomer =
-    createCustomer
+initFirstCustomer : String -> Customer
+initFirstCustomer playerName =
+    createCustomer playerName
         { name = "Abby Aubergine"
         , wealthLevel = Poor
         , introMessage = "She greets you with a smile."
@@ -568,9 +570,9 @@ initFirstCustomer =
         }
 
 
-initWaitingCustomers : List Customer
-initWaitingCustomers =
-    [ createCustomer
+initWaitingCustomers : String -> List Customer
+initWaitingCustomers playerName =
+    [ createCustomer playerName
         { name = "Bob Bucket"
         , wealthLevel = Poor
         , introMessage = "He eyes your store shiftily."
@@ -588,9 +590,9 @@ type alias CustomerPoolInit =
     List CustomerInit
 
 
-initCustomerPool : CustomerPool
-initCustomerPool =
-    List.map createCustomer initCustomerPoolInit
+initCustomerPool : String -> CustomerPool
+initCustomerPool playerName =
+    List.map (createCustomer playerName) initCustomerPoolInit
 
 
 type alias ItemPreferences =

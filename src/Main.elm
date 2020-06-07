@@ -20,8 +20,18 @@ type alias Flags =
     { windowWidth : Int }
 
 
+type alias MainModel =
+    { playerName : String
+    , storeName : String
+    , model : Maybe Model
+    , windowWidth : Int
+    }
+
+
 type alias Model =
-    { gameState : GameState
+    { playerName : String
+    , storeName : String
+    , windowWidth : Int
     , time : Time
     , pcGold : Int
     , cleanTime : Int
@@ -30,7 +40,6 @@ type alias Model =
     , conversation : List (List String)
     , lastMessage : String
     , hintMessage : String
-    , windowWidth : Int
     , waitTime : Int
     , timeOfNextCustomer : Time
     , storeState : StoreState
@@ -59,30 +68,40 @@ type alias Time =
     Int
 
 
-init : Flags -> ( Model, Cmd Msg )
+init : Flags -> ( MainModel, Cmd Msg )
 init flags =
-    ( updateConversationWithActionMessage
-        (Clientele.customerCallMessage
-            Clientele.initFirstCustomer
+    ( { playerName = "Biloe Celhai"
+      , storeName = "Trading Post"
+      , windowWidth = flags.windowWidth
+      , model = Nothing
+      }
+    , Cmd.none
+    )
+
+
+initModel : String -> String -> Int -> Model
+initModel playerName storeName windowWidth =
+    updateConversationWithActionMessage
+        (Clientele.customerCallMessage <|
+            Clientele.initFirstCustomer playerName
         )
-        { gameState = Intro
+        { playerName = playerName
+        , storeName = storeName
+        , windowWidth = windowWidth
         , time = openHour * minutesInHour
         , pcGold = 0
         , cleanTime = 10
-        , customers = Clientele.initCustomers
+        , customers = Clientele.initCustomers playerName
         , isConvoReverse = True
         , lastMessage = ""
         , hintMessage = "Click the question-mark next to the item if you need a hint."
         , conversation = []
-        , windowWidth = flags.windowWidth
         , waitTime = 0
         , timeOfNextCustomer = (openHour * 60) + timeBetweenCustomersMins
         , storeState = Open
         , statsTracker = initStatsTracker
         , stockQty = initStockQty
         }
-    , Cmd.none
-    )
 
 
 initStatsTracker : StatsTracker
@@ -116,6 +135,8 @@ initStockQty =
 type Msg
     = NoOp
     | StartGame
+    | UpdateYourName String
+    | UpdateStoreName String
     | SubmitConfirmSale
     | ClearStory
     | KickOutCustomer
@@ -141,61 +162,101 @@ type StoreState
 ---- UPDATE ----
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    case msg of
-        NoOp ->
-            ( model, Cmd.none )
+update : Msg -> MainModel -> ( MainModel, Cmd Msg )
+update msg mainModel =
+    case mainModel.model of
+        Nothing ->
+            case msg of
+                UpdateYourName name ->
+                    ( updateName name mainModel, Cmd.none )
 
-        StartGame ->
-            ( startGame model, Cmd.none )
+                UpdateStoreName name ->
+                    ( updateStoreName name mainModel, Cmd.none )
 
-        SubmitConfirmSale ->
-            ( submitConfirmSale <| model, Cmd.none )
+                StartGame ->
+                    ( startGame mainModel, Cmd.none )
 
-        ClearStory ->
-            ( { model | conversation = [] }, Cmd.none )
+                _ ->
+                    ( mainModel, Cmd.none )
 
-        KickOutCustomer ->
-            ( fuckOffCustomer model, Cmd.none )
+        -- TODO Fix messages
+        Just model ->
+            setModel mainModel <|
+                case msg of
+                    NoOp ->
+                        ( model, Cmd.none )
 
-        CleanStore ->
-            ( cleanStore model, Cmd.none )
+                    -- TODO Remove
+                    UpdateYourName _ ->
+                        ( model, Cmd.none )
 
-        ReverseStory ->
-            ( reverseStory model, Cmd.none )
+                    UpdateStoreName _ ->
+                        ( model, Cmd.none )
 
-        InspectCustomer ->
-            ( inspectCustomer model, Cmd.none )
+                    StartGame ->
+                        ( model, Cmd.none )
 
-        SchmoozeCustomer ->
-            ( schmoozeCustomer model, Cmd.none )
+                    SubmitConfirmSale ->
+                        ( submitConfirmSale <| model, Cmd.none )
 
-        CustomerEntry customer ->
-            ( callNextCustomer customer model, Cmd.none )
+                    ClearStory ->
+                        ( { model | conversation = [] }, Cmd.none )
 
-        UpdateWaitTime waitTimeStr ->
-            ( updateWaitTime waitTimeStr model, Cmd.none )
+                    KickOutCustomer ->
+                        ( fuckOffCustomer model, Cmd.none )
 
-        WaitAwhile ->
-            ( waitAwhile model, Cmd.none )
+                    CleanStore ->
+                        ( cleanStore model, Cmd.none )
 
-        OpenStore ->
-            ( openStore model, Cmd.none )
+                    ReverseStory ->
+                        ( reverseStory model, Cmd.none )
 
-        OfferAtOptimalPrice customer offer item ->
-            ( offerItemAtPrice customer offer item model, Cmd.none )
+                    InspectCustomer ->
+                        ( inspectCustomer model, Cmd.none )
 
-        GetHintForItem customer item ->
-            ( getHintForItem customer item model, Cmd.none )
+                    SchmoozeCustomer ->
+                        ( schmoozeCustomer model, Cmd.none )
 
-        PurchaseItem item ->
-            ( purchaseItem item model, Cmd.none )
+                    CustomerEntry customer ->
+                        ( callNextCustomer customer model, Cmd.none )
+
+                    UpdateWaitTime waitTimeStr ->
+                        ( updateWaitTime waitTimeStr model, Cmd.none )
+
+                    WaitAwhile ->
+                        ( waitAwhile model, Cmd.none )
+
+                    OpenStore ->
+                        ( openStore model, Cmd.none )
+
+                    OfferAtOptimalPrice customer offer item ->
+                        ( offerItemAtPrice customer offer item model, Cmd.none )
+
+                    GetHintForItem customer item ->
+                        ( getHintForItem customer item model, Cmd.none )
+
+                    PurchaseItem item ->
+                        ( purchaseItem item model, Cmd.none )
 
 
-startGame : Model -> Model
-startGame model =
-    { model | gameState = Started }
+setModel : MainModel -> ( Model, Cmd Msg ) -> ( MainModel, Cmd Msg )
+setModel mainModel ( model, cmd ) =
+    ( { mainModel | model = Just model }, cmd )
+
+
+startGame : MainModel -> MainModel
+startGame mainModel =
+    { mainModel | model = Just <| initModel mainModel.playerName mainModel.storeName mainModel.windowWidth }
+
+
+updateName : String -> MainModel -> MainModel
+updateName name model =
+    { model | playerName = name }
+
+
+updateStoreName : String -> MainModel -> MainModel
+updateStoreName name model =
+    { model | storeName = name }
 
 
 purchaseItem : Item -> Model -> Model
@@ -665,7 +726,7 @@ updateTimeFuckOff model =
 exitCurrentCustomerClearBasket : Model -> Model
 exitCurrentCustomerClearBasket model =
     { model
-        | customers = Clientele.exitCurrentCustomer model.customers
+        | customers = Clientele.exitCurrentCustomer model.playerName model.customers
         , stockQty =
             restockWith model.stockQty <|
                 case model.customers.currentCustomer of
@@ -680,7 +741,7 @@ exitCurrentCustomerClearBasket model =
 exitCurrentCustomerSuccessfulSale : Model -> Model
 exitCurrentCustomerSuccessfulSale model =
     { model
-        | customers = Clientele.exitCurrentCustomer model.customers
+        | customers = Clientele.exitCurrentCustomer model.playerName model.customers
     }
 
 
@@ -760,8 +821,8 @@ calculateClosingTime time =
 openStore : Model -> Model
 openStore model =
     updateConversationWithActionMessage
-        (Clientele.customerCallMessage
-            Clientele.initFirstCustomer
+        (Clientele.customerCallMessage <|
+            Clientele.initFirstCustomer model.playerName
         )
     <|
         (\mdl ->
@@ -795,7 +856,7 @@ closeStore closeMessage model =
             (\mdl ->
                 { mdl
                     | storeState = Closed
-                    , customers = Clientele.exitAllCustomers model.customers
+                    , customers = Clientele.exitAllCustomers model.playerName model.customers
                     , stockQty =
                         case mdl.customers.currentCustomer of
                             Just customer ->
@@ -1176,23 +1237,41 @@ oneBlock theHtml =
 -- Main view
 
 
-view : Model -> Html Msg
-view model =
+view : MainModel -> Html Msg
+view mainModel =
     div [] <|
-        case model.gameState of
-            Intro ->
-                startGameView model
+        case mainModel.model of
+            Nothing ->
+                startGameView mainModel
 
-            Started ->
+            Just model ->
                 activeGameView model
 
 
-startGameView : Model -> List (Html Msg)
-startGameView model =
-    [ div [ Attr.class "heading-box" ] [ h1 [] [ text "Trading Post" ] ]
+startGameView : MainModel -> List (Html Msg)
+startGameView mainModel =
+    [ div [ Attr.class "heading-box" ] [ h1 [] [ text mainModel.storeName ] ]
     , Html.a [ Attr.href "https://github.com/mark-chimes/trading-post", Attr.target "_blank" ] [ text "https://github.com/mark-chimes/trading-post" ]
     , oneBlock <|
         [ div [] [ text "Welcome to Trading Post!" ]
+        , div []
+            [ text "Your Name: "
+            , input
+                [ Attr.attribute "aria-label" "Your name"
+                , value mainModel.playerName
+                , onInput UpdateYourName
+                ]
+                []
+            ]
+        , div []
+            [ text "Store Name: "
+            , input
+                [ Attr.attribute "aria-label" "Store name"
+                , value mainModel.storeName
+                , onInput UpdateStoreName
+                ]
+                []
+            ]
         , basicButton [ onClick StartGame ] [ text "Start Game" ]
         ]
     ]
@@ -1200,7 +1279,7 @@ startGameView model =
 
 activeGameView : Model -> List (Html Msg)
 activeGameView model =
-    [ div [ Attr.class "heading-box" ] [ h1 [] [ text "Trading Post" ] ]
+    [ div [ Attr.class "heading-box" ] [ h1 [] [ text model.storeName ] ]
     , oneBlock <| storeInfo model
     , oneBlock <| customerConversationBlock model
     , uiBasedOnStoreState model.storeState model
@@ -1234,8 +1313,7 @@ uiBasedOnStoreState storeState model =
 
 storeInfo : Model -> List (Html Msg)
 storeInfo model =
-    [ h2 [] [ text "Store" ]
-    , div [ Attr.class "date" ] [ text ("Day " ++ (String.fromInt <| dayOfYear model.time)) ]
+    [ div [ Attr.class "date" ] [ text ("Day " ++ (String.fromInt <| dayOfYear model.time)) ]
     , div [ Attr.class "time" ] [ text (displayTime model.time) ]
     , div [ Attr.class "gold" ] [ text (String.fromInt model.pcGold ++ " gold") ]
     ]
@@ -1407,8 +1485,8 @@ customerConversationBlock model =
         :: (case model.customers.currentCustomer of
                 Just customer ->
                     [ div [ Attr.class "grid-of-convo-headings" ]
-                        [ h4 [] [ text "You" ]
-                        , h4 [] [ text "Them" ]
+                        [ div [] [ text "You" ]
+                        , div [] [ text "Them" ]
                         ]
                     , div
                         [ Attr.class "grid-of-convo" ]
@@ -1715,7 +1793,7 @@ displayTime time =
 ---- PROGRAM ----
 
 
-main : Program Flags Model Msg
+main : Program Flags MainModel Msg
 main =
     Browser.element
         { view = view

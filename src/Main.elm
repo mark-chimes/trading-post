@@ -1176,7 +1176,6 @@ view model =
         -}
         , div [] []
         , oneBlock <| storeInfo model
-        , oneBlock <| customerConversationBlock model
         , uiBasedOnStoreState model.storeState model
         , oneBlock <| storyBlock model
         ]
@@ -1192,6 +1191,7 @@ uiBasedOnStoreState storeState model =
                 , gridElement <| customerInfoPanelOpen model
                 , gridElement <| customersBlockOpen model
                 , gridElement <| currentSituationBlockOpen model
+                , gridElement <| customerConversationBlock model
                 , gridElement <| lastMessagePanel model
                 ]
 

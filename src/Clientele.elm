@@ -96,7 +96,16 @@ updateCurrentCustomerBasket offerInfo clientele =
 
 updateCustomerBasket : Item.OfferInfo -> Customer -> Customer
 updateCustomerBasket offerInfo customer =
-    { customer | basket = customer.basket ++ [ offerInfo ], numItemsInBasket = incrementCustomerNumItemsInBasket offerInfo.item.itemType customer.numItemsInBasket }
+    { customer
+        | basket = customer.basket ++ [ offerInfo ]
+        , numItemsInBasket = incrementCustomerNumItemsInBasket offerInfo.item.itemType customer.numItemsInBasket
+        , conversation = customer.conversation ++ [ customerSaleConvoMessage offerInfo ]
+    }
+
+
+customerSaleConvoMessage : Item.OfferInfo -> ( String, String )
+customerSaleConvoMessage offerInfo =
+    ( "One " ++ offerInfo.item.displayName ++ "! For you, only " ++ String.fromInt offerInfo.pcOffer ++ " gold!", "Well I can't say \"no\" to a deal like that!" )
 
 
 incrementCustomerNumItemsInBasket : ItemType -> (ItemType.ItemType -> Int) -> (ItemType.ItemType -> Int)

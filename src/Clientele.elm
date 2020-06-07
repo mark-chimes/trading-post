@@ -55,7 +55,7 @@ resetCustomer customer =
 resetConversation : String -> List ( String, String )
 resetConversation name =
     [ ( "Hello, and welcome to the Trading Post! What's your name?", "My name is " ++ name ++ ", what's yours?" )
-    , ( "Why, good to meet you " ++ name ++ ", I am Bailoe Celhai. Welcome to the Trading Post! And what brings you here today? "
+    , ( "Why, good to meet you " ++ name ++ ", I am Biloe Celhai. Welcome to the Trading Post! And what brings you here today? "
       , "Thank you! I'd like to buy some items. What have you got for me?"
       )
     ]
@@ -115,7 +115,9 @@ updateCustomerBasket offerInfo customer =
 
 customerSaleConvoMessage : Item.OfferInfo -> ( String, String )
 customerSaleConvoMessage offerInfo =
-    ( "One " ++ offerInfo.item.displayName ++ "! For you, only " ++ String.fromInt offerInfo.pcOffer ++ " gold!", "Well I can't say \"no\" to a deal like that!" )
+    ( "One " ++ offerInfo.item.displayName ++ "! For you, only " ++ String.fromInt offerInfo.pcOffer ++ " gold!"
+    , "A " ++ offerInfo.item.displayName ++ " for " ++ String.fromInt offerInfo.pcOffer ++ " sounds like a good deal."
+    )
 
 
 incrementCustomerNumItemsInBasket : ItemType -> (ItemType.ItemType -> Int) -> (ItemType.ItemType -> Int)

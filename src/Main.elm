@@ -1404,6 +1404,8 @@ convertMessageListToGrid listOfPairs =
             , div [ Attr.class "convoEmpty" ] []
             , div [ Attr.class "convoEmpty" ] []
             , div [ Attr.class "convo-right " ] [ text y ]
+            , div [ Attr.class "convoEmpty" ] []
+            , div [ Attr.class "convoEmpty" ] []
             ]
         )
         listOfPairs

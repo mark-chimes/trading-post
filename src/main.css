@@ -125,6 +125,7 @@ button:hover:not([disabled]) {
   overflow-y: scroll;
   height: 200px;
   background-image: var(--image-text-boxes);
+     grid-gap: 2rem;
 }
 
 .convo-left { 

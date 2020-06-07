@@ -206,10 +206,29 @@ exitAllCustomers clientele =
 schmoozeCustomer : Customer -> Customer
 schmoozeCustomer customer =
     if customer.schmoozeCount < constants.maxSchmoozes then
-        { customer | schmoozeCount = customer.schmoozeCount + 1 }
+        { customer
+            | schmoozeCount = customer.schmoozeCount + 1
+            , conversation = updateConvoWithSchmooze customer.schmoozeCount customer.conversation
+        }
 
     else
         customer
+
+
+updateConvoWithSchmooze : Int -> List ( String, String ) -> List ( String, String )
+updateConvoWithSchmooze schmoozeCount oldCovo =
+    case schmoozeCount of
+        0 ->
+            oldCovo ++ [ ( "Your hair is really lovely, you know!", "Oh, why thank you!" ) ]
+
+        1 ->
+            oldCovo ++ [ ( "Those garments of yours are rather fine!", "Haha, flattery will get you nowhere, you know!" ) ]
+
+        2 ->
+            oldCovo ++ [ ( "Your voice is like a song carried on the wind!", "*Flutters Eyelashes* Oh but you are such a charmer!" ) ]
+
+        _ ->
+            oldCovo ++ [ ( "Gives generic compliment.", "Did you just literally say \"gives generic compliment\"? That's a bit lazy." ) ]
 
 
 customerFuckOffMessage : ClienteleDetails -> String
@@ -345,6 +364,7 @@ type alias Customer =
     , inspectedState : InspectedState
     , template : CustomerTemplate
     , numItemsInBasket : ItemType -> Int
+    , conversation : List ( String, String )
     }
 
 
@@ -374,6 +394,7 @@ createCustomer ci =
     , inspectedState = Inspected
     , template = ci.template
     , numItemsInBasket = \_ -> 0
+    , conversation = []
     }
 
 

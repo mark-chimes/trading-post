@@ -132,11 +132,8 @@ initStockQty =
         ]
 
 
-type Msg
+type MainMessageType
     = NoOp
-    | StartGame
-    | UpdateYourName String
-    | UpdateStoreName String
     | SubmitConfirmSale
     | ClearStory
     | KickOutCustomer
@@ -153,6 +150,17 @@ type Msg
     | PurchaseItem Item.Item
 
 
+type OtherMessageType
+    = UpdateYourName String
+    | UpdateStoreName String
+    | StartGame
+
+
+type Msg
+    = MainMsg MainMessageType
+    | OtherMsg OtherMessageType
+
+
 type StoreState
     = Open
     | Closed
@@ -164,9 +172,9 @@ type StoreState
 
 update : Msg -> MainModel -> ( MainModel, Cmd Msg )
 update msg mainModel =
-    case mainModel.model of
-        Nothing ->
-            case msg of
+    case msg of
+        OtherMsg otherMsg ->
+            case otherMsg of
                 UpdateYourName name ->
                     ( updateName name mainModel, Cmd.none )
 
@@ -176,67 +184,58 @@ update msg mainModel =
                 StartGame ->
                     ( startGame mainModel, Cmd.none )
 
-                _ ->
+        MainMsg mainMsg ->
+            case mainModel.model of
+                Nothing ->
                     ( mainModel, Cmd.none )
 
-        -- TODO Fix messages
-        Just model ->
-            setModel mainModel <|
-                case msg of
-                    NoOp ->
-                        ( model, Cmd.none )
+                Just model ->
+                    setModel mainModel <|
+                        case mainMsg of
+                            NoOp ->
+                                ( model, Cmd.none )
 
-                    -- TODO Remove
-                    UpdateYourName _ ->
-                        ( model, Cmd.none )
+                            SubmitConfirmSale ->
+                                ( submitConfirmSale <| model, Cmd.none )
 
-                    UpdateStoreName _ ->
-                        ( model, Cmd.none )
+                            ClearStory ->
+                                ( { model | conversation = [] }, Cmd.none )
 
-                    StartGame ->
-                        ( model, Cmd.none )
+                            KickOutCustomer ->
+                                ( fuckOffCustomer model, Cmd.none )
 
-                    SubmitConfirmSale ->
-                        ( submitConfirmSale <| model, Cmd.none )
+                            CleanStore ->
+                                ( cleanStore model, Cmd.none )
 
-                    ClearStory ->
-                        ( { model | conversation = [] }, Cmd.none )
+                            ReverseStory ->
+                                ( reverseStory model, Cmd.none )
 
-                    KickOutCustomer ->
-                        ( fuckOffCustomer model, Cmd.none )
+                            InspectCustomer ->
+                                ( inspectCustomer model, Cmd.none )
 
-                    CleanStore ->
-                        ( cleanStore model, Cmd.none )
+                            SchmoozeCustomer ->
+                                ( schmoozeCustomer model, Cmd.none )
 
-                    ReverseStory ->
-                        ( reverseStory model, Cmd.none )
+                            CustomerEntry customer ->
+                                ( callNextCustomer customer model, Cmd.none )
 
-                    InspectCustomer ->
-                        ( inspectCustomer model, Cmd.none )
+                            UpdateWaitTime waitTimeStr ->
+                                ( updateWaitTime waitTimeStr model, Cmd.none )
 
-                    SchmoozeCustomer ->
-                        ( schmoozeCustomer model, Cmd.none )
+                            WaitAwhile ->
+                                ( waitAwhile model, Cmd.none )
 
-                    CustomerEntry customer ->
-                        ( callNextCustomer customer model, Cmd.none )
+                            OpenStore ->
+                                ( openStore model, Cmd.none )
 
-                    UpdateWaitTime waitTimeStr ->
-                        ( updateWaitTime waitTimeStr model, Cmd.none )
+                            OfferAtOptimalPrice customer offer item ->
+                                ( offerItemAtPrice customer offer item model, Cmd.none )
 
-                    WaitAwhile ->
-                        ( waitAwhile model, Cmd.none )
+                            GetHintForItem customer item ->
+                                ( getHintForItem customer item model, Cmd.none )
 
-                    OpenStore ->
-                        ( openStore model, Cmd.none )
-
-                    OfferAtOptimalPrice customer offer item ->
-                        ( offerItemAtPrice customer offer item model, Cmd.none )
-
-                    GetHintForItem customer item ->
-                        ( getHintForItem customer item model, Cmd.none )
-
-                    PurchaseItem item ->
-                        ( purchaseItem item model, Cmd.none )
+                            PurchaseItem item ->
+                                ( purchaseItem item model, Cmd.none )
 
 
 setModel : MainModel -> ( Model, Cmd Msg ) -> ( MainModel, Cmd Msg )
@@ -1233,10 +1232,6 @@ oneBlock theHtml =
         theHtml
 
 
-
--- Main view
-
-
 view : MainModel -> Html Msg
 view mainModel =
     div [] <|
@@ -1259,7 +1254,7 @@ startGameView mainModel =
             , input
                 [ Attr.attribute "aria-label" "Your name"
                 , value mainModel.playerName
-                , onInput UpdateYourName
+                , onInput <| \s -> OtherMsg <| UpdateYourName s
                 ]
                 []
             ]
@@ -1268,11 +1263,11 @@ startGameView mainModel =
             , input
                 [ Attr.attribute "aria-label" "Store name"
                 , value mainModel.storeName
-                , onInput UpdateStoreName
+                , onInput <| \s -> OtherMsg <| UpdateStoreName s
                 ]
                 []
             ]
-        , basicButton [ onClick StartGame ] [ text "Start Game" ]
+        , basicButton [ onClick (OtherMsg StartGame) ] [ text "Start Game" ]
         ]
     ]
 
@@ -1333,9 +1328,9 @@ currentSituationBlockOpen : Model -> List (Html Msg)
 currentSituationBlockOpen model =
     [ h3 [] [ text "Wait" ]
     , div []
-        [ basicButton [ onClick CleanStore ] [ text "Clean Store" ]
+        [ basicButton [ onClick <| MainMsg <| CleanStore ] [ text "Clean Store" ]
         , div [] []
-        , basicButton [ Attr.attribute "aria-label" "Reset waiting time to 0", onClick <| UpdateWaitTime <| String.fromInt 0 ] [ text "Reset" ]
+        , basicButton [ Attr.attribute "aria-label" "Reset waiting time to 0", onClick <| MainMsg <| UpdateWaitTime <| String.fromInt 0 ] [ text "Reset" ]
         , modifyWaitButton -60 model
         , modifyWaitButton -10 model
         , input
@@ -1345,14 +1340,14 @@ currentSituationBlockOpen model =
             , Attr.min "0"
             , Attr.max "1440"
             , value (String.fromInt model.waitTime)
-            , onInput UpdateWaitTime
+            , onInput <| \s -> MainMsg <| UpdateWaitTime s
             ]
             []
         , modifyWaitButton 10 model
         , modifyWaitButton 60 model
         , div [] []
         , basicButton
-            [ onClick WaitAwhile ]
+            [ onClick <| MainMsg <| WaitAwhile ]
             [ text <| "Wait for " ++ String.fromInt model.waitTime ++ " minutes" ]
         ]
     ]
@@ -1366,10 +1361,10 @@ basketBox : Clientele.Customer -> Html Msg
 basketBox customer =
     div [ Attr.class "basket-box" ] <|
         if List.length customer.basket == 0 then
-            [ basicButton [ onClick KickOutCustomer ] [ text <| "Kick out " ++ customer.name ] ]
+            [ basicButton [ onClick <| MainMsg <| KickOutCustomer ] [ text <| "Kick out " ++ customer.name ] ]
 
         else
-            [ basicButton [ onClick SubmitConfirmSale ] [ text <| "Confirm Sale of " ++ String.fromInt (List.length customer.basket) ++ " items and Say Goodbye" ]
+            [ basicButton [ onClick <| MainMsg <| SubmitConfirmSale ] [ text <| "Confirm Sale of " ++ String.fromInt (List.length customer.basket) ++ " items and Say Goodbye" ]
             , div [] <|
                 List.map
                     (\s -> div [ Attr.class "basket" ] [ text s ])
@@ -1393,7 +1388,7 @@ itemDisplay offerInfo =
 currentSituationBlockClosed : Model -> List (Html Msg)
 currentSituationBlockClosed _ =
     [ h3 [] [ text "Wait" ]
-    , basicButton [ onClick OpenStore ] [ text <| "Skip until tomorrow and open store at " ++ String.fromInt openHour ++ " o Clock." ]
+    , basicButton [ onClick <| MainMsg <| OpenStore ] [ text <| "Skip until tomorrow and open store at " ++ String.fromInt openHour ++ " o Clock." ]
     ]
 
 
@@ -1413,7 +1408,7 @@ customerInfoPanelOpen model =
                                     []
 
                                 Clientele.Uninspected ->
-                                    [ basicButton [ onClick InspectCustomer ] [ text <| "Inspect " ++ customer.name ] ]
+                                    [ basicButton [ onClick <| MainMsg <| InspectCustomer ] [ text <| "Inspect " ++ customer.name ] ]
                            )
                 ]
 
@@ -1431,7 +1426,7 @@ schmoozeButton customer =
         basicButton [ Attr.disabled True ] [ text <| schmoozeButtonText customer ]
 
     else
-        basicButton [ onClick SchmoozeCustomer ] [ text <| schmoozeButtonText customer ]
+        basicButton [ onClick <| MainMsg <| SchmoozeCustomer ] [ text <| schmoozeButtonText customer ]
 
 
 schmoozeButtonText : Customer -> String
@@ -1465,7 +1460,7 @@ modifyWaitButton : Int -> Model -> Html Msg
 modifyWaitButton timeDiff model =
     basicButton
         [ Attr.attribute "aria-label" (String.fromInt timeDiff ++ " waiting time modify")
-        , onClick <| UpdateWaitTime <| String.fromInt <| model.waitTime + timeDiff
+        , onClick <| MainMsg <| UpdateWaitTime <| String.fromInt <| model.waitTime + timeDiff
         ]
         [ text
             ((if timeDiff > 0 then
@@ -1532,7 +1527,7 @@ stockAndOfferBlock model =
 
 purchaseItemButton : Item -> Html Msg
 purchaseItemButton item =
-    basicButton [ onClick <| PurchaseItem item ]
+    basicButton [ onClick <| MainMsg <| PurchaseItem item ]
         [ text <|
             item.displayName
                 ++ " for "
@@ -1620,8 +1615,8 @@ priceBoxCustomer customer ( item, quantity ) =
                 ++ " x"
                 ++ String.fromInt quantity
                 ++ " "
-        , basicButton [ Attr.attribute "aria-label" "Hint", onClick <| GetHintForItem customer item ] [ text "?" ]
-        , basicButton [ onClick <| OfferAtOptimalPrice customer price item ]
+        , basicButton [ Attr.attribute "aria-label" "Hint", onClick <| MainMsg <| GetHintForItem customer item ] [ text "?" ]
+        , basicButton [ onClick <| MainMsg <| OfferAtOptimalPrice customer price item ]
             [ text <|
                 " Offer "
                     ++ item.displayName
@@ -1644,31 +1639,31 @@ customersBlockOpen model =
         [ div [] <|
             text "Rich"
                 :: Clientele.customerEntryButtons
-                    (\c -> onClick (CustomerEntry c))
+                    (\c -> onClick (MainMsg <| CustomerEntry c))
                     Clientele.Rich
                     model.customers
         , div [] <|
             text "Well-Off"
                 :: Clientele.customerEntryButtons
-                    (\c -> onClick (CustomerEntry c))
+                    (\c -> onClick (MainMsg <| CustomerEntry c))
                     Clientele.WellOff
                     model.customers
         , div [] <|
             text "Average"
                 :: Clientele.customerEntryButtons
-                    (\c -> onClick (CustomerEntry c))
+                    (\c -> onClick (MainMsg <| CustomerEntry c))
                     Clientele.Average
                     model.customers
         , div [] <|
             text "Poor"
                 :: Clientele.customerEntryButtons
-                    (\c -> onClick (CustomerEntry c))
+                    (\c -> onClick (MainMsg <| CustomerEntry c))
                     Clientele.Poor
                     model.customers
         , div [] <|
             text "Destitute"
                 :: Clientele.customerEntryButtons
-                    (\c -> onClick (CustomerEntry c))
+                    (\c -> onClick (MainMsg <| CustomerEntry c))
                     Clientele.Destitute
                     model.customers
         ]
@@ -1678,7 +1673,7 @@ customersBlockOpen model =
             Just customer ->
                 [ text ("You are speaking to: " ++ customer.name ++ ".")
                 , div [] []
-                , basicButton [ onClick KickOutCustomer ] [ text <| "Kick out " ++ customer.name ]
+                , basicButton [ onClick <| MainMsg <| KickOutCustomer ] [ text <| "Kick out " ++ customer.name ]
                 ]
 
             Nothing ->
@@ -1733,7 +1728,7 @@ storyBlock model =
 
             else
                 "Story forwards "
-        , button [ onClick ReverseStory ] [ text <| "Reverse" ]
+        , button [ onClick <| MainMsg <| ReverseStory ] [ text <| "Reverse" ]
         ]
     , div []
         []

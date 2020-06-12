@@ -1252,26 +1252,30 @@ startGameView mainModel =
     [ div [ Attr.class "heading-box" ] [ h1 [] [ text mainModel.storeName ] ]
     , Html.a [ Attr.href "https://github.com/mark-chimes/trading-post", Attr.target "_blank" ] [ text "https://github.com/mark-chimes/trading-post" ]
     , oneBlock <|
-        [ div [] [ text "Welcome to Trading Post!" ]
-        , div []
-            [ text "Your Name: "
-            , input
-                [ Attr.attribute "aria-label" "Your name"
-                , value mainModel.playerName
-                , onInput <| \s -> OtherMsg <| UpdateYourName s
+        [ h2 [] [ text "Welcome to Trading Post!" ]
+        , div [ Attr.class "start-game-container" ]
+            [ div [ Attr.class "start-game-element" ]
+                [ text "Your Name: "
+                , input
+                    [ Attr.attribute "aria-label" "Your name"
+                    , value mainModel.playerName
+                    , onInput <| \s -> OtherMsg <| UpdateYourName s
+                    ]
+                    []
                 ]
-                []
-            ]
-        , div []
-            [ text "Store Name: "
-            , input
-                [ Attr.attribute "aria-label" "Store name"
-                , value mainModel.storeName
-                , onInput <| \s -> OtherMsg <| UpdateStoreName s
+            , div [ Attr.class "start-game-element" ]
+                [ text "Store Name: "
+                , input
+                    [ Attr.attribute "aria-label" "Store name"
+                    , value mainModel.storeName
+                    , onInput <| \s -> OtherMsg <| UpdateStoreName s
+                    ]
+                    []
                 ]
-                []
             ]
-        , basicButton [ onClick (OtherMsg StartGame) ] [ text "Start Game" ]
+        , div [ Attr.class "start-game-button-container" ]
+            [ basicButton [ Attr.class "start-game-button", onClick (OtherMsg StartGame) ] [ text "Start Game" ]
+            ]
         ]
     ]
 

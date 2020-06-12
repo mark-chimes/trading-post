@@ -85,7 +85,6 @@ a:active {
 }
 */
 
-
 button {
   background-color: var(--color-button)	;
   border: 4px outset var(--element-border-color);
@@ -106,6 +105,25 @@ button:hover:not([disabled]) {
   background-color: var(--color-accentuate);
   border: 4px outset var(--color-far-back);
   color: var(--color-text);
+}
+
+.start-game-container { 
+  display: flex;
+  flex-direction: column;
+  margin: 20px;
+}
+
+.start-game-element { 
+  margin: 20px;
+}
+
+
+.start-game-button-container { 
+  margin: 20px;
+}
+
+.start-game-button { 
+  font-size: 40px;
 }
 
 .basket { 

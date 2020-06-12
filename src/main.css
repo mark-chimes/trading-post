@@ -117,7 +117,6 @@ button:hover:not([disabled]) {
   margin: 20px;
 }
 
-
 .start-game-button-container { 
   margin: 20px;
 }
@@ -204,20 +203,18 @@ button:hover:not([disabled]) {
   background-repeat: no-repeat;
 }
 
- 
-.date {
+.store-info-box {
+  border: 4px ridge var(--color-standard-back);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.store-info-element { 
+  font-size: 18px;
+  border: 4px ridge var(--color-standard-back);
 
 }
 
-.time { 
-  font-size: 24px;
-  padding-bottom: var(--full-thick);
-}
-
-.gold { 
-  font-size: 24px;
-  padding-bottom: var(--full-thick);
-}
 
 .heading-box { 
   border: 40px ridge var(--color-standard-back);

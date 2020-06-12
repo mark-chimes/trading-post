@@ -1283,7 +1283,6 @@ startGameView mainModel =
 activeGameView : Model -> List (Html Msg)
 activeGameView model =
     [ div [ Attr.class "heading-box" ] [ h1 [] [ text model.storeName ] ]
-    , oneBlock <| storeInfo model
     , uiBasedOnStoreState model.storeState model
     , oneBlock <| storyBlock model
     ]
@@ -1296,7 +1295,7 @@ uiBasedOnStoreState storeState model =
             grid
                 [ gridElement <| stockAndOfferBlock model
                 , gridElement <| customerInfoPanel model
-                , gridElement <| customersBlock model
+                , gridElement <| storeBlock model
                 , gridElement <| customerConversationBlock model
                 , gridElement <| waitBlock model
                 , gridElement <| lastMessagePanel model
@@ -1312,22 +1311,25 @@ uiBasedOnStoreState storeState model =
                 ]
 
 
-storeInfo : Model -> List (Html Msg)
+storeInfo : Model -> Html Msg
 storeInfo model =
-    [ div [ Attr.class "date" ] [ text ("Day " ++ (String.fromInt <| dayOfYear model.time)) ]
-    , div [ Attr.class "time" ] [ text (displayTime model.time) ]
-    , div [ Attr.class "gold" ] [ text (String.fromInt model.pcGold ++ " gold") ]
-    ]
-
-
-nooneMessage : String
-nooneMessage =
-    "Select a customer to address."
-
-
-storeClosedMessage : String
-storeClosedMessage =
-    "The store is now closed."
+    div [ Attr.class "store-info-box" ]
+        [ div []
+            [ div [ Attr.class "store-info-element" ] [ text "Day" ]
+            , div [ Attr.class "store-info-element" ] [ text (String.fromInt <| dayOfYear model.time) ]
+            ]
+        , div
+            []
+            [ div [ Attr.class "store-info-element" ] [ text "Time" ]
+            , div [ Attr.class "store-info-element" ] [ text (displayTime model.time) ]
+            ]
+        , div []
+            [ div
+                [ Attr.class "store-info-element" ]
+                [ text "Gold" ]
+            , div [ Attr.class "store-info-element" ] [ text <| String.fromInt model.pcGold ++ " gp" ]
+            ]
+        ]
 
 
 waitBlock : Model -> List (Html Msg)
@@ -1630,11 +1632,10 @@ priceBoxCustomer customer ( item, quantity ) =
         ]
 
 
-customersBlock : Model -> List (Html Msg)
-customersBlock model =
+storeBlock : Model -> List (Html Msg)
+storeBlock model =
     [ h3 [] [ text "Store" ]
-    , div [] <|
-        storeInfo model
+    , storeInfo model
     , h4 [] [ text "Customers" ]
     , div
         []

@@ -215,6 +215,23 @@ button:hover:not([disabled]) {
 
 }
 
+.customers-box { 
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.customers-name-element { 
+  border: 4px ridge var(--color-standard-back);
+  grid-column: 1;
+  background-image: var(--image-text-boxes);
+}
+
+.customers-buttons-element { 
+  border: 4px ridge var(--color-standard-back);
+  grid-column: 2 / 5;
+ 
+}
+
 
 .heading-box { 
   border: 40px ridge var(--color-standard-back);

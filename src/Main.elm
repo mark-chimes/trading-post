@@ -1638,38 +1638,14 @@ storeBlock model =
     , storeInfo model
     , h4 [] [ text "Customers" ]
     , div
-        []
-        [ div [] <|
-            text "Rich"
-                :: Clientele.customerEntryButtons
-                    (\c -> onClick (MainMsg <| CustomerEntry c))
-                    Clientele.Rich
-                    model.customers
-        , div [] <|
-            text "Well-Off"
-                :: Clientele.customerEntryButtons
-                    (\c -> onClick (MainMsg <| CustomerEntry c))
-                    Clientele.WellOff
-                    model.customers
-        , div [] <|
-            text "Average"
-                :: Clientele.customerEntryButtons
-                    (\c -> onClick (MainMsg <| CustomerEntry c))
-                    Clientele.Average
-                    model.customers
-        , div [] <|
-            text "Poor"
-                :: Clientele.customerEntryButtons
-                    (\c -> onClick (MainMsg <| CustomerEntry c))
-                    Clientele.Poor
-                    model.customers
-        , div [] <|
-            text "Destitute"
-                :: Clientele.customerEntryButtons
-                    (\c -> onClick (MainMsg <| CustomerEntry c))
-                    Clientele.Destitute
-                    model.customers
-        ]
+        [ Attr.class "customers-box" ]
+      -- [ div [ Attr.class "customers-element" ] [ text "54" ], div [ Attr.class "customers-element" ] [ text "asdf" ] ]
+      <|
+        customersOfWealthLevel "Rich" Clientele.Rich model.customers
+            ++ customersOfWealthLevel "Well-Off" Clientele.WellOff model.customers
+            ++ customersOfWealthLevel "Average" Clientele.Average model.customers
+            ++ customersOfWealthLevel "Poor" Clientele.Poor model.customers
+            ++ customersOfWealthLevel "Destitute" Clientele.Destitute model.customers
     , br [] []
     , div []
         (case model.customers.currentCustomer of
@@ -1679,6 +1655,23 @@ storeBlock model =
             Nothing ->
                 []
         )
+    ]
+
+
+customersOfWealthLevel : String -> Clientele.WealthLevel -> Clientele.ClienteleDetails -> List (Html Msg)
+customersOfWealthLevel levelString level customers =
+    [ div [ Attr.class "customers-name-element" ] [ text levelString ]
+    , div [ Attr.class "customers-buttons-element" ] <|
+        let
+            customersButtons =
+                Clientele.customerEntryButtons (\c -> onClick (MainMsg <| CustomerEntry c)) level customers
+        in
+        case customersButtons of
+            [] ->
+                [ div [] [ text "None" ] ]
+
+            xs ->
+                xs
     ]
 
 

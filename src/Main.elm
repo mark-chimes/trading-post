@@ -96,7 +96,7 @@ initModel playerName storeName windowWidth =
         , customers = Clientele.initCustomers playerName storeName
         , isConvoReverse = True
         , lastMessage = ""
-        , hintMessage = "Click the question-mark next to the item if you need a hint."
+        , hintMessage = "Click the hint button (question-mark) next to the item if you need a hint."
         , conversation = []
         , waitTime = 0
         , timeOfNextCustomer = (openHour * 60) + timeBetweenCustomersMins
@@ -1540,8 +1540,8 @@ purchaseItemButton item =
 
 priceBoxes : Maybe Customer -> Model -> List (Html Msg)
 priceBoxes maybeCust model =
-    List.concatMap (\itemType -> priceBoxByType maybeCust itemType model) ItemType.itemTypesEnum
-        ++ (case maybeCust of
+    (div [ Attr.class "stock-table" ] <| List.concatMap (\itemType -> priceBoxByType maybeCust itemType model) ItemType.itemTypesEnum)
+        :: (case maybeCust of
                 Just _ ->
                     [ h4 [] [ text "Hints" ]
                     , Html.pre [] [ text model.hintMessage ]
@@ -1554,7 +1554,7 @@ priceBoxes maybeCust model =
 
 priceBoxByType : Maybe Customer -> ItemType -> Model -> List (Html Msg)
 priceBoxByType maybeCust itemType model =
-    h4 [] [ text <| ItemType.toString itemType ]
+    h4 [ Attr.class "stock-heading" ] [ text <| ItemType.toString itemType ]
         :: itemListHtmlByType
             maybeCust
             itemType
@@ -1568,7 +1568,7 @@ itemListHtmlByType maybeCust itemType model =
             List.map priceBoxNoone
 
         Just customer ->
-            List.map (priceBoxCustomer customer)
+            List.concatMap (priceBoxCustomer customer)
     )
     <|
         List.reverse <|
@@ -1605,31 +1605,35 @@ priceBoxNoone ( item, quantity ) =
         ]
 
 
-priceBoxCustomer : Clientele.Customer -> ( Item.Item, Int ) -> Html Msg
+priceBoxCustomer : Clientele.Customer -> ( Item.Item, Int ) -> List (Html Msg)
 priceBoxCustomer customer ( item, quantity ) =
     let
         price =
             Clientele.optimalPrice item customer
     in
-    div []
-        [ text <|
-            item.displayName
-                ++ " x"
-                ++ String.fromInt quantity
-                ++ " "
-        , basicButton [ Attr.attribute "aria-label" "Hint", onClick <| MainMsg <| GetHintForItem customer item ] [ text "?" ]
-        , basicButton [ onClick <| MainMsg <| OfferAtOptimalPrice customer price item ]
-            [ text <|
-                " Offer "
-                    ++ item.displayName
-                    ++ " for "
-                    ++ String.fromInt price
-                    ++ " gp"
-                    ++ " (cost "
-                    ++ String.fromInt item.itemWorth
-                    ++ " gp)"
-            ]
+    [ basicButton [ Attr.class "item-hint", Attr.attribute "aria-label" "Hint", onClick <| MainMsg <| GetHintForItem customer item ] [ text "?" ]
+    , div [ Attr.class "item-name" ] [ text item.displayName ]
+    , div [ Attr.class "item-qty" ]
+        [ text <| String.fromInt quantity ]
+    , basicButton
+        [ Attr.class "item-purchase"
+        , onClick <| MainMsg <| OfferAtOptimalPrice customer price item
+        , Attr.attribute "aria-label" <|
+            " Offer "
+                ++ item.displayName
+                ++ " for "
+                ++ String.fromInt price
+                ++ " gp"
+                ++ " (cost "
+                ++ String.fromInt item.itemWorth
+                ++ " gp)"
         ]
+        [ text <|
+            String.fromInt price
+                ++ " gp"
+        ]
+    , div [ Attr.attribute "aria-label" <| "cost " ++ String.fromInt item.itemWorth ++ " gp", Attr.class "item-cost" ] [ text <| String.fromInt item.itemWorth ++ " gp" ]
+    ]
 
 
 storeBlock : Model -> List (Html Msg)

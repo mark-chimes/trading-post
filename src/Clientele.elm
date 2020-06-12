@@ -349,10 +349,10 @@ customerEntryButtons command wealthLevel customers =
         (\c ->
             case customers.currentCustomer of
                 Just currentCustomer ->
-                    bar currentCustomer command c
+                    currentCustomerButton currentCustomer command c
 
                 Nothing ->
-                    foo command c
+                    nonCurrentCustomerButton command c
         )
     <|
         List.sortBy
@@ -369,8 +369,8 @@ customerEntryButtons command wealthLevel customers =
                        )
 
 
-bar : Customer -> (Customer -> Attribute msg) -> Customer -> Html msg
-bar currentCustomer command customer =
+currentCustomerButton : Customer -> (Customer -> Attribute msg) -> Customer -> Html msg
+currentCustomerButton currentCustomer command customer =
     if currentCustomer == customer then
         if List.length customer.basket > 0 then
             button
@@ -387,11 +387,11 @@ bar currentCustomer command customer =
                 [ text customer.name ]
 
     else
-        foo command customer
+        nonCurrentCustomerButton command customer
 
 
-foo : (Customer -> Attribute msg) -> Customer -> Html msg
-foo command customer =
+nonCurrentCustomerButton : (Customer -> Attribute msg) -> Customer -> Html msg
+nonCurrentCustomerButton command customer =
     if List.length customer.basket > 0 then
         button
             [ Attr.attribute "aria-label" (customer.name ++ " speak to (with items in basket) ")

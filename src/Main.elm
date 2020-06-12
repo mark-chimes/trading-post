@@ -34,6 +34,7 @@ type alias Model =
     , windowWidth : Int
     , time : Time
     , pcGold : Int
+    , rent : Int
     , cleanTime : Int
     , customers : Clientele.ClienteleDetails
     , isConvoReverse : Bool
@@ -90,6 +91,7 @@ initModel playerName storeName windowWidth =
         , windowWidth = windowWidth
         , time = openHour * minutesInHour
         , pcGold = 0
+        , rent = 300
         , cleanTime = 10
         , customers = Clientele.initCustomers playerName storeName
         , isConvoReverse = True
@@ -877,12 +879,8 @@ closeStore closeMessage model =
 
 takeRent : Model -> Model
 takeRent model =
-    let
-        rent =
-            50
-    in
-    updateConversationWithActionMessage ("Rent of " ++ String.fromInt rent ++ " gp is due.") <|
-        { model | pcGold = model.pcGold - rent }
+    updateConversationWithActionMessage ("Rent of " ++ String.fromInt model.rent ++ " gp is due.") <|
+        { model | pcGold = model.pcGold - model.rent }
 
 
 recordNeglectedCustomers : Model -> Model
@@ -911,7 +909,7 @@ neglectedCustomers numCust statsTracker =
 statsModelMessage : Model -> String
 statsModelMessage model =
     statsTrackMessage model.statsTracker
-        ++ " You ended the day with a total of "
+        ++ " After rent of " ++  String.fromInt model.rent ++ " You ended the day with a total of "
         ++ String.fromInt model.pcGold
         ++ " gp"
 

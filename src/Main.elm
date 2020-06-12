@@ -125,7 +125,7 @@ type alias StockQties =
 initStockQty : StockQties
 initStockQty =
     Dict.fromList
-        [( Item.sword.uniqueName, 1 )
+        [ ( Item.sword.uniqueName, 1 )
         , ( Item.shortsword.uniqueName, 2 )
         , ( Item.axe.uniqueName, 5 )
         , ( Item.dagger.uniqueName, 7 )
@@ -909,7 +909,9 @@ neglectedCustomers numCust statsTracker =
 statsModelMessage : Model -> String
 statsModelMessage model =
     statsTrackMessage model.statsTracker
-        ++ " After rent of " ++  String.fromInt model.rent ++ " You ended the day with a total of "
+        ++ " After rent of "
+        ++ String.fromInt model.rent
+        ++ " You ended the day with a total of "
         ++ String.fromInt model.pcGold
         ++ " gp"
 
@@ -1278,7 +1280,6 @@ activeGameView : Model -> List (Html Msg)
 activeGameView model =
     [ div [ Attr.class "heading-box" ] [ h1 [] [ text model.storeName ] ]
     , oneBlock <| storeInfo model
-    , oneBlock <| customerConversationBlock model
     , uiBasedOnStoreState model.storeState model
     , oneBlock <| storyBlock model
     ]
@@ -1290,21 +1291,20 @@ uiBasedOnStoreState storeState model =
         Open ->
             grid
                 [ gridElement <| stockAndOfferBlock model
-                , gridElement <| basketBlockOpen model
-                , gridElement <| customerInfoPanelOpen model
-                , gridElement <| customersBlockOpen model
-                , gridElement <| currentSituationBlockOpen model
+                , gridElement <| customerInfoPanel model
+                , gridElement <| customersBlock model
+                , gridElement <| customerConversationBlock model
+                , gridElement <| waitBlock model
                 , gridElement <| lastMessagePanel model
                 ]
 
         Closed ->
-            grid
-                [ gridElement <| stockAndOfferBlock model
-                , gridElement <| basketBlockClosed
-                , gridElement <| customerInfoPanelClosed
-                , gridElement <| customersBlockClosed
-                , gridElement <| currentSituationBlockClosed model
-                , gridElement <| lastMessagePanel model
+            div []
+                [ grid
+                    [ gridElement <| stockAndOfferBlock model
+                    , gridElement <| lastMessagePanel model
+                    ]
+                , oneBlock <| skipTomorrowOpenStoreBlock model
                 ]
 
 
@@ -1326,8 +1326,8 @@ storeClosedMessage =
     "The store is now closed."
 
 
-currentSituationBlockOpen : Model -> List (Html Msg)
-currentSituationBlockOpen model =
+waitBlock : Model -> List (Html Msg)
+waitBlock model =
     [ h3 [] [ text "Wait" ]
     , div []
         [ basicButton [ onClick <| MainMsg <| CleanStore ] [ text "Clean Store" ]
@@ -1387,15 +1387,15 @@ itemDisplay offerInfo =
         ++ " gp"
 
 
-currentSituationBlockClosed : Model -> List (Html Msg)
-currentSituationBlockClosed _ =
+skipTomorrowOpenStoreBlock : Model -> List (Html Msg)
+skipTomorrowOpenStoreBlock _ =
     [ h3 [] [ text "Wait" ]
     , basicButton [ onClick <| MainMsg <| OpenStore ] [ text <| "Skip until tomorrow and open store at " ++ String.fromInt openHour ++ " o Clock." ]
     ]
 
 
-customerInfoPanelOpen : Model -> List (Html Msg)
-customerInfoPanelOpen model =
+customerInfoPanel : Model -> List (Html Msg)
+customerInfoPanel model =
     [ div []
         (case model.customers.currentCustomer of
             Just customer ->
@@ -1412,6 +1412,8 @@ customerInfoPanelOpen model =
                                 Clientele.Uninspected ->
                                     [ basicButton [ onClick <| MainMsg <| InspectCustomer ] [ text <| "Inspect " ++ customer.name ] ]
                            )
+                , h4 [] [ text "Basket" ]
+                , basketBox customer
                 ]
 
             Nothing ->
@@ -1443,14 +1445,6 @@ schmoozeButtonText customer =
            )
         ++ ") "
         ++ customer.name
-
-
-customerInfoPanelClosed : List (Html Msg)
-customerInfoPanelClosed =
-    [ h3 [] [ text "Customer Info" ]
-    , div []
-        [ text storeClosedMessage ]
-    ]
 
 
 basicButton : List (Html.Attribute msg) -> List (Html msg) -> Html msg
@@ -1632,10 +1626,12 @@ priceBoxCustomer customer ( item, quantity ) =
         ]
 
 
-customersBlockOpen : Model -> List (Html Msg)
-customersBlockOpen model =
-    [ h3 []
-        [ text "Customers" ]
+customersBlock : Model -> List (Html Msg)
+customersBlock model =
+    [ h3 [] [ text "Store" ]
+    , div [] <|
+        storeInfo model
+    , h4 [] [ text "Customers" ]
     , div
         []
         [ div [] <|
@@ -1673,41 +1669,11 @@ customersBlockOpen model =
     , div []
         (case model.customers.currentCustomer of
             Just customer ->
-                [ text ("You are speaking to: " ++ customer.name ++ ".")
-                , div [] []
-                , basicButton [ onClick <| MainMsg <| KickOutCustomer ] [ text <| "Kick out " ++ customer.name ]
-                ]
+                [ text ("You are speaking to: " ++ customer.name ++ ".") ]
 
             Nothing ->
                 []
         )
-    ]
-
-
-customersBlockClosed : List (Html Msg)
-customersBlockClosed =
-    [ h3 [] [ text "Customers" ]
-    , div []
-        [ text storeClosedMessage ]
-    ]
-
-
-basketBlockOpen : Model -> List (Html Msg)
-basketBlockOpen model =
-    [ h3 [] [ text "Basket" ]
-    , case model.customers.currentCustomer of
-        Nothing ->
-            div [] [ text nooneMessage ]
-
-        Just customer ->
-            div [] [ basketBox customer ]
-    ]
-
-
-basketBlockClosed : List (Html Msg)
-basketBlockClosed =
-    [ h3 [] [ text "Sale" ]
-    , text storeClosedMessage
     ]
 
 

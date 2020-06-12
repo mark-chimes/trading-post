@@ -1293,10 +1293,10 @@ uiBasedOnStoreState storeState model =
     case storeState of
         Open ->
             grid
-                [ gridElement <| stockAndOfferBlock model
-                , gridElement <| customerInfoPanel model
-                , gridElement <| storeBlock model
+                [ gridElement <| storeBlock model
                 , gridElement <| customerConversationBlock model
+                , gridElement <| stockAndOfferBlock model
+                , gridElement <| customerInfoPanel model
                 , gridElement <| waitBlock model
                 , gridElement <| lastMessagePanel model
                 ]

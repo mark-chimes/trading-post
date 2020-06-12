@@ -140,7 +140,7 @@ button:hover:not([disabled]) {
   margin: var(--full-thick);
   border: 5px ridge var(--box-border-color);
   overflow-y: scroll;
-  height: 200px;
+  height: 324px;
   background-image: var(--image-text-boxes);
   grid-gap: 1rem;
 }
@@ -224,14 +224,17 @@ button:hover:not([disabled]) {
   border: 4px ridge var(--color-standard-back);
   grid-column: 1;
   background-image: var(--image-text-boxes);
+  padding: 10px;
+}
+
+.customer-name-element-inner { 
+	margin: 0px;
 }
 
 .customers-buttons-element { 
   border: 4px ridge var(--color-standard-back);
   grid-column: 2 / 5;
- 
 }
-
 
 .heading-box { 
   border: 40px ridge var(--color-standard-back);

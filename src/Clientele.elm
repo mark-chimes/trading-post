@@ -347,23 +347,64 @@ customerEntryButtons :
 customerEntryButtons command wealthLevel customers =
     List.map
         (\c ->
-            if List.length c.basket > 0 then
-                button
-                    [ Attr.attribute "aria-label" (c.name ++ " (with items in basket) speak to")
-                    , command c
-                    ]
-                    [ text <| c.name ++ " (*)" ]
+            case customers.currentCustomer of
+                Just currentCustomer ->
+                    bar currentCustomer command c
 
-            else
-                button
-                    [ Attr.attribute "aria-label" (c.name ++ " speak to")
-                    , command c
-                    ]
-                    [ text c.name ]
+                Nothing ->
+                    foo command c
         )
     <|
-        List.filter (\c -> c.wealthLevel == wealthLevel)
-            customers.waitingCustomers
+        List.sortBy
+            (\c -> c.name)
+        <|
+            List.filter (\c -> c.wealthLevel == wealthLevel) <|
+                customers.waitingCustomers
+                    ++ (case customers.currentCustomer of
+                            Just cust ->
+                                [ cust ]
+
+                            Nothing ->
+                                []
+                       )
+
+
+bar : Customer -> (Customer -> Attribute msg) -> Customer -> Html msg
+bar currentCustomer command customer =
+    if currentCustomer == customer then
+        if List.length customer.basket > 0 then
+            button
+                [ Attr.disabled True
+                , Attr.attribute "aria-label" (customer.name ++ " currently spoken to (with items in basket) ")
+                ]
+                [ text <| customer.name ++ " (*)" ]
+
+        else
+            button
+                [ Attr.disabled True
+                , Attr.attribute "aria-label" (customer.name ++ " currently spoken to")
+                ]
+                [ text customer.name ]
+
+    else
+        foo command customer
+
+
+foo : (Customer -> Attribute msg) -> Customer -> Html msg
+foo command customer =
+    if List.length customer.basket > 0 then
+        button
+            [ Attr.attribute "aria-label" (customer.name ++ " speak to (with items in basket) ")
+            , command customer
+            ]
+            [ text <| customer.name ++ " (*)" ]
+
+    else
+        button
+            [ Attr.attribute "aria-label" (customer.name ++ " speak to")
+            , command customer
+            ]
+            [ text customer.name ]
 
 
 
@@ -616,8 +657,10 @@ type alias CustomerTemplate =
     }
 
 
+
 -- itemNeed affects their willingness to pay more than the item's base worth
 -- itemQualityDesire affects their willingness to buy a more expensive item of that type (price cap)
+
 
 templateKnight : CustomerTemplate
 templateKnight =
@@ -643,7 +686,7 @@ templateKnight =
 
             else
                 0
-    } 
+    }
 
 
 templateTraveller : CustomerTemplate

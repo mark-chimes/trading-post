@@ -1639,28 +1639,18 @@ storeBlock model =
     , h4 [] [ text "Customers" ]
     , div
         [ Attr.class "customers-box" ]
-      -- [ div [ Attr.class "customers-element" ] [ text "54" ], div [ Attr.class "customers-element" ] [ text "asdf" ] ]
       <|
         customersOfWealthLevel "Rich" Clientele.Rich model.customers
             ++ customersOfWealthLevel "Well-Off" Clientele.WellOff model.customers
             ++ customersOfWealthLevel "Average" Clientele.Average model.customers
             ++ customersOfWealthLevel "Poor" Clientele.Poor model.customers
             ++ customersOfWealthLevel "Destitute" Clientele.Destitute model.customers
-    , br [] []
-    , div []
-        (case model.customers.currentCustomer of
-            Just customer ->
-                [ text ("You are speaking to: " ++ customer.name ++ ".") ]
-
-            Nothing ->
-                []
-        )
     ]
 
 
 customersOfWealthLevel : String -> Clientele.WealthLevel -> Clientele.ClienteleDetails -> List (Html Msg)
 customersOfWealthLevel levelString level customers =
-    [ div [ Attr.class "customers-name-element" ] [ text levelString ]
+    [ div [ Attr.class "customers-name-element" ] [ h4 [ Attr.class "customer-name-element-inner" ] [ text levelString ] ]
     , div [ Attr.class "customers-buttons-element" ] <|
         let
             customersButtons =

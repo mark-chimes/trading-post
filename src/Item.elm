@@ -28,7 +28,7 @@ sword : Item
 sword =
     { uniqueName = "sword"
     , displayName = "sword"
-    , itemWorth = 20
+    , itemWorth = 50
     , itemType = ItemType.weapon
     }
 
@@ -37,7 +37,7 @@ axe : Item
 axe =
     { uniqueName = "axe"
     , displayName = "axe"
-    , itemWorth = 15
+    , itemWorth = 20
     , itemType = ItemType.weapon
     }
 
@@ -55,7 +55,7 @@ fancyChocolate : Item
 fancyChocolate =
     { uniqueName = "fancyChocolate"
     , displayName = "fancy bar of chocolate"
-    , itemWorth = 20
+    , itemWorth = 50
     , itemType = ItemType.food
     }
 
@@ -64,7 +64,7 @@ trailMix : Item
 trailMix =
     { uniqueName = "trailMix"
     , displayName = "packet of trail mix"
-    , itemWorth = 10
+    , itemWorth = 20
     , itemType = ItemType.food
     }
 
@@ -73,7 +73,7 @@ cabbage : Item
 cabbage =
     { uniqueName = "cabbage"
     , displayName = "head of cabbage"
-    , itemWorth = 4
+    , itemWorth = 10
     , itemType = ItemType.food
     }
 

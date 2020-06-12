@@ -440,15 +440,15 @@ maxPrice item customer =
 
 paymentForItemType : ItemType -> Customer -> Float
 paymentForItemType itemType customer =
-    customer.template.itemPreferences itemType
+    customer.template.itemNeed itemType
         * priceMultiplierFromWealth customer.wealthLevel
-        * (1 + 0.5 * toFloat customer.schmoozeCount)
+        * (1 + 0.1 * toFloat customer.schmoozeCount)
         * (1.0 / (1.0 + (toFloat <| customer.numItemsInBasket itemType)))
 
 
 priceCapForItemType : ItemType -> Customer -> Float
 priceCapForItemType itemType customer =
-    (1.0 + 0.1 * toFloat customer.schmoozeCount) * toFloat (priceCapFromWealth customer.wealthLevel * customer.template.basePriceByItemType itemType)
+    (1.0 + 0.2 * toFloat customer.schmoozeCount) * toFloat (priceCapFromWealth customer.wealthLevel * customer.template.itemQualityDesire itemType)
 
 
 priceMultiplierFromWealth : WealthLevel -> Float
@@ -611,59 +611,62 @@ type alias BasePriceByItemType =
 type alias CustomerTemplate =
     { name : String
     , description : String
-    , itemPreferences : ItemPreferences
-    , basePriceByItemType : BasePriceByItemType
+    , itemNeed : ItemPreferences
+    , itemQualityDesire : BasePriceByItemType
     }
 
+
+-- itemNeed affects their willingness to pay more than the item's base worth
+-- itemQualityDesire affects their willingness to buy a more expensive item of that type (price cap)
 
 templateKnight : CustomerTemplate
 templateKnight =
     { name = "Knight"
-    , description = "They are a knight! They'll pay normal price for food and double for weapons."
-    , itemPreferences =
+    , description = "They are a knight! They're really on the lookout for weapon items but might also buy some food."
+    , itemNeed =
         \itemType ->
             if itemType == ItemType.weapon then
-                2.0
+                1.2
 
             else if itemType == ItemType.food then
-                1.0
+                0.8
 
             else
                 0.0
-    , basePriceByItemType =
+    , itemQualityDesire =
         \itemType ->
             if itemType == ItemType.weapon then
                 5
 
             else if itemType == ItemType.food then
-                1
+                2
 
             else
                 0
-    }
+    } 
 
 
 templateTraveller : CustomerTemplate
 templateTraveller =
     { name = "Traveller"
-    , description = "They are a traveller! They'll pay half price for weapons and double for food."
-    , itemPreferences =
+    , description = "They are a traveller! They're looking for food but might need some weapons for the road."
+    , itemNeed =
         \itemType ->
             if itemType == ItemType.weapon then
-                0.5
+                0.9
 
             else if itemType == ItemType.food then
-                2.0
+                1.1
 
             else
                 0.0
-    , basePriceByItemType =
+    , itemQualityDesire =
         \itemType ->
             if itemType == ItemType.weapon then
                 2
 
             else if itemType == ItemType.food then
-                4
+                5
 
             else
                 0
@@ -674,8 +677,8 @@ templateWeird : CustomerTemplate
 templateWeird =
     { name = "Weird"
     , description = "They are weird! You can't tell what they want."
-    , itemPreferences = \_ -> 0.0
-    , basePriceByItemType = \_ -> 0
+    , itemNeed = \_ -> 0.0
+    , itemQualityDesire = \_ -> 0
     }
 
 

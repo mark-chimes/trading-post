@@ -626,10 +626,10 @@ templateKnight =
     , itemNeed =
         \itemType ->
             if itemType == ItemType.weapon then
-                1.2
+                1.3
 
             else if itemType == ItemType.food then
-                0.8
+                1.1
 
             else
                 0.0
@@ -656,7 +656,7 @@ templateTraveller =
                 0.9
 
             else if itemType == ItemType.food then
-                1.1
+                1.3
 
             else
                 0.0

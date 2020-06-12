@@ -1,4 +1,4 @@
-module Item exposing (Item, OfferInfo, PcOfferInfo, axe, cabbage, dagger, fancyChocolate, itemForName, itemsList, sword, trailMix)
+module Item exposing (..)
 
 import Dict
 import ItemType
@@ -28,7 +28,15 @@ sword : Item
 sword =
     { uniqueName = "sword"
     , displayName = "sword"
-    , itemWorth = 50
+    , itemWorth = 60
+    , itemType = ItemType.weapon
+    }
+
+shortsword : Item
+shortsword =
+    { uniqueName = "shortsword"
+    , displayName = "shortsword"
+    , itemWorth = 40
     , itemType = ItemType.weapon
     }
 
@@ -46,16 +54,31 @@ dagger : Item
 dagger =
     { uniqueName = "dagger"
     , displayName = "dagger"
-    , itemWorth = 10
+    , itemWorth = 15
     , itemType = ItemType.weapon
     }
 
+club : Item
+club =
+    { uniqueName = "club"
+    , displayName = "club"
+    , itemWorth = 5
+    , itemType = ItemType.weapon
+    }
+
+porterhouse : Item
+porterhouse =
+    { uniqueName = "porterhouse"
+    , displayName = "porterhouse steak"
+    , itemWorth = 50
+    , itemType = ItemType.food
+    }
 
 fancyChocolate : Item
 fancyChocolate =
     { uniqueName = "fancyChocolate"
     , displayName = "fancy bar of chocolate"
-    , itemWorth = 50
+    , itemWorth = 30
     , itemType = ItemType.food
     }
 
@@ -68,12 +91,21 @@ trailMix =
     , itemType = ItemType.food
     }
 
+vegetables : Item
+vegetables =
+    { uniqueName = "vegetables"
+    , displayName = "packet of mixed vegetables"
+    , itemWorth = 10
+    , itemType = ItemType.food
+    }
+
+
 
 cabbage : Item
 cabbage =
     { uniqueName = "cabbage"
     , displayName = "head of cabbage"
-    , itemWorth = 10
+    , itemWorth = 3
     , itemType = ItemType.food
     }
 
@@ -91,10 +123,14 @@ itemsDict : Dict.Dict String Item
 itemsDict =
     Dict.fromList
         [ ( "sword", sword )
+        , ( "shortsword", shortsword )
         , ( "axe", axe )
         , ( "dagger", dagger )
+        , ( "club", club)
+        , ( "porterhouse", porterhouse )
         , ( "fancyChocolate", fancyChocolate )
         , ( "trailMix", trailMix )
+        , ( "vegetables", vegetables )
         , ( "cabbage", cabbage )
         ]
 

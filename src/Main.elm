@@ -123,11 +123,15 @@ type alias StockQties =
 initStockQty : StockQties
 initStockQty =
     Dict.fromList
-        [ ( Item.sword.uniqueName, 2 )
+        [( Item.sword.uniqueName, 1 )
+        , ( Item.shortsword.uniqueName, 2 )
         , ( Item.axe.uniqueName, 5 )
-        , ( Item.dagger.uniqueName, 10 )
+        , ( Item.dagger.uniqueName, 7 )
+        , ( Item.club.uniqueName, 10 )
+        , ( Item.porterhouse.uniqueName, 1 )
         , ( Item.fancyChocolate.uniqueName, 2 )
         , ( Item.trailMix.uniqueName, 5 )
+        , ( Item.vegetables.uniqueName, 7 )
         , ( Item.cabbage.uniqueName, 10 )
         ]
 

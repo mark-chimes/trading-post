@@ -911,7 +911,7 @@ statsModelMessage model =
     statsTrackMessage model.statsTracker
         ++ " After rent of "
         ++ String.fromInt model.rent
-        ++ " You ended the day with a total of "
+        ++ " gp, you ended the day with a total of "
         ++ String.fromInt model.pcGold
         ++ " gp"
 
@@ -1305,9 +1305,8 @@ uiBasedOnStoreState storeState model =
             div []
                 [ grid
                     [ gridElement <| stockAndOfferBlock model
-                    , gridElement <| lastMessagePanel model
+                    , gridElement <| statsPanel model
                     ]
-                , oneBlock <| skipTomorrowOpenStoreBlock model
                 ]
 
 
@@ -1393,11 +1392,9 @@ itemDisplay offerInfo =
         ++ " gp"
 
 
-skipTomorrowOpenStoreBlock : Model -> List (Html Msg)
+skipTomorrowOpenStoreBlock : Model -> Html Msg
 skipTomorrowOpenStoreBlock _ =
-    [ h3 [] [ text "Wait" ]
-    , basicButton [ onClick <| MainMsg <| OpenStore ] [ text <| "Skip until tomorrow and open store at " ++ String.fromInt openHour ++ " o Clock." ]
-    ]
+    basicButton [ onClick <| MainMsg <| OpenStore ] [ text <| "Skip until tomorrow and open store at " ++ String.fromInt openHour ++ " o Clock." ]
 
 
 customerInfoPanel : Model -> List (Html Msg)
@@ -1594,7 +1591,7 @@ itemListHtmlByType maybeCust itemType model =
 
 priceBoxNoone : ( Item.Item, Int ) -> Html Msg
 priceBoxNoone ( item, quantity ) =
-    div []
+    div [ Attr.class "price-box-noone" ]
         [ text <|
             item.displayName
                 ++ " x"
@@ -1673,6 +1670,14 @@ lastMessagePanel : Model -> List (Html Msg)
 lastMessagePanel model =
     [ h3 [] [ text "Last Event" ]
     , Html.pre [] [ text model.lastMessage ]
+    ]
+
+
+statsPanel : Model -> List (Html Msg)
+statsPanel model =
+    [ h3 [] [ text "Stats for the Day" ]
+    , Html.pre [] [ text model.lastMessage ]
+    , skipTomorrowOpenStoreBlock model
     ]
 
 

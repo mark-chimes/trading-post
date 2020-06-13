@@ -167,6 +167,11 @@ button:hover:active:not([disabled]) {
   grid-column: 11 / 13;
 }
 
+.price-box-noone { 
+  margin: var(--table-text-margin);
+  grid-column: 1 / 13;
+}
+
 .grid-of-convo-headings {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

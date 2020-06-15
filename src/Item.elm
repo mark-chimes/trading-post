@@ -32,6 +32,7 @@ sword =
     , itemType = ItemType.weapon
     }
 
+
 shortsword : Item
 shortsword =
     { uniqueName = "shortsword"
@@ -58,6 +59,7 @@ dagger =
     , itemType = ItemType.weapon
     }
 
+
 club : Item
 club =
     { uniqueName = "club"
@@ -66,6 +68,7 @@ club =
     , itemType = ItemType.weapon
     }
 
+
 porterhouse : Item
 porterhouse =
     { uniqueName = "porterhouse"
@@ -73,6 +76,7 @@ porterhouse =
     , itemWorth = 50
     , itemType = ItemType.food
     }
+
 
 fancyChocolate : Item
 fancyChocolate =
@@ -91,6 +95,7 @@ trailMix =
     , itemType = ItemType.food
     }
 
+
 vegetables : Item
 vegetables =
     { uniqueName = "vegetables"
@@ -98,7 +103,6 @@ vegetables =
     , itemWorth = 10
     , itemType = ItemType.food
     }
-
 
 
 cabbage : Item
@@ -112,7 +116,7 @@ cabbage =
 
 itemsList : List Item
 itemsList =
-    [ sword, axe, dagger, fancyChocolate, trailMix, cabbage ]
+    Dict.values itemsDict
 
 
 
@@ -126,7 +130,7 @@ itemsDict =
         , ( "shortsword", shortsword )
         , ( "axe", axe )
         , ( "dagger", dagger )
-        , ( "club", club)
+        , ( "club", club )
         , ( "porterhouse", porterhouse )
         , ( "fancyChocolate", fancyChocolate )
         , ( "trailMix", trailMix )

@@ -90,7 +90,7 @@ initModel playerName storeName windowWidth =
         , storeName = storeName
         , windowWidth = windowWidth
         , time = openHour * minutesInHour
-        , pcGold = 0
+        , pcGold = 350
         , rent = 300
         , cleanTime = 10
         , customers = Clientele.initCustomers playerName storeName
@@ -149,6 +149,7 @@ type MainMessageType
     | CustomerEntry Clientele.Customer
     | UpdateWaitTime String
     | WaitAwhile
+    | WaitUntilNextCustomer
     | InspectCustomer
     | OpenStore
     | OfferAtOptimalPrice Clientele.Customer Int Item.Item
@@ -228,6 +229,9 @@ update msg mainModel =
                             UpdateWaitTime waitTimeStr ->
                                 ( updateWaitTime waitTimeStr model, Cmd.none )
 
+                            WaitUntilNextCustomer ->
+                                ( waitUntilNextCustomer model, Cmd.none )
+
                             WaitAwhile ->
                                 ( waitAwhile model, Cmd.none )
 
@@ -289,7 +293,7 @@ purchaseItem item model =
                     ++ " You now have "
                     ++ String.fromInt (Maybe.withDefault -1 (Dict.get item.uniqueName mdl.stockQty))
                     ++ " of this item and a total of "
-                    ++ String.fromInt model.pcGold
+                    ++ String.fromInt mdl.pcGold
                     ++ " gp. "
                 )
                 mdl
@@ -648,6 +652,19 @@ cleanStore model =
 
     else
         updateConversationWithActionMessage (cleanStoreMessage model.cleanTime) <| incrementTimeWithMinOpen model.cleanTime <| model
+
+
+waitUntilNextCustomer : Model -> Model
+waitUntilNextCustomer model =
+    let
+        waitingTime =
+            model.timeOfNextCustomer - model.time
+    in
+    if (model.storeState == Open) && wouldStoreClose waitingTime model.time then
+        closeStore "You wait for more customers, but no more enter. Those that are in the store all leave." model
+
+    else
+        updateConversationWithActionMessage (waitForNextCustomerMessage waitingTime) <| incrementTimeWithMinOpen waitingTime <| model
 
 
 waitAwhile : Model -> Model
@@ -1077,6 +1094,11 @@ calculateTimeOfNextCustomer newTime oldTimeOfNextCust =
             oldTimeOfNextCust + rounds * timeBetweenCustomersMins
     in
     ( newTimeOfNextCust, rounds )
+
+
+waitForNextCustomerMessage : Int -> String
+waitForNextCustomerMessage waitingTimeMin =
+    "You sit on your ass for " ++ String.fromInt waitingTimeMin ++ " minutes until a customer enters."
 
 
 waitAwhileMessage : Int -> String
@@ -1512,21 +1534,26 @@ convertMessageListToGrid listOfPairs =
 stockAndOfferBlock : Model -> List (Html Msg)
 stockAndOfferBlock model =
     [ h3 [] [ text "Stock and Offer" ]
-    , div [] <| priceBoxes model.customers.currentCustomer model
     , div [] <|
         case model.storeState of
             Closed ->
-                h4 [] [ text "Purchase" ]
-                    :: List.map purchaseItemButton Item.itemsList
+                [ h4 [] [ text "Gold" ]
+                , div [] [ text <| String.fromInt model.pcGold ]
+                ]
 
             Open ->
                 []
+    , div [] <| priceBoxes model.customers.currentCustomer model
     ]
 
 
-purchaseItemButton : Item -> Html Msg
-purchaseItemButton item =
-    basicButton [ onClick <| MainMsg <| PurchaseItem item ]
+
+-- TODO Aria
+
+
+purchaseItemButton : Int -> Item -> Html Msg
+purchaseItemButton pcGold item =
+    basicButton [ Attr.disabled (pcGold < item.itemWorth), Attr.class "purchase-item-button", onClick <| MainMsg <| PurchaseItem item ]
         [ text <|
             item.displayName
                 ++ " for "
@@ -1552,8 +1579,7 @@ priceBoxes maybeCust model =
 priceBoxByType : Maybe Customer -> ItemType -> Model -> List (Html Msg)
 priceBoxByType maybeCust itemType model =
     h4 [ Attr.class "stock-heading" ] [ text <| ItemType.toString itemType ]
-        :: priceHeadingsBox
-        ++ itemListHtmlByType
+        :: itemListHtmlByType
             maybeCust
             itemType
             model
@@ -1561,45 +1587,49 @@ priceBoxByType maybeCust itemType model =
 
 itemListHtmlByType : Maybe Customer -> ItemType -> Model -> List (Html Msg)
 itemListHtmlByType maybeCust itemType model =
-    (case maybeCust of
+    case maybeCust of
         Nothing ->
-            List.map priceBoxNoone
+            List.map (priceBoxNoone model.pcGold) <|
+                itemListWithQuantities itemType model
 
         Just customer ->
-            List.concatMap (priceBoxCustomer customer)
-    )
-    <|
-        List.reverse <|
-            List.sortBy (\( item, _ ) -> item.itemWorth) <|
-                List.filter (\( item, _ ) -> item.itemType == itemType) <|
-                    List.filterMap
-                        (\( maybeItem, qty ) ->
-                            case maybeItem of
-                                Just item ->
-                                    Just ( item, qty )
+            priceHeadingsBox
+                ++ (List.concatMap (priceBoxCustomer customer) <|
+                        itemListWithQuantities itemType model
+                   )
 
-                                Nothing ->
-                                    Nothing
+
+itemListWithQuantities : ItemType -> Model -> List ( Item, Int )
+itemListWithQuantities itemType model =
+    List.reverse <|
+        List.sortBy (\( item, _ ) -> item.itemWorth) <|
+            List.filter (\( item, _ ) -> item.itemType == itemType) <|
+                List.filterMap
+                    (\( maybeItem, qty ) ->
+                        case maybeItem of
+                            Just item ->
+                                Just ( item, qty )
+
+                            Nothing ->
+                                Nothing
+                    )
+                <|
+                    List.map
+                        (\( itemName, qty ) ->
+                            ( Item.itemForName itemName, qty )
                         )
                     <|
-                        List.map
-                            (\( itemName, qty ) ->
-                                ( Item.itemForName itemName, qty )
-                            )
-                        <|
-                            Dict.toList model.stockQty
+                        Dict.toList model.stockQty
 
 
-priceBoxNoone : ( Item.Item, Int ) -> Html Msg
-priceBoxNoone ( item, quantity ) =
+priceBoxNoone : Int -> ( Item.Item, Int ) -> Html Msg
+priceBoxNoone pcGold ( item, quantity ) =
     div [ Attr.class "price-box-noone" ]
-        [ text <|
-            item.displayName
-                ++ " x"
-                ++ String.fromInt quantity
-                ++ " (cost "
-                ++ String.fromInt item.itemWorth
-                ++ " gp)"
+        [ div [ Attr.class "purchase-item-qty" ]
+            [ text <|
+                String.fromInt quantity
+            ]
+        , purchaseItemButton pcGold item
         ]
 
 
@@ -1629,7 +1659,7 @@ priceBoxCustomer customer ( item, quantity ) =
         ]
     , basicButton
         [ Attr.class "item-purchase"
-        , Attr.disabled <| (price - item.itemWorth) <= 0
+        , Attr.disabled <| (price < item.itemWorth)
         , onClick <| MainMsg <| OfferAtOptimalPrice customer price item
         , Attr.attribute "aria-label" <|
             " Offer "
@@ -1655,6 +1685,7 @@ storeBlock : Model -> List (Html Msg)
 storeBlock model =
     [ h3 [] [ text "Store" ]
     , storeInfo model
+    , basicButton [ onClick <| MainMsg <| WaitUntilNextCustomer ] [ text <| "Wait for next customer" ]
     , h4 [] [ text "Customers" ]
     , div
         [ Attr.class "customers-box" ]

@@ -112,7 +112,6 @@ updateCustomerBasket : Item.OfferInfo -> Customer -> Customer
 updateCustomerBasket offerInfo customer =
     { customer
         | basket = customer.basket ++ [ offerInfo ]
-        , numItemsInBasket = incrementCustomerNumItemsInBasket offerInfo.item.itemType customer.numItemsInBasket
         , conversation = customer.conversation ++ [ customerSaleConvoMessage offerInfo ]
     }
 
@@ -122,16 +121,6 @@ customerSaleConvoMessage offerInfo =
     ( "One " ++ offerInfo.item.displayName ++ "! For you, only " ++ String.fromInt offerInfo.pcOffer ++ " gold!"
     , "A " ++ offerInfo.item.displayName ++ " for " ++ String.fromInt offerInfo.pcOffer ++ " sounds like a good deal."
     )
-
-
-incrementCustomerNumItemsInBasket : ItemType -> (ItemType.ItemType -> Int) -> (ItemType.ItemType -> Int)
-incrementCustomerNumItemsInBasket incrementedItem numItemsInBasket =
-    \itemType ->
-        if itemType == incrementedItem then
-            numItemsInBasket itemType + 1
-
-        else
-            numItemsInBasket itemType
 
 
 updateCurrentCustomerGold : Int -> ClienteleDetails -> ClienteleDetails
@@ -429,7 +418,6 @@ type alias Customer =
     , descriptionMessage : String
     , inspectedState : InspectedState
     , template : CustomerTemplate
-    , numItemsInBasket : ItemType -> Int
     , conversation : List ( String, String )
     }
 
@@ -459,7 +447,6 @@ createCustomer playerName storeName ci =
     , descriptionMessage = ci.descriptionMessage
     , inspectedState = Inspected
     , template = ci.template
-    , numItemsInBasket = \_ -> 0
     , conversation = resetConversation playerName storeName ci.name
     }
 
@@ -484,7 +471,17 @@ paymentForItemType itemType customer =
     customer.template.itemNeed itemType
         * priceMultiplierFromWealth customer.wealthLevel
         * (1 + 0.1 * toFloat customer.schmoozeCount)
-        * (1.0 / (1.0 + (toFloat <| customer.numItemsInBasket itemType)))
+        * (1.0 / (1.0 + 0.25 * (toFloat <| numItemsInBasket itemType customer)))
+
+
+numItemsInBasket : ItemType -> Customer -> Int
+numItemsInBasket itemType customer =
+    List.length <|
+        List.filter (\i -> i.item.itemType == itemType) customer.basket
+
+
+
+-- TODO
 
 
 priceCapForItemType : ItemType -> Customer -> Float
@@ -669,10 +666,10 @@ templateKnight =
     , itemNeed =
         \itemType ->
             if itemType == ItemType.weapon then
-                1.3
+                1.5
 
             else if itemType == ItemType.food then
-                1.1
+                1.2
 
             else
                 0.0
@@ -696,10 +693,10 @@ templateTraveller =
     , itemNeed =
         \itemType ->
             if itemType == ItemType.weapon then
-                0.9
+                1.0
 
             else if itemType == ItemType.food then
-                1.3
+                1.8
 
             else
                 0.0

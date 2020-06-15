@@ -473,7 +473,7 @@ determineIfSale customer offerInfo =
         NoMoney
 
     else if offer > Clientele.maxPrice offerInfo.item customer then
-        if customer.numItemsInBasket offerInfo.item.itemType == 0 then
+        if Clientele.numItemsInBasket offerInfo.item.itemType customer == 0 then
             BadDeal
 
         else
@@ -1612,6 +1612,7 @@ priceBoxCustomer customer ( item, quantity ) =
     , div [ Attr.class "item-name" ] [ text item.displayName ]
     , div [ Attr.class "item-qty" ]
         [ text <| String.fromInt quantity ]
+    , div [ Attr.attribute "aria-label" <| "cost " ++ String.fromInt item.itemWorth ++ " gp", Attr.class "item-cost" ] [ text <| String.fromInt item.itemWorth ++ " gp" ]
     , basicButton
         [ Attr.class "item-purchase"
         , onClick <| MainMsg <| OfferAtOptimalPrice customer price item
@@ -1629,7 +1630,6 @@ priceBoxCustomer customer ( item, quantity ) =
             String.fromInt price
                 ++ " gp"
         ]
-    , div [ Attr.attribute "aria-label" <| "cost " ++ String.fromInt item.itemWorth ++ " gp", Attr.class "item-cost" ] [ text <| String.fromInt item.itemWorth ++ " gp" ]
     ]
 
 

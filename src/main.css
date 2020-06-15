@@ -159,13 +159,16 @@ button:hover:active:not([disabled]) {
   margin: var(--table-text-margin);
   grid-column: 8 / 9;
 }
-.item-purchase { 
-  grid-column: 9 / 11;
-}
+
 .item-cost { 
   margin: var(--table-text-margin);
+  grid-column: 9 / 11;
+}
+
+.item-purchase { 
   grid-column: 11 / 13;
 }
+
 
 .price-box-noone { 
   margin: var(--table-text-margin);

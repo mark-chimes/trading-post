@@ -1552,7 +1552,8 @@ priceBoxes maybeCust model =
 priceBoxByType : Maybe Customer -> ItemType -> Model -> List (Html Msg)
 priceBoxByType maybeCust itemType model =
     h4 [ Attr.class "stock-heading" ] [ text <| ItemType.toString itemType ]
-        :: itemListHtmlByType
+        :: priceHeadingsBox
+        ++ itemListHtmlByType
             maybeCust
             itemType
             model
@@ -1602,6 +1603,17 @@ priceBoxNoone ( item, quantity ) =
         ]
 
 
+priceHeadingsBox : List (Html Msg)
+priceHeadingsBox =
+    [ div [ Attr.class "item-hint" ] [ text "Hint" ]
+    , div [ Attr.class "item-name" ] [ text "Item" ]
+    , div [ Attr.class "item-qty" ] [ text "Qty" ]
+    , div [ Attr.class "item-cost" ] [ text "Cst" ]
+    , div [ Attr.class "item-profit" ] [ text "Pft" ]
+    , div [ Attr.class "item-purchase" ] [ text "Offer" ]
+    ]
+
+
 priceBoxCustomer : Clientele.Customer -> ( Item.Item, Int ) -> List (Html Msg)
 priceBoxCustomer customer ( item, quantity ) =
     let
@@ -1610,25 +1622,31 @@ priceBoxCustomer customer ( item, quantity ) =
     in
     [ basicButton [ Attr.class "item-hint", Attr.attribute "aria-label" "Hint", onClick <| MainMsg <| GetHintForItem customer item ] [ text "?" ]
     , div [ Attr.class "item-name" ] [ text item.displayName ]
-    , div [ Attr.class "item-qty" ]
-        [ text <| String.fromInt quantity ]
-    , div [ Attr.attribute "aria-label" <| "cost " ++ String.fromInt item.itemWorth ++ " gp", Attr.class "item-cost" ] [ text <| String.fromInt item.itemWorth ++ " gp" ]
+    , div [ Attr.class "item-qty" ] [ text <| String.fromInt quantity ]
+    , div [ Attr.attribute "aria-label" <| "cost " ++ String.fromInt item.itemWorth ++ "", Attr.class "item-cost" ] [ text <| String.fromInt item.itemWorth ++ "" ]
+    , div [ Attr.class "item-profit" ]
+        [ text <| String.fromInt (price - item.itemWorth)
+        ]
     , basicButton
         [ Attr.class "item-purchase"
+        , Attr.disabled <| (price - item.itemWorth) <= 0
         , onClick <| MainMsg <| OfferAtOptimalPrice customer price item
         , Attr.attribute "aria-label" <|
             " Offer "
                 ++ item.displayName
                 ++ " for "
                 ++ String.fromInt price
-                ++ " gp"
-                ++ " (cost "
+                ++ ""
+                ++ ", cost "
                 ++ String.fromInt item.itemWorth
-                ++ " gp)"
+                ++ ", "
+                ++ "profit "
+                ++ String.fromInt (price - item.itemWorth)
+                ++ "."
         ]
         [ text <|
             String.fromInt price
-                ++ " gp"
+                ++ " gp "
         ]
     ]
 

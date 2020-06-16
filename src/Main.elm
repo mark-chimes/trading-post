@@ -1326,7 +1326,7 @@ uiBasedOnStoreState storeState model =
         Closed ->
             div []
                 [ grid
-                    [ gridElement <| stockAndOfferBlock model
+                    [ gridElement <| purchaseItemsBlock model
                     , gridElement <| statsPanel model
                     ]
                 ]
@@ -1531,18 +1531,23 @@ convertMessageListToGrid listOfPairs =
         listOfPairs
 
 
+
+-- TODO Finish this
+
+
+purchaseItemsBlock : Model -> List (Html Msg)
+purchaseItemsBlock model =
+    [ div []
+        [ h4 [] [ text "Gold" ]
+        , div [] [ text <| String.fromInt model.pcGold ]
+        , div [ Attr.class "stock-table" ] <| List.concatMap (\itemType -> sellAfterHours itemType model) ItemType.itemTypesEnum
+        ]
+    ]
+
+
 stockAndOfferBlock : Model -> List (Html Msg)
 stockAndOfferBlock model =
     [ h3 [] [ text "Stock and Offer" ]
-    , div [] <|
-        case model.storeState of
-            Closed ->
-                [ h4 [] [ text "Gold" ]
-                , div [] [ text <| String.fromInt model.pcGold ]
-                ]
-
-            Open ->
-                []
     , div [] <| priceBoxes model.customers.currentCustomer model
     ]
 
@@ -1564,39 +1569,78 @@ purchaseItemButton pcGold item =
 
 priceBoxes : Maybe Customer -> Model -> List (Html Msg)
 priceBoxes maybeCust model =
-    (div [ Attr.class "stock-table" ] <| List.concatMap (\itemType -> priceBoxByType maybeCust itemType model) ItemType.itemTypesEnum)
-        :: (case maybeCust of
-                Just _ ->
-                    [ h4 [] [ text "Hints" ]
-                    , Html.pre [] [ text model.hintMessage ]
-                    ]
+    case maybeCust of
+        Just customer ->
+            (div [ Attr.class "stock-table" ] <| List.concatMap (\itemType -> priceBoxByType customer itemType model) ItemType.itemTypesEnum)
+                :: [ h4 [] [ text "Hints" ]
+                   , Html.pre [] [ text model.hintMessage ]
+                   ]
 
-                Nothing ->
-                    []
+        Nothing ->
+            [ div [ Attr.class "stock-table" ] <| List.concatMap (\itemType -> displayItemsDuringHours itemType model) ItemType.itemTypesEnum ]
+
+
+sellAfterHours : ItemType -> Model -> List (Html Msg)
+sellAfterHours itemType model =
+    List.map (purchaseItemsBox model.pcGold) <|
+        itemListWithQuantities itemType model
+
+
+displayItemsDuringHours : ItemType -> Model -> List (Html Msg)
+displayItemsDuringHours itemType model =
+    h4 [ Attr.class "stock-heading" ] [ text <| ItemType.toString itemType ]
+        :: displayItemsHeadings
+        ++ (List.map displayItemsBox <|
+                itemListWithQuantities itemType model
            )
 
 
-priceBoxByType : Maybe Customer -> ItemType -> Model -> List (Html Msg)
-priceBoxByType maybeCust itemType model =
+displayItemsHeadings : List (Html Msg)
+displayItemsHeadings =
+    [ div [ Attr.class "quantity-display" ]
+        [ text "Qty."
+        ]
+    , div [ Attr.class "name-display" ]
+        [ text "Name"
+        ]
+    , div [ Attr.class "value-display" ]
+        [ text "Purchase Price" ]
+    ]
+
+
+displayItemsBox : ( Item.Item, Int ) -> Html Msg
+displayItemsBox ( item, quantity ) =
+    div [ Attr.class "price-box-display" ]
+        [ div [ Attr.class "quantity-display" ]
+            --  Attr.attribute "grid-column" "1/2" ]
+            [ text <|
+                String.fromInt quantity
+            ]
+        , div [ Attr.class "name-display" ]
+            -- Attr.attribute "grid-column" "2/7" ]
+            [ text item.displayName
+            ]
+        , div [ Attr.class "value-display" ]
+            --Attr.attribute "grid-column" "7/8" ]
+            [ text <| String.fromInt item.itemWorth ++ " gp" ]
+        ]
+
+
+priceBoxByType : Customer -> ItemType -> Model -> List (Html Msg)
+priceBoxByType customer itemType model =
     h4 [ Attr.class "stock-heading" ] [ text <| ItemType.toString itemType ]
         :: itemListHtmlByType
-            maybeCust
+            customer
             itemType
             model
 
 
-itemListHtmlByType : Maybe Customer -> ItemType -> Model -> List (Html Msg)
-itemListHtmlByType maybeCust itemType model =
-    case maybeCust of
-        Nothing ->
-            List.map (priceBoxNoone model.pcGold) <|
+itemListHtmlByType : Customer -> ItemType -> Model -> List (Html Msg)
+itemListHtmlByType customer itemType model =
+    priceHeadingsBox
+        ++ (List.concatMap (priceBoxCustomer customer) <|
                 itemListWithQuantities itemType model
-
-        Just customer ->
-            priceHeadingsBox
-                ++ (List.concatMap (priceBoxCustomer customer) <|
-                        itemListWithQuantities itemType model
-                   )
+           )
 
 
 itemListWithQuantities : ItemType -> Model -> List ( Item, Int )
@@ -1622,9 +1666,9 @@ itemListWithQuantities itemType model =
                         Dict.toList model.stockQty
 
 
-priceBoxNoone : Int -> ( Item.Item, Int ) -> Html Msg
-priceBoxNoone pcGold ( item, quantity ) =
-    div [ Attr.class "price-box-noone" ]
+purchaseItemsBox : Int -> ( Item.Item, Int ) -> Html Msg
+purchaseItemsBox pcGold ( item, quantity ) =
+    div [ Attr.class "price-box-purchase" ]
         [ div [ Attr.class "purchase-item-qty" ]
             [ text <|
                 String.fromInt quantity

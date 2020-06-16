@@ -173,13 +173,33 @@ button:hover:active:not([disabled]) {
 }
 
 
-.price-box-noone { 
+.price-box-display { 
   margin: var(--table-text-margin);
   grid-column: 1 / 13;
   display: grid;
   grid-template-columns: repeat(12, 1fr)
 }
 
+.quantity-display { 
+  grid-column: 1 / 3;
+}
+
+.name-display { 
+  grid-column: 3 / 11;
+}
+
+.value-display { 
+  grid-column: 11 / 13;
+}
+
+.price-box-purchase { 
+  margin: var(--table-text-margin);
+  grid-column: 1 / 13;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr)
+}
+
+ 
 .purchase-item-qty { 
   grid-column: 1 / 3;
 }

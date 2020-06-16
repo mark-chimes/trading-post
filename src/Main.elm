@@ -1558,12 +1558,9 @@ stockAndOfferBlock model =
 
 purchaseItemButton : Int -> Item -> Html Msg
 purchaseItemButton pcGold item =
-    basicButton [ Attr.disabled (pcGold < item.itemWorth), Attr.class "purchase-item-button", onClick <| MainMsg <| PurchaseItem item ]
+    basicButton [ Attr.disabled (pcGold < item.itemWorth), Attr.class "name-display", onClick <| MainMsg <| PurchaseItem item ]
         [ text <|
             item.displayName
-                ++ " for "
-                ++ String.fromInt item.itemWorth
-                ++ " gp"
         ]
 
 
@@ -1582,8 +1579,11 @@ priceBoxes maybeCust model =
 
 sellAfterHours : ItemType -> Model -> List (Html Msg)
 sellAfterHours itemType model =
-    List.map (purchaseItemsBox model.pcGold) <|
-        itemListWithQuantities itemType model
+    h4 [ Attr.class "stock-heading" ] [ text <| ItemType.toString itemType ]
+        :: displayItemsHeadings
+        ++ (List.map (purchaseItemsBox model.pcGold) <|
+                itemListWithQuantities itemType model
+           )
 
 
 displayItemsDuringHours : ItemType -> Model -> List (Html Msg)
@@ -1612,16 +1612,13 @@ displayItemsBox : ( Item.Item, Int ) -> Html Msg
 displayItemsBox ( item, quantity ) =
     div [ Attr.class "price-box-display" ]
         [ div [ Attr.class "quantity-display" ]
-            --  Attr.attribute "grid-column" "1/2" ]
             [ text <|
                 String.fromInt quantity
             ]
         , div [ Attr.class "name-display" ]
-            -- Attr.attribute "grid-column" "2/7" ]
             [ text item.displayName
             ]
         , div [ Attr.class "value-display" ]
-            --Attr.attribute "grid-column" "7/8" ]
             [ text <| String.fromInt item.itemWorth ++ " gp" ]
         ]
 
@@ -1669,11 +1666,13 @@ itemListWithQuantities itemType model =
 purchaseItemsBox : Int -> ( Item.Item, Int ) -> Html Msg
 purchaseItemsBox pcGold ( item, quantity ) =
     div [ Attr.class "price-box-purchase" ]
-        [ div [ Attr.class "purchase-item-qty" ]
+        [ div [ Attr.class "quantity-display" ]
             [ text <|
                 String.fromInt quantity
             ]
         , purchaseItemButton pcGold item
+        , div [ Attr.class "value-display" ]
+            [ text <| String.fromInt item.itemWorth ++ " gp" ]
         ]
 
 

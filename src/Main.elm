@@ -1,4 +1,4 @@
-module Main exposing (Model, Msg(..), calculateTimeOfNextCustomer, dayOfYear, failOnSaleNoMoney, hourOfDay, hoursInDay, incrementTimeWithMinOpen, init, main, purchaseItem, purchaseString, storyBlock, totalSaleValueOfBasket, update, view)
+port module Main exposing (Model, Msg(..), calculateTimeOfNextCustomer, dayOfYear, failOnSaleNoMoney, hourOfDay, hoursInDay, incrementTimeWithMinOpen, init, main, purchaseItem, purchaseString, storyBlock, totalSaleValueOfBasket, update, view)
 
 import Browser
 import Clientele exposing (Customer)
@@ -161,6 +161,9 @@ type OtherMessageType
     = UpdateYourName String
     | UpdateStoreName String
     | StartGame
+    | StartSoundTest
+    | StopSoundTest
+    | SetAudioState Bool
 
 
 type Msg
@@ -190,6 +193,17 @@ update msg mainModel =
 
                 StartGame ->
                     ( startGame mainModel, Cmd.none )
+
+                StartSoundTest ->
+                    ( mainModel, startSound 0 )
+
+                StopSoundTest ->
+                    ( mainModel, stopSound 0 )
+
+                SetAudioState shouldPlay ->
+                    ( mainModel
+                    , setShouldPlay shouldPlay
+                    )
 
         MainMsg mainMsg ->
             case mainModel.model of
@@ -246,6 +260,19 @@ update msg mainModel =
 
                             PurchaseItem item ->
                                 ( purchaseItem item model, Cmd.none )
+
+
+
+-- port logger : String -> Cmd msg
+
+
+port startSound : Int -> Cmd msg
+
+
+port stopSound : Int -> Cmd msg
+
+
+port setShouldPlay : Bool -> Cmd msg
 
 
 setModel : MainModel -> ( Model, Cmd Msg ) -> ( MainModel, Cmd Msg )
@@ -1298,6 +1325,13 @@ startGameView mainModel =
         , div [ Attr.class "start-game-button-container" ]
             [ basicButton [ Attr.class "start-game-button", onClick (OtherMsg StartGame) ] [ text "Start Game" ]
             ]
+        , div [] []
+        , h3 [] [ text "Settings" ]
+        , basicButton [ onClick (OtherMsg <| SetAudioState True) ] [ text "Activate Sounds" ]
+        , basicButton [ onClick (OtherMsg <| SetAudioState False) ] [ text "Deactivate Sounds" ]
+        , div [] []
+        , basicButton [ onClick (OtherMsg StartSoundTest) ] [ text "Start Sound Test" ]
+        , basicButton [ onClick (OtherMsg StopSoundTest) ] [ text "Stop Sound Test" ]
         ]
     ]
 

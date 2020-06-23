@@ -1,4 +1,4 @@
-port module Main exposing (Model, Msg(..), calculateTimeOfNextCustomer, dayOfYear, failOnSaleNoMoney, hourOfDay, hoursInDay, incrementTimeWithMinOpen, init, main, purchaseItem, purchaseString, storyBlock, totalSaleValueOfBasket, update, view)
+port module Main exposing (Model, Msg(..), dayOfYear, failOnSaleNoMoney, hourOfDay, hoursInDay, incrementTimeWithMinOpen, init, main, purchaseItem, purchaseString, storyBlock, totalSaleValueOfBasket, update, view)
 
 import Browser
 import Clientele exposing (Customer)
@@ -47,11 +47,6 @@ type alias Model =
     , statsTracker : StatsTracker
     , stockQty : StockQties
     }
-
-
-type GameState
-    = Intro
-    | Started
 
 
 type alias StatsTracker =
@@ -1093,7 +1088,7 @@ addCustomers : Time -> Time -> Clientele.ClienteleDetails -> ( Time, Clientele.C
 addCustomers newTime oldTimeOfNextCust customers =
     let
         ( newTimeOfNextCust, numRounds ) =
-            calculateTimeOfNextCustomer newTime oldTimeOfNextCust
+            calculateNewCustomers newTime oldTimeOfNextCust 0
     in
     ( newTimeOfNextCust, loopClienteleNewWaitingCustomer customers numRounds )
 
@@ -1107,20 +1102,41 @@ loopClienteleNewWaitingCustomer customers roundNum =
         customers
 
 
-calculateTimeOfNextCustomer : Time -> Time -> ( Time, Int )
-calculateTimeOfNextCustomer newTime oldTimeOfNextCust =
-    let
-        rounds =
-            if newTime >= oldTimeOfNextCust then
-                ((newTime - oldTimeOfNextCust) // timeBetweenCustomersMins) + 1
 
-            else
-                0
+{-
+   calculateTimeOfNextCustomer : Time -> Time -> ( Time, Int )
+   calculateTimeOfNextCustomer newTime oldTimeOfNextCust =
+       let
+           rounds =
+               if newTime >= oldTimeOfNextCust then
+                   ((newTime - oldTimeOfNextCust) // timeBetweenCustomersMins) + 1
 
-        newTimeOfNextCust =
-            oldTimeOfNextCust + rounds * timeBetweenCustomersMins
-    in
-    ( newTimeOfNextCust, rounds )
+               else
+                   0
+
+           newTimeOfNextCust =
+               oldTimeOfNextCust + rounds * timeBetweenCustomersMins
+       in
+       ( newTimeOfNextCust, rounds )
+-}
+
+
+calculateNewCustomers : Time -> Time -> Int -> ( Time, Int )
+calculateNewCustomers finalTime lastTimeOfNextCust roundsSoFar =
+    if lastTimeOfNextCust > finalTime then
+        ( lastTimeOfNextCust, roundsSoFar )
+
+    else
+        let
+            nextCustomerTime =
+                calculateNextTimeOfCustomer lastTimeOfNextCust
+        in
+        calculateNewCustomers finalTime nextCustomerTime (roundsSoFar + 1)
+
+
+calculateNextTimeOfCustomer : Time -> Time
+calculateNextTimeOfCustomer lastTimeOfNextCust =
+    lastTimeOfNextCust + timeBetweenCustomersMins
 
 
 waitForNextCustomerMessage : Int -> String

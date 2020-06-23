@@ -1359,13 +1359,16 @@ startGameView mainModel =
         , div [ Attr.class "start-game-button-container" ]
             [ basicButton [ Attr.class "start-game-button", onClick (OtherMsg StartGame) ] [ text "Start Game" ]
             ]
-        , div [] []
-        , h3 [] [ text "Settings" ]
-        , basicButton [ onClick (OtherMsg <| SetAudioState True) ] [ text "Activate Sounds" ]
-        , basicButton [ onClick (OtherMsg <| SetAudioState False) ] [ text "Deactivate Sounds" ]
-        , div [] []
-        , basicButton [ onClick (OtherMsg StartSoundTest) ] [ text "Start Sound Test" ]
-        , basicButton [ onClick (OtherMsg StopSoundTest) ] [ text "Stop Sound Test" ]
+
+        {- Sound settings - reactivate when there are sounds to play.
+           , div [] []
+           , h3 [] [ text "Settings" ]
+           , basicButton [ onClick (OtherMsg <| SetAudioState True) ] [ text "Activate Sounds" ]
+           , basicButton [ onClick (OtherMsg <| SetAudioState False) ] [ text "Deactivate Sounds" ]
+           , div [] []
+           , basicButton [ onClick (OtherMsg StartSoundTest) ] [ text "Start Sound Test" ]
+           , basicButton [ onClick (OtherMsg StopSoundTest) ] [ text "Stop Sound Test" ]
+        -}
         ]
     ]
 

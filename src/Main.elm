@@ -1,4 +1,4 @@
-port module Main exposing (Model, Msg(..), dayOfYear, failOnSaleNoMoney, hourOfDay, hoursInDay, incrementTimeWithMinOpen, init, main, purchaseItem, purchaseString, storyBlock, totalSaleValueOfBasket, update, view)
+port module Main exposing (Model, Msg(..), dayOfYear, failOnSaleNoMoney, hourOfDay, hoursInDay, incrementTimeWithMinOpen, init, main, purchaseItem, purchaseString, storyBlock, totalSaleValueOfBasket, update, updateStoreCustomersAndStockForClose, view)
 
 import Browser
 import Clientele exposing (Customer)
@@ -94,7 +94,7 @@ initModel playerName storeName windowWidth =
         , hintMessage = "Click the hint button (question-mark) next to the item if you need a hint."
         , conversation = []
         , waitTime = 0
-        , timeOfNextCustomer = (openHour * 60) + timeBetweenCustomersMins
+        , timeOfNextCustomer = (openHour * 60) + calculateCustomerWaitTime openHour
         , storeState = Open
         , statsTracker = initStatsTracker
         , stockQty = initStockQty
@@ -897,23 +897,25 @@ closeStore : String -> Model -> Model
 closeStore closeMessage model =
     (\mdl -> updateConversationWithActionMessage (statsModelMessage mdl) mdl) <|
         takeRent <|
-            (\mdl ->
-                { mdl
-                    | storeState = Closed
-                    , customers = Clientele.exitAllCustomers model.playerName model.storeName model.customers
-                    , stockQty =
-                        case mdl.customers.currentCustomer of
-                            Just customer ->
-                                restockWith mdl.stockQty customer.basket
-
-                            Nothing ->
-                                mdl.stockQty
-                }
-            )
-            <|
+            updateStoreCustomersAndStockForClose <|
                 recordNeglectedCustomers <|
                     updateConversationWithActionMessage closeMessage <|
                         incrementTimeToTimeWhilstOpen (calculateClosingTime model.time) model
+
+
+updateStoreCustomersAndStockForClose : Model -> Model
+updateStoreCustomersAndStockForClose model =
+    { model
+        | storeState = Closed
+        , customers = Clientele.exitAllCustomers model.playerName model.storeName model.customers
+        , stockQty =
+            case model.customers.currentCustomer of
+                Just customer ->
+                    restockWith model.stockQty customer.basket
+
+                Nothing ->
+                    model.stockQty
+    }
 
 
 takeRent : Model -> Model
@@ -1102,25 +1104,6 @@ loopClienteleNewWaitingCustomer customers roundNum =
         customers
 
 
-
-{-
-   calculateTimeOfNextCustomer : Time -> Time -> ( Time, Int )
-   calculateTimeOfNextCustomer newTime oldTimeOfNextCust =
-       let
-           rounds =
-               if newTime >= oldTimeOfNextCust then
-                   ((newTime - oldTimeOfNextCust) // timeBetweenCustomersMins) + 1
-
-               else
-                   0
-
-           newTimeOfNextCust =
-               oldTimeOfNextCust + rounds * timeBetweenCustomersMins
-       in
-       ( newTimeOfNextCust, rounds )
--}
-
-
 calculateNewCustomers : Time -> Time -> Int -> ( Time, Int )
 calculateNewCustomers finalTime lastTimeOfNextCust roundsSoFar =
     if lastTimeOfNextCust > finalTime then
@@ -1136,7 +1119,42 @@ calculateNewCustomers finalTime lastTimeOfNextCust roundsSoFar =
 
 calculateNextTimeOfCustomer : Time -> Time
 calculateNextTimeOfCustomer lastTimeOfNextCust =
-    lastTimeOfNextCust + timeBetweenCustomersMins
+    lastTimeOfNextCust + calculateCustomerWaitTime (hourOfDay lastTimeOfNextCust)
+
+
+
+-- Takes in time in an hour and outputs as a minute
+
+
+calculateCustomerWaitTime : Int -> Int
+calculateCustomerWaitTime hour =
+    case hour of
+        9 ->
+            60
+
+        10 ->
+            60
+
+        11 ->
+            30
+
+        12 ->
+            30
+
+        13 ->
+            15
+
+        14 ->
+            30
+
+        15 ->
+            60
+
+        16 ->
+            60
+
+        _ ->
+            1
 
 
 waitForNextCustomerMessage : Int -> String
@@ -1817,7 +1835,9 @@ lastMessagePanel model =
 
 statsPanel : Model -> List (Html Msg)
 statsPanel model =
-    [ h3 [] [ text "Stats for the Day" ]
+    [ h3 [] [ text "Time" ]
+    , div [] [ text <| displayTime model.time ]
+    , h3 [] [ text "Stats for the Day" ]
     , Html.pre [] [ text model.lastMessage ]
     , skipTomorrowOpenStoreBlock model
     ]

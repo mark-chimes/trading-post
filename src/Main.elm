@@ -46,6 +46,8 @@ type alias Model =
     , storeState : StoreState
     , statsTracker : StatsTracker
     , stockQty : StockQties
+    , dayReputation : Int
+    , reputation : Int
     }
 
 
@@ -98,6 +100,8 @@ initModel playerName storeName windowWidth =
         , storeState = Open
         , statsTracker = initStatsTracker
         , stockQty = initStockQty
+        , dayReputation = 0
+        , reputation = 0
         }
 
 
@@ -531,13 +535,19 @@ addToBasket customer offerInfo model =
                             model
 
 
-confirmSale : Clientele.Customer -> Model -> Model
+confirmSale : Customer -> Model -> Model
 confirmSale customer model =
     updateModelStatsTrackerWithConfirmSale customer <|
-        exitCurrentCustomerSuccessfulSale <|
-            (\mdl -> updateConversationWithActionMessage (confirmSaleString customer mdl.pcGold) mdl) <|
-                updateGoldWithSale customer <|
-                    model
+        updateReputationWithCustomer customer <|
+            exitCurrentCustomerSuccessfulSale <|
+                (\mdl -> updateConversationWithActionMessage (confirmSaleString customer mdl.pcGold) mdl) <|
+                    updateGoldWithSale customer <|
+                        model
+
+
+updateReputationWithCustomer : Customer -> Model -> Model
+updateReputationWithCustomer customer model =
+    { model | dayReputation = model.dayReputation + List.length customer.basket + customer.schmoozeCount }
 
 
 updateBasketAndStock : Item.OfferInfo -> Model -> Model
@@ -897,10 +907,19 @@ closeStore : String -> Model -> Model
 closeStore closeMessage model =
     (\mdl -> updateConversationWithActionMessage (statsModelMessage mdl) mdl) <|
         takeRent <|
-            updateStoreCustomersAndStockForClose <|
-                recordNeglectedCustomers <|
-                    updateConversationWithActionMessage closeMessage <|
-                        incrementTimeToTimeWhilstOpen (calculateClosingTime model.time) model
+            updateReputationForClose <|
+                updateStoreCustomersAndStockForClose <|
+                    recordNeglectedCustomers <|
+                        updateConversationWithActionMessage closeMessage <|
+                            incrementTimeToTimeWhilstOpen (calculateClosingTime model.time) model
+
+
+updateReputationForClose : Model -> Model
+updateReputationForClose model =
+    { model
+        | reputation = model.reputation + model.dayReputation
+        , dayReputation = 0
+    }
 
 
 updateStoreCustomersAndStockForClose : Model -> Model
@@ -1799,6 +1818,8 @@ storeBlock : Model -> List (Html Msg)
 storeBlock model =
     [ h3 [] [ text "Store" ]
     , storeInfo model
+    , div [] [ text <| "Day Reputation: " ++ String.fromInt model.dayReputation ]
+    , div [] [ text <| "Reputation: " ++ String.fromInt model.reputation ]
     , basicButton [ onClick <| MainMsg <| WaitUntilNextCustomer ] [ text <| "Wait for next customer" ]
     , h4 [] [ text "Customers" ]
     , div
@@ -1840,6 +1861,7 @@ statsPanel : Model -> List (Html Msg)
 statsPanel model =
     [ h3 [] [ text "Time" ]
     , div [] [ text <| displayTime model.time ]
+    , div [] [ text <| "Reputation: " ++ String.fromInt model.reputation ]
     , h3 [] [ text "Stats for the Day" ]
     , Html.pre [] [ text model.lastMessage ]
     , skipTomorrowOpenStoreBlock model

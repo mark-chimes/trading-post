@@ -28,7 +28,130 @@ type alias ClienteleDetails =
 
 generateNextCustomer : String -> String -> CustomerPool -> ( Customer, CustomerPool )
 generateNextCustomer playerName storeName customerPool =
-    case customerPool of
+    { customerPool | customerWealthCounter = customerPool.customerWealthCounter + 1 }
+        |> generateNextCustomerBaz
+            playerName
+            storeName
+            (determineWealthFromCustomerWealthCounter customerPool.customerWealthCounter)
+
+
+determineWealthFromCustomerWealthCounter : Int -> WealthLevel
+determineWealthFromCustomerWealthCounter wealthCounter =
+    case modBy 20 wealthCounter of
+        0 ->
+            Average
+
+        1 ->
+            Poor
+
+        2 ->
+            Poor
+
+        3 ->
+            Average
+
+        4 ->
+            Average
+
+        5 ->
+            Poor
+
+        6 ->
+            Poor
+
+        7 ->
+            Average
+
+        8 ->
+            WellOff
+
+        9 ->
+            Rich
+
+        10 ->
+            Poor
+
+        11 ->
+            Average
+
+        12 ->
+            WellOff
+
+        13 ->
+            Average
+
+        14 ->
+            Average
+
+        15 ->
+            Destitute
+
+        16 ->
+            Average
+
+        17 ->
+            WellOff
+
+        18 ->
+            Rich
+
+        19 ->
+            Average
+
+        _ ->
+            Rich
+
+
+generateNextCustomerBaz : String -> String -> WealthLevel -> CustomerPool -> ( Customer, CustomerPool )
+generateNextCustomerBaz playerName storeName wealthLevel customerPool =
+    let
+        ( customer, listOfCustomers ) =
+            generateNextCustomerSpecificWealth playerName storeName (foo wealthLevel customerPool)
+    in
+    ( customer, bar wealthLevel listOfCustomers customerPool )
+
+
+foo : WealthLevel -> CustomerPool -> List Customer
+foo wealthLevel customerPool =
+    case wealthLevel of
+        Destitute ->
+            customerPool.destitute
+
+        Poor ->
+            customerPool.poor
+
+        Average ->
+            customerPool.average
+
+        WellOff ->
+            customerPool.welloff
+
+        Rich ->
+            customerPool.rich
+
+
+bar : WealthLevel -> List Customer -> CustomerPool -> CustomerPool
+bar wealthLevel customers customerPool =
+    case wealthLevel of
+        Destitute ->
+            { customerPool | destitute = customers }
+
+        Poor ->
+            { customerPool | poor = customers }
+
+        Average ->
+            { customerPool | average = customers }
+
+        WellOff ->
+            { customerPool | welloff = customers }
+
+        Rich ->
+            { customerPool | rich = customers }
+
+
+generateNextCustomerSpecificWealth : String -> String -> List Customer -> ( Customer, List Customer )
+generateNextCustomerSpecificWealth playerName storeName customers =
+    case customers of
         [] ->
             ( defaultCustomer playerName storeName, [] )
 
@@ -41,7 +164,21 @@ generateNextCustomer playerName storeName customerPool =
 
 addCustomerToPool : String -> String -> CustomerPool -> Customer -> CustomerPool
 addCustomerToPool playerName storeName customerPool customer =
-    customerPool ++ [ resetCustomer playerName storeName customer ]
+    case customer.wealthLevel of
+        Destitute ->
+            { customerPool | destitute = customerPool.destitute ++ [ resetCustomer playerName storeName customer ] }
+
+        Poor ->
+            { customerPool | poor = customerPool.poor ++ [ resetCustomer playerName storeName customer ] }
+
+        Average ->
+            { customerPool | average = customerPool.average ++ [ resetCustomer playerName storeName customer ] }
+
+        WellOff ->
+            { customerPool | welloff = customerPool.welloff ++ [ resetCustomer playerName storeName customer ] }
+
+        Rich ->
+            { customerPool | rich = customerPool.rich ++ [ resetCustomer playerName storeName customer ] }
 
 
 resetCustomer : String -> String -> Customer -> Customer
@@ -210,11 +347,35 @@ exitAllCustomers playerName storeName clientele =
     (\clt ->
         { clt
             | waitingCustomers = []
-            , customerPool = clt.customerPool ++ clt.waitingCustomers
+            , customerPool = addCustomersToPool clt.waitingCustomers clt.customerPool
         }
     )
     <|
         exitCurrentCustomer playerName storeName clientele
+
+
+addCustomersToPool : List Customer -> CustomerPool -> CustomerPool
+addCustomersToPool customers customerPool =
+    List.foldl addCustomerToPoolNoReset customerPool customers
+
+
+addCustomerToPoolNoReset : Customer -> CustomerPool -> CustomerPool
+addCustomerToPoolNoReset customer customerPool =
+    case customer.wealthLevel of
+        Destitute ->
+            { customerPool | destitute = customerPool.destitute ++ [ customer ] }
+
+        Poor ->
+            { customerPool | poor = customerPool.poor ++ [ customer ] }
+
+        Average ->
+            { customerPool | average = customerPool.average ++ [ customer ] }
+
+        WellOff ->
+            { customerPool | welloff = customerPool.welloff ++ [ customer ] }
+
+        Rich ->
+            { customerPool | rich = customerPool.rich ++ [ customer ] }
 
 
 schmoozeCustomer : Customer -> Customer
@@ -625,8 +786,18 @@ initWaitingCustomers playerName storeName =
     ]
 
 
+
+-- TODO Should probably use a dict
+
+
 type alias CustomerPool =
-    List Customer
+    { destitute : List Customer
+    , poor : List Customer
+    , average : List Customer
+    , welloff : List Customer
+    , rich : List Customer
+    , customerWealthCounter : Int
+    }
 
 
 type alias CustomerPoolInit =
@@ -635,7 +806,17 @@ type alias CustomerPoolInit =
 
 initCustomerPool : String -> String -> CustomerPool
 initCustomerPool playerName storeName =
-    List.map (createCustomer playerName storeName) initCustomerPoolInit
+    let
+        customers =
+            List.map (createCustomer playerName storeName) initCustomerPoolInit
+    in
+    { destitute = List.filter (\c -> c.wealthLevel == Destitute) customers
+    , poor = List.filter (\c -> c.wealthLevel == Poor) customers
+    , average = List.filter (\c -> c.wealthLevel == Average) customers
+    , welloff = List.filter (\c -> c.wealthLevel == WellOff) customers
+    , rich = List.filter (\c -> c.wealthLevel == Rich) customers
+    , customerWealthCounter = 0
+    }
 
 
 type alias ItemPreferences =

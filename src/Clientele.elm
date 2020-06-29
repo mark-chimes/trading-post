@@ -26,17 +26,27 @@ type alias ClienteleDetails =
     }
 
 
-generateNextCustomer : String -> String -> CustomerPool -> ( Customer, CustomerPool )
-generateNextCustomer playerName storeName customerPool =
+generateNextCustomer : String -> String -> Int -> CustomerPool -> ( Customer, CustomerPool )
+generateNextCustomer playerName storeName reputation customerPool =
     { customerPool | customerWealthCounter = customerPool.customerWealthCounter + 1 }
         |> generateNextCustomerBaz
             playerName
             storeName
-            (determineWealthFromCustomerWealthCounter customerPool.customerWealthCounter)
+            (if reputation > 10 then
+                determineWealthFromCustomerWealthCounter1 customerPool.customerWealthCounter
+
+             else
+                determineWealthFromCustomerWealthCounter2 customerPool.customerWealthCounter
+            )
 
 
-determineWealthFromCustomerWealthCounter : Int -> WealthLevel
-determineWealthFromCustomerWealthCounter wealthCounter =
+determineWealthFromCustomerWealthCounter1 : Int -> WealthLevel
+determineWealthFromCustomerWealthCounter1 reputation =
+    Rich
+
+
+determineWealthFromCustomerWealthCounter2 : Int -> WealthLevel
+determineWealthFromCustomerWealthCounter2 wealthCounter =
     case modBy 20 wealthCounter of
         0 ->
             Average
@@ -428,11 +438,11 @@ customerCallMessage customer =
         ++ customer.introMessage
 
 
-callCustomerFromPool : ClienteleDetails -> ClienteleDetails
-callCustomerFromPool clientele =
+callCustomerFromPool : Int -> ClienteleDetails -> ClienteleDetails
+callCustomerFromPool reputation clientele =
     let
         ( newCustomer, newCustomerPool ) =
-            generateNextCustomer clientele.playerName clientele.storeName clientele.customerPool
+            generateNextCustomer clientele.playerName clientele.storeName reputation clientele.customerPool
     in
     { clientele
         | currentCustomer = Just newCustomer
@@ -460,11 +470,11 @@ switchCustomer waitingCustomers maybeCurrentCustomer calledCustomer =
            )
 
 
-newWaitingCustomer : ClienteleDetails -> ClienteleDetails
-newWaitingCustomer clientele =
+newWaitingCustomer : Int -> ClienteleDetails -> ClienteleDetails
+newWaitingCustomer reputation clientele =
     let
         ( newCustomer, newCustomerPool ) =
-            generateNextCustomer clientele.playerName clientele.storeName clientele.customerPool
+            generateNextCustomer clientele.playerName clientele.storeName reputation clientele.customerPool
     in
     { clientele
         | waitingCustomers = clientele.waitingCustomers ++ [ newCustomer ]

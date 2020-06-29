@@ -898,7 +898,7 @@ incTimeAndOpenStore model =
         | storeState = Open
         , time = ((dayOfYear model.time + 1) * minutesInDay) + (openHour * minutesInHour)
         , timeOfNextCustomer = ((dayOfYear model.time + 1) * minutesInDay) + (openHour * 60) + timeBetweenCustomersMins
-        , customers = Clientele.callCustomerFromPool model.customers
+        , customers = Clientele.callCustomerFromPool model.reputation model.customers
         , statsTracker = initStatsTracker
     }
 
@@ -1081,7 +1081,7 @@ incrementTimeToTimeWhilstOpen : Time -> Model -> Model
 incrementTimeToTimeWhilstOpen newTime model =
     let
         ( lastTimeOfNextCustomer, newClienteleDetails ) =
-            addCustomers newTime model.timeOfNextCustomer model.customers
+            addCustomers model.reputation newTime model.timeOfNextCustomer model.customers
     in
     { model
         | time = newTime
@@ -1105,19 +1105,19 @@ timeBetweenCustomersMins =
     30
 
 
-addCustomers : Time -> Time -> Clientele.ClienteleDetails -> ( Time, Clientele.ClienteleDetails )
-addCustomers newTime oldTimeOfNextCust customers =
+addCustomers : Int -> Time -> Time -> Clientele.ClienteleDetails -> ( Time, Clientele.ClienteleDetails )
+addCustomers reputation newTime oldTimeOfNextCust customers =
     let
         ( newTimeOfNextCust, numRounds ) =
             calculateNewCustomers newTime oldTimeOfNextCust 0
     in
-    ( newTimeOfNextCust, loopClienteleNewWaitingCustomer customers numRounds )
+    ( newTimeOfNextCust, loopClienteleNewWaitingCustomer reputation customers numRounds )
 
 
-loopClienteleNewWaitingCustomer : Clientele.ClienteleDetails -> Int -> Clientele.ClienteleDetails
-loopClienteleNewWaitingCustomer customers roundNum =
+loopClienteleNewWaitingCustomer : Int -> Clientele.ClienteleDetails -> Int -> Clientele.ClienteleDetails
+loopClienteleNewWaitingCustomer reputation customers roundNum =
     if roundNum > 0 then
-        loopClienteleNewWaitingCustomer (Clientele.newWaitingCustomer customers) (roundNum - 1)
+        loopClienteleNewWaitingCustomer reputation (Clientele.newWaitingCustomer reputation customers) (roundNum - 1)
 
     else
         customers

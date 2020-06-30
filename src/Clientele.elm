@@ -29,39 +29,81 @@ type alias ClienteleDetails =
 
 generateNextCustomer : String -> String -> Int -> CustomerPool -> ( Customer, CustomerPool )
 generateNextCustomer playerName storeName reputation customerPool =
+    let
+        reputationArray =
+            if reputation > 20 then
+                reputationArray1
+
+            else if reputation > 50 then
+                reputationArray2
+
+            else if reputation > 100 then
+                reputationArray3
+
+            else if reputation > 200 then
+                reputationArray4
+
+            else
+                reputationArray0
+    in
     { customerPool | customerWealthCounter = customerPool.customerWealthCounter + 1 }
         |> generateNextCustomerBaz
             playerName
             storeName
-            (if reputation > 10 then
-                determineWealthFromCustomerWealthCounter1 customerPool.customerWealthCounter
-
-             else
-                determineWealthFromCustomerWealthCounter2 customerPool.customerWealthCounter
-            )
-
-
-determineWealthFromCustomerWealthCounter1 : Int -> WealthLevel
-determineWealthFromCustomerWealthCounter1 reputation =
-    Rich
-
-
-reputationArray10 : Array.Array WealthLevel
-reputationArray10 =
-    Array.fromList
-        [ Average, Poor, Poor, Average, Average, Poor, Poor, Average, WellOff, Rich, Poor, Average, WellOff, Average, Average, Destitute, Average, WellOff, Rich, Average, Rich ]
+            (determineWealthFromCustomerWealthCounter3 customerPool.customerWealthCounter reputationArray)
 
 
 determineWealthFromCustomerWealthCounter2 : Int -> WealthLevel
 determineWealthFromCustomerWealthCounter2 wealthCounter =
-    Maybe.withDefault Destitute <| Array.get (modBy (Array.length reputationArray10) wealthCounter) reputationArray10
+    Maybe.withDefault Destitute <| Array.get (modBy (Array.length reputationArray0) wealthCounter) reputationArray0
+
+
+determineWealthFromCustomerWealthCounter3 : Int -> Array.Array WealthLevel -> WealthLevel
+determineWealthFromCustomerWealthCounter3 wealthCounter reputationArray =
+    Maybe.withDefault Destitute <| Array.get (modBy (Array.length reputationArray) wealthCounter) reputationArray
+
+
+reputationArray0 : Array.Array WealthLevel
+reputationArray0 =
+    Array.fromList
+        [ Average, Poor, Poor, Average, Average, Poor, Destitute, Average, Average, Poor, Poor, Average, Average, Average, Average, Destitute, Average, WellOff, Poor, Average, Rich ]
+
+
+reputationArray1 : Array.Array WealthLevel
+reputationArray1 =
+    Array.fromList
+        [ Average, Poor, Average, Poor, Average, Poor, Poor, Average, WellOff, Average, Poor, Average, WellOff, Average, Average, Destitute, Average, WellOff, Rich, Average, Average ]
+
+
+reputationArray2 : Array.Array WealthLevel
+reputationArray2 =
+    Array.fromList
+        [ WellOff, Average, Average, Rich, Average, Poor, Destitute, Average, WellOff, WellOff, Average, Average, Poor, Average, Average, Average, Average, WellOff, WellOff, Average, Rich ]
+
+
+reputationArray3 : Array.Array WealthLevel
+reputationArray3 =
+    Array.fromList
+        [ WellOff, Average, Average, WellOff, Rich, WellOff, Average, Destitute, WellOff, Rich, Average, Average, Poor, Average, WellOff, Average, Average, WellOff, Rich, Average, Rich ]
+
+
+reputationArray4 : Array.Array WealthLevel
+reputationArray4 =
+    Array.fromList
+        [ WellOff, Rich, Destitute, WellOff, WellOff, Rich, Average, Average, WellOff, Average, Rich, WellOff, Average, Poor, Rich, Rich, Average, WellOff, Average, Rich, WellOff ]
+
+
+reputationArray5 : Array.Array WealthLevel
+reputationArray5 =
+    Array.fromList
+        [ Rich, Average, Rich, Average, Average, WellOff, WellOff, Destitute, Rich, WellOff, Rich, WellOff, Average, WellOff, Rich, Poor, Rich, WellOff, Rich, Average, Rich ]
 
 
 generateNextCustomerBaz : String -> String -> WealthLevel -> CustomerPool -> ( Customer, CustomerPool )
 generateNextCustomerBaz playerName storeName wealthLevel customerPool =
     let
         ( customer, listOfCustomers ) =
-            generateNextCustomerSpecificWealth playerName storeName (foo wealthLevel customerPool)
+            generateNextCustomerSpecificWealth playerName storeName wealthLevel (foo wealthLevel customerPool)
     in
     ( customer, bar wealthLevel listOfCustomers customerPool )
 
@@ -104,11 +146,11 @@ bar wealthLevel customers customerPool =
             { customerPool | rich = customers }
 
 
-generateNextCustomerSpecificWealth : String -> String -> List Customer -> ( Customer, List Customer )
-generateNextCustomerSpecificWealth playerName storeName customers =
+generateNextCustomerSpecificWealth : String -> String -> WealthLevel -> List Customer -> ( Customer, List Customer )
+generateNextCustomerSpecificWealth playerName storeName wealth customers =
     case customers of
         [] ->
-            ( defaultCustomer playerName storeName, [] )
+            ( defaultCustomerWithWealth playerName storeName wealth, [] )
 
         x :: [] ->
             ( x, [] )
@@ -704,6 +746,18 @@ percentageForDisplay itemType customer =
     String.fromInt (round (paymentForItemType itemType customer * 100)) ++ "%"
 
 
+defaultCustomerWithWealth : String -> String -> WealthLevel -> Customer
+defaultCustomerWithWealth playerName storeName wealthLevel =
+    createCustomer playerName
+        storeName
+        { name = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+        , wealthLevel = wealthLevel
+        , introMessage = "You sense a bizarre otherworldly presence."
+        , descriptionMessage = "They seem wrong, somehow. Like something that shouldn't exist."
+        , template = templateWeird
+        }
+
+
 defaultCustomer : String -> String -> Customer
 defaultCustomer playerName storeName =
     createCustomer playerName
@@ -1002,6 +1056,54 @@ initCustomerPoolInit =
       , wealthLevel = Poor
       , introMessage = "An attractive young man with a scraggly beard and reddish eyes."
       , descriptionMessage = "He speaks slowly and often seems to be a bit lost in his own world."
+      , template = templateTraveller
+      }
+    , { name = "Aromanta Bergandy"
+      , wealthLevel = Average
+      , introMessage = "A sweet aroma punctuates the air."
+      , descriptionMessage = "They seem to have a fondness for spiced tea."
+      , template = templateTraveller
+      }
+    , { name = "Brandsley Ceilspitch"
+      , wealthLevel = Average
+      , introMessage = "You can hear them jabbering for awhile before entering the door."
+      , descriptionMessage = "Very talkative."
+      , template = templateKnight
+      }
+    , { name = "Cassandra Diogenes"
+      , wealthLevel = Destitute
+      , introMessage = "She's a beggar spouting some nonsense predictions that can't possibly be true."
+      , descriptionMessage = "It's not even worth trying to figure out what she's going on about, what insight could a beggar possibly have to offer?"
+      , template = templateTraveller
+      }
+    , { name = "Dionysius Etymologus"
+      , wealthLevel = Rich
+      , introMessage = "A handsome, muscular man wearing very little clothing and smelling of expensive alcohol."
+      , descriptionMessage = "He's surprisingly well-spoken considering how drunk he is."
+      , template = templateTraveller
+      }
+    , { name = "Earthia Flatprover"
+      , wealthLevel = WellOff
+      , introMessage = "A woman in ill-fitting though expensive clothing whose colours clash dreadfully."
+      , descriptionMessage = "She does love to go on about those crazy theories of hers!"
+      , template = templateTraveller
+      }
+    , { name = "Frederick Goldenhole"
+      , wealthLevel = Rich
+      , introMessage = "A man whose golden armor is so shiny, you would swear he is compensating for something!"
+      , descriptionMessage = "He can't seem to stop reminiscing about the \"Good Old Days\" and complaining about how things aren't as they used to be."
+      , template = templateKnight
+      }
+    , { name = "Guacamolly Holly"
+      , wealthLevel = Rich
+      , introMessage = "An orc who's obviously managed to buy their way into civilized society."
+      , descriptionMessage = "You barely detect a hint of an Orcish accent."
+      , template = templateKnight
+      }
+    , { name = "Hipstratia Impostersyndrome"
+      , wealthLevel = Rich
+      , introMessage = "An unattractive woman wearing way too much makeup."
+      , descriptionMessage = "She's wonderfully intelligent and an absolute delight to speak to."
       , template = templateTraveller
       }
     ]

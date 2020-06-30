@@ -88,7 +88,7 @@ initModel playerName storeName windowWidth =
         , windowWidth = windowWidth
         , time = openHour * minutesInHour
         , pcGold = 350
-        , rent = 300
+        , rent = 100
         , cleanTime = 10
         , customers = Clientele.initCustomers playerName storeName
         , isConvoReverse = True
@@ -897,7 +897,7 @@ incTimeAndOpenStore model =
     { model
         | storeState = Open
         , time = ((dayOfYear model.time + 1) * minutesInDay) + (openHour * minutesInHour)
-        , timeOfNextCustomer = ((dayOfYear model.time + 1) * minutesInDay) + (openHour * 60) + timeBetweenCustomersMins
+        , timeOfNextCustomer = (openHour * 60) + calculateCustomerWaitTime openHour
         , customers = Clientele.callCustomerFromPool model.reputation model.customers
         , statsTracker = initStatsTracker
     }

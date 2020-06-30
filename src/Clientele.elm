@@ -1,5 +1,6 @@
 module Clientele exposing (..)
 
+import Array exposing (Array)
 import Html exposing (Attribute, Html, button, text)
 import Html.Attributes as Attr
 import Item exposing (Item)
@@ -45,71 +46,15 @@ determineWealthFromCustomerWealthCounter1 reputation =
     Rich
 
 
+reputationArray10 : Array.Array WealthLevel
+reputationArray10 =
+    Array.fromList
+        [ Average, Poor, Poor, Average, Average, Poor, Poor, Average, WellOff, Rich, Poor, Average, WellOff, Average, Average, Destitute, Average, WellOff, Rich, Average, Rich ]
+
+
 determineWealthFromCustomerWealthCounter2 : Int -> WealthLevel
 determineWealthFromCustomerWealthCounter2 wealthCounter =
-    case modBy 20 wealthCounter of
-        0 ->
-            Average
-
-        1 ->
-            Poor
-
-        2 ->
-            Poor
-
-        3 ->
-            Average
-
-        4 ->
-            Average
-
-        5 ->
-            Poor
-
-        6 ->
-            Poor
-
-        7 ->
-            Average
-
-        8 ->
-            WellOff
-
-        9 ->
-            Rich
-
-        10 ->
-            Poor
-
-        11 ->
-            Average
-
-        12 ->
-            WellOff
-
-        13 ->
-            Average
-
-        14 ->
-            Average
-
-        15 ->
-            Destitute
-
-        16 ->
-            Average
-
-        17 ->
-            WellOff
-
-        18 ->
-            Rich
-
-        19 ->
-            Average
-
-        _ ->
-            Rich
+    Maybe.withDefault Destitute <| Array.get (modBy (Array.length reputationArray10) wealthCounter) reputationArray10
 
 
 generateNextCustomerBaz : String -> String -> WealthLevel -> CustomerPool -> ( Customer, CustomerPool )

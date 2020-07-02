@@ -892,12 +892,16 @@ openStore model =
                 model
 
 
+
+-- TODO FIX HOW TIME WORKS
+
+
 incTimeAndOpenStore : Model -> Model
 incTimeAndOpenStore model =
     { model
         | storeState = Open
         , time = ((dayOfYear model.time + 1) * minutesInDay) + (openHour * minutesInHour)
-        , timeOfNextCustomer = (openHour * 60) + calculateCustomerWaitTime openHour
+        , timeOfNextCustomer = ((dayOfYear model.time + 1) * minutesInDay) + (openHour * 60) + calculateCustomerWaitTime openHour
         , customers = Clientele.callCustomerFromPool model.reputation model.customers
         , statsTracker = initStatsTracker
     }

@@ -1,6 +1,7 @@
 module Clientele exposing (..)
 
 import Array exposing (Array)
+import Dict exposing (Dict)
 import Html exposing (Attribute, Html, button, text)
 import Html.Attributes as Attr
 import Item exposing (Item)
@@ -50,23 +51,18 @@ generateNextCustomer playerName storeName reputation customerPool =
         |> generateNextCustomerBaz
             playerName
             storeName
-            (determineWealthFromCustomerWealthCounter3 customerPool.customerWealthCounter reputationArray)
+            (determineWealthFromCustomerWealthCounter customerPool.customerWealthCounter reputationArray)
 
 
-determineWealthFromCustomerWealthCounter2 : Int -> WealthLevel
-determineWealthFromCustomerWealthCounter2 wealthCounter =
-    Maybe.withDefault Destitute <| Array.get (modBy (Array.length reputationArray0) wealthCounter) reputationArray0
-
-
-determineWealthFromCustomerWealthCounter3 : Int -> Array.Array WealthLevel -> WealthLevel
-determineWealthFromCustomerWealthCounter3 wealthCounter reputationArray =
+determineWealthFromCustomerWealthCounter : Int -> Array.Array WealthLevel -> WealthLevel
+determineWealthFromCustomerWealthCounter wealthCounter reputationArray =
     Maybe.withDefault Destitute <| Array.get (modBy (Array.length reputationArray) wealthCounter) reputationArray
 
 
 reputationArray0 : Array.Array WealthLevel
 reputationArray0 =
     Array.fromList
-        [ Average, Poor, Poor, Average, Average, Poor, Destitute, Average, Average, Poor, Poor, Average, Average, Average, Average, Destitute, Average, WellOff, Poor, Average, Rich ]
+        [ Average, Poor, Poor, Average, Average, Poor, Destitute, Average, Average, Poor, Poor, Average, Average, Average, Average, Destitute, Average, WellOff, Poor, Average, Average ]
 
 
 reputationArray1 : Array.Array WealthLevel
@@ -103,13 +99,13 @@ generateNextCustomerBaz : String -> String -> WealthLevel -> CustomerPool -> ( C
 generateNextCustomerBaz playerName storeName wealthLevel customerPool =
     let
         ( customer, listOfCustomers ) =
-            generateNextCustomerSpecificWealth playerName storeName wealthLevel (foo wealthLevel customerPool)
+            generateNextCustomerSpecificWealth playerName storeName wealthLevel (wealthLevelToCustomerPoolList wealthLevel customerPool)
     in
     ( customer, bar wealthLevel listOfCustomers customerPool )
 
 
-foo : WealthLevel -> CustomerPool -> List Customer
-foo wealthLevel customerPool =
+wealthLevelToCustomerPoolList : WealthLevel -> CustomerPool -> List Customer
+wealthLevelToCustomerPoolList wealthLevel customerPool =
     case wealthLevel of
         Destitute ->
             customerPool.destitute

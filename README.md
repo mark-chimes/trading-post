@@ -1,6 +1,6 @@
 # Trading Post
 
-Still in very early development. Not really a game yet.
+An experiment in frontend programming with a functional language (Elm).
 
 Try it out for yourself at: https://mark-chimes.github.io/trading-post/
 (If the background doesn't load, try refreshing).

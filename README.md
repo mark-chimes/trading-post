@@ -2,6 +2,8 @@
 
 An experiment in frontend programming with a functional language (Elm).
 
+The aim is to make money by selling items to customers. It's not much of a game, but it functions without runtime errors and works well with screen-readers. 
+
 Try it out for yourself at: https://mark-chimes.github.io/trading-post/
 (If the background doesn't load, try refreshing).
 
